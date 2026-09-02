@@ -13,7 +13,7 @@
     "bootstrap": "node scripts/bootstrap.mjs",
     "lint": "eslint . --max-warnings=0 && node scripts/lint-typography.mjs",
     "typecheck": "pnpm -r --workspace-concurrency=4 run typecheck",
-    "test": "pnpm -r --workspace-concurrency=1 run test && pnpm run test:swift",
+    "test": "pnpm -r --workspace-concurrency=1 run test && pnpm run test:swift && pnpm run test:scripts",
     "test:swift": "node scripts/run-swift-tests.mjs",
     "test:e2e": "pnpm --filter @apprentice/desktop run test:e2e",
     "test:local-model": "RUN_LOCAL_MODEL_TEST=1 pnpm --filter @apprentice/model-adapters run test:local-model",
@@ -27,7 +27,8 @@
     "model:install": "node scripts/install-uimate-model.mjs",
     "model:start": "node scripts/start-local-model.mjs",
     "audit": "pnpm audit --audit-level=high",
-    "licenses": "node scripts/license-inventory.mjs"
+    "licenses": "node scripts/license-inventory.mjs",
+    "test:scripts": "vitest run --config vitest.scripts.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-02",
+  "uiMateCommit": "1cb9e1e44ce856e23b593992b02efbd489943fcb",
+  "mlxVlmVersion": "0.6.17",
+  "mlxPins": {
+    "mlx-vlm": "0.6.17",
+    "mlx": "0.32.2",
+    "transformers": "5.16.1"
+  },
+  "mlxPinsResolvedAt": "2026-09-02",
+  "mlxPinsSource": "https://pypi.org/pypi/mlx-vlm/0.6.17/json requires_dist (mlx>=0.32.0, transformers>=5.14.0); mlx and transformers pinned to the newest stable release satisfying those bounds with macOS arm64 wheels",
+  "appSupportDir": {
+    "note": "All runtime, model, venv and log files live under the app support directory. Nothing is installed system-wide and sudo is never used.",
+    "macDefault": "~/Library/Application Support/Apprentice",
+    "envOverride": "APPRENTICE_DATA_DIR",
+    "layout": {
+      "runtime": "runtime/llama-b10752 (llama-server + dylibs), runtime/downloads, runtime/llama-server.pid",
+      "models": "models/ui-mate-9b (GGUF + mmproj + model.json), models/UI-Mate-9B-mlx-6bit (MLX route)",
+      "logs": "logs/llama-server-<timestamp>.log, logs/mlx-*.log",
+      "mlxVenv": "mlx-venv (python virtual environment for the MLX route)"
+    }
+  },
+  "llamaCpp": {
+    "release": "b10752",
+    "assetName": "llama-b10752-bin-macos-arm64.tar.gz",
+    "url": "https://github.com/ggml-org/llama.cpp/releases/download/b10752/llama-b10752-bin-macos-arm64.tar.gz",
+    "size": 11072747,
+    "sha256": "3c2057747f1d3c618d818960524151e48797d3b7f19fbebacc00124d930e3028",
+    "extractedDir": "llama-b10752",
+    "serverBinary": "llama-server",
+    "expectedVersionSubstring": "10752",
+    "source": "https://github.com/ggml-org/llama.cpp/releases/tag/b10752",
+    "license": "MIT",
+    "expectedDiskBytes": 60000000,
+    "note": "The tarball extracts to llama-b10752/ containing llama-server and its dylibs. The binary must run from inside that directory (dylibs are resolved relative to it)."
+  },
+  "model": {
+    "name": "UI-Mate-9B",
+    "alias": "UI_Mate",
+    "repo": "bartowski/tencent_UI-Mate-9B-GGUF",
+    "hfSpec": "bartowski/tencent_UI-Mate-9B-GGUF:Q6_K",
+    "upstreamRepo": "tencent/UI-Mate-9B",
+    "quantization": "Q6_K",
+    "license": "Apache-2.0",
+    "licenseHolder": "Tencent (UI-Mate)",
+    "sourceUrls": [
+      "https://github.com/Tencent/UI-Mate",
+      "https://huggingface.co/tencent/UI-Mate-9B",
+      "https://huggingface.co/bartowski/tencent_UI-Mate-9B-GGUF",
+      "https://ui-mate.github.io/usage.html"
+    ],
+    "files": {
+      "weights": {
+        "file": "tencent_UI-Mate-9B-Q6_K.gguf",
+        "url": "https://huggingface.co/bartowski/tencent_UI-Mate-9B-GGUF/resolve/main/tencent_UI-Mate-9B-Q6_K.gguf",
+        "size": 7700259968,
+        "sha256": "d43523385746a24991f6c84761a34564104ec474041f77987ca9bf660130a971"
+      },
+      "mmproj": {
+        "file": "mmproj-tencent_UI-Mate-9B-f16.gguf",
+        "url": "https://huggingface.co/bartowski/tencent_UI-Mate-9B-GGUF/resolve/main/mmproj-tencent_UI-Mate-9B-f16.gguf",
+        "size": 918166016,
+        "sha256": "5a8380c4637dddceed9dbc28fffcdfa8601909c0ece9fe218fbd6888ec5d2c16"
+      }
+    },
+    "expectedDownloadBytes": 8618425984,
+    "expectedDiskBytes": 8618425984,
+    "contextSize": 8192,
+    "gpuLayers": 99,
+    "imagesToKeep": 2,
+    "memoryRecommendation": {
+      "recommendedUnifiedMemoryGb": 24,
+      "minimumUnifiedMemoryGb": 16,
+      "note": "Q6_K weights (7.7 GB) + f16 mmproj (0.9 GB) + 8192 context + KV cache and image encoder fit comfortably in 24 GB. On 16 GB machines use a smaller quant (IQ4_XS or Q4_K_M from the same repo) or an external endpoint."
+    },
+    "officialMacCommand": "llama-server -hf bartowski/tencent_UI-Mate-9B-GGUF:Q6_K --port 8000 -ngl 99 -c 8192 --alias UI_Mate"
+  },
+  "mlx": {
+    "hfPath": "tencent/UI-Mate-9B",
+    "outputDirName": "UI-Mate-9B-mlx-6bit",
+    "quantBits": 6,
+    "groupSize": 64,
+    "env": {
+      "KV_BITS": "4",
+      "PREFILL_STEP_SIZE": "1024"
+    },
+    "imagesToKeep": 2,
+    "expectedDownloadBytes": 19000000000,
+    "expectedDiskBytes": 27000000000,
+    "diskNote": "Estimates only (not measured on this machine): the bf16 upstream checkpoint (~19 GB) lands in the Hugging Face cache, the converted 6-bit weights are roughly 7-8 GB.",
+    "officialConvertCommand": "python -m mlx_vlm.convert --hf-path tencent/UI-Mate-9B --mlx-path ~/models/UI-Mate-9B-mlx-6bit -q --q-bits 6 --q-group-size 64",
+    "officialServeCommand": "KV_BITS=4 PREFILL_STEP_SIZE=1024 python -m mlx_vlm.server --model <path> --port 8000",
+    "patchPolicy": "No upstream cache patch is applied by default. Opt in with --patch <diff> --patch-sha256 <hash>; the hash is verified before git apply --check, and every touched file is recorded in mlx-venv/PATCHES.json."
+  }
+}
