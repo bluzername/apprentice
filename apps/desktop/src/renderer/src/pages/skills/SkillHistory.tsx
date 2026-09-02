@@ -20,7 +20,9 @@ export function diffSummary(previous: Skill, next: Skill): string[] {
 }
 
 export function SkillHistory({ skill, history }: { skill: Skill; history: Skill[] }): JSX.Element {
-  const versions = [...history, skill].sort((a, b) => a.version - b.version);
+  const byVersion = new Map<number, Skill>();
+  for (const v of [...history, skill]) byVersion.set(v.version, v);
+  const versions = [...byVersion.values()].sort((a, b) => a.version - b.version);
   return (
     <div className="stack">
       <Card title="Version history">

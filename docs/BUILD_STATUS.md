@@ -24,7 +24,7 @@ the build machine described in `docs/BUILD_ENVIRONMENT.md` and produced the stat
 | apps/desktop main process | verified | `vitest run test`: 17 files, 106 tests pass (real helper binary in fixture mode, loopback pairing, discovery, teach, run engine, feedback export + aggregator, privacy delete-all, runtime manager with fake llama-server, headless `--smoke-test` through the built app printing ok:true with 3 candidates and a 13-step completed run) |
 | apps/desktop renderer | verified | 6 files, 52 tests pass; tsc web config clean; electron-vite build succeeds; UI exercised manually in a browser against the dev mock (light and dark) |
 | scripts (runtime, model, bundle) | verified | `pnpm test:scripts`: 7 files, 39 tests pass; real llama.cpp b10752 download, sha256, extraction, and `--version` verified on this machine |
-| e2e (Playwright, demo mode) | pending | |
+| e2e (Playwright, demo mode) | verified | `pnpm test:e2e`: 1 passed (about 13 s): onboarding 7 steps, demo load, candidate detail, edit and save skill (v1 then v2 with correction), guided run with 9 approvals and 4 subtask confirmations to Completed, run feedback, bundle export + offline aggregation, Delete today |
 | packaging (dmg, zip) | pending | |
 | dist/alpha bundle | pending | |
 
@@ -37,7 +37,7 @@ the build machine described in `docs/BUILD_ENVIRONMENT.md` and produced the stat
 | `pnpm typecheck` | ok: all 7 packages |
 | `pnpm test` | ok: schemas 9, extension 101, core 128, worker 35, adapters 115, fixtures 282, desktop 106+52 (158), scripts 39, Swift 62. Total 929 automated tests, 0 failures, 0 skipped |
 | `pnpm audit --audit-level=high` | No known vulnerabilities found |
-| `pnpm test:e2e` | pending |
+| `pnpm test:e2e` | ok: 1 passed (demo journey) |
 | `pnpm build` | pending |
 | `pnpm package:mac` | pending |
 | `pnpm alpha:bundle` | pending |
