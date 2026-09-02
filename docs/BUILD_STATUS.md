@@ -25,7 +25,7 @@ the build machine described in `docs/BUILD_ENVIRONMENT.md` and produced the stat
 | apps/desktop renderer | verified | 6 files, 52 tests pass; tsc web config clean; electron-vite build succeeds; UI exercised manually in a browser against the dev mock (light and dark) |
 | scripts (runtime, model, bundle) | verified | `pnpm test:scripts`: 7 files, 39 tests pass; real llama.cpp b10752 download, sha256, extraction, and `--version` verified on this machine |
 | e2e (Playwright, demo mode) | verified | `pnpm test:e2e`: 1 passed (about 13 s): onboarding 7 steps, demo load, candidate detail, edit and save skill (v1 then v2 with correction), guided run with 9 approvals and 4 subtask confirmations to Completed, run feedback, bundle export + offline aggregation, Delete today |
-| packaging (dmg, zip) | pending | |
+| packaging (dmg, zip) | in progress | unpacked ad hoc build verified: `electron-builder --mac --arm64 --dir` produces Apprentice.app (283 MB) with only zod/yazl/yauzl in the asar, helper and fixtures under Contents/Resources, ad hoc signature with runtime flag (`Signature=adhoc`), and the packaged binary passes `--smoke-test` (3 candidates, 13-step completed run, bundle exported) |
 | dist/alpha bundle | pending | |
 
 ## Top-level commands
