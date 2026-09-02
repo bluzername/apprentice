@@ -78,7 +78,9 @@ export const AllowlistResponseSchema = z.object({
   domains: z.array(z.string().max(253)),
   learningState: z.enum(["learning", "paused", "private", "stopped"]),
   captureEnabled: z.boolean(),
-  productName: z.string()
+  productName: z.string(),
+  /** True while an assisted run is active, so the extension polls for DOM queries. */
+  runActive: z.boolean().default(false)
 });
 export type AllowlistResponse = z.infer<typeof AllowlistResponseSchema>;
 
@@ -97,7 +99,14 @@ export const DomStateQuerySchema = z.object({
   marker: z.string().max(160)
 });
 export const DomStateResultSchema = z.object({
+  marker: z.string().max(160),
   present: z.boolean(),
   domain: z.string().max(253).optional(),
   path: z.string().max(512).optional()
 });
+export type DomStateResult = z.infer<typeof DomStateResultSchema>;
+
+/** GET /v1/dom-query response: the pending query for the extension, or null. */
+export const DomQueryResponseSchema = z.object({ query: DomStateQuerySchema.nullable() });
+/** POST /v1/dom-state response. */
+export const DomStateAckSchema = z.object({ ok: z.boolean() });

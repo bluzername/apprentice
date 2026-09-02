@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Apprentice Browser Companion</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <header class="header">
+        <h1 id="product-name">Apprentice Browser Companion</h1>
+        <p class="status" id="pairing-status" role="status" aria-live="polite">Checking status...</p>
+      </header>
+
+      <section id="pair-section" aria-labelledby="pair-heading" hidden>
+        <h2 id="pair-heading">Pair with the desktop app</h2>
+        <p class="hint">Open Apprentice on this Mac, go to Settings, Browser extension, and enter the 6-digit code shown there.</p>
+        <form id="pair-form" class="row">
+          <label for="pair-code">6-digit pairing code</label>
+          <input
+            id="pair-code"
+            name="code"
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            minlength="6"
+            required
+            aria-describedby="pair-error"
+          />
+          <button type="submit" id="pair-button">Pair</button>
+        </form>
+        <p id="pair-error" class="error" role="alert"></p>
+      </section>
+
+      <section id="paired-section" aria-labelledby="paired-heading" hidden>
+        <h2 id="paired-heading">Desktop learning state</h2>
+        <dl class="facts">
+          <div><dt>Learning</dt><dd id="learning-state">-</dd></div>
+          <div><dt>Capture</dt><dd id="capture-state">-</dd></div>
+          <div><dt>Last sync</dt><dd id="last-sync">-</dd></div>
+          <div><dt>Events sent</dt><dd id="events-sent">0</dd></div>
+        </dl>
+
+        <h2 id="allowlist-heading">Allowlisted domains</h2>
+        <p class="hint" id="allowlist-empty" hidden>No domains yet. Add domains in the desktop app first.</p>
+        <ul id="allowlist" class="domains" aria-labelledby="allowlist-heading"></ul>
+        <button type="button" id="grant-button" hidden>Grant access</button>
+
+        <div class="toggle-row">
+          <label for="pause-toggle">Pause capture in this browser</label>
+          <input type="checkbox" id="pause-toggle" role="switch" aria-checked="false" />
+        </div>
+
+        <div class="row actions">
+          <button type="button" id="sync-button">Sync now</button>
+          <button type="button" id="unpair-button" class="danger">Unpair</button>
+        </div>
+        <p id="action-error" class="error" role="alert"></p>
+      </section>
+
+      <footer class="footer">
+        <p>This extension only talks to the Apprentice app on this computer (127.0.0.1).</p>
+        <p class="muted" id="footer-detail"></p>
+      </footer>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
