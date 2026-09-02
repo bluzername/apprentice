@@ -1,0 +1,226 @@
+/* Overview */
+.overview-card .stat {
+  margin: 6px 0 2px;
+}
+
+/* Activity */
+.activity-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+.activity-toolbar .field {
+  min-width: 140px;
+}
+.event-type {
+  font-weight: 500;
+}
+.event-meta {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.event-shot {
+  margin-top: 6px;
+}
+
+/* Candidates */
+.candidate-card h3 {
+  margin-bottom: 4px;
+}
+.candidate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.evidence-block {
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+  margin-bottom: 12px;
+}
+
+/* Skills */
+.subtask-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: var(--bg-sunken);
+}
+
+/* Runs */
+.trace-step {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.trace-step:last-child {
+  border-bottom: 0;
+}
+.trace-index {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+.trace-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px 16px;
+  margin-top: 6px;
+  font-size: var(--text-sm);
+}
+.trace-grid strong {
+  display: block;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.approval-panel {
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  background: var(--bg-elevated);
+}
+.approval-shot {
+  position: relative;
+  width: 100%;
+  min-height: 120px;
+  max-height: 460px;
+  display: flex;
+  justify-content: center;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.approval-shot img {
+  display: block;
+  max-width: 100%;
+  max-height: 460px;
+  object-fit: contain;
+}
+.approval-marker {
+  position: absolute;
+  border: 3px solid #e0202b;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.approval-marker::before,
+.approval-marker::after {
+  content: "";
+  position: absolute;
+  background: #e0202b;
+  left: 50%;
+  top: 50%;
+}
+.approval-marker::before {
+  width: 200%;
+  height: 2px;
+  transform: translate(-50%, -50%);
+}
+.approval-marker::after {
+  width: 2px;
+  height: 200%;
+  transform: translate(-50%, -50%);
+}
+.typed-text {
+  font-family: var(--font-mono);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.approval-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.rating {
+  display: flex;
+  gap: 6px;
+}
+.rating label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.rating label:has(input:checked) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.rating input {
+  margin: 0;
+}
+
+/* Privacy */
+.danger-zone {
+  border-color: var(--danger);
+}
+.danger-zone .card-title {
+  color: var(--danger);
+}
+
+/* Settings */
+.settings-section {
+  scroll-margin-top: 12px;
+}
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.pairing-code {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  letter-spacing: 6px;
+  font-weight: 600;
+}
+
+/* Teach */
+.teach-events {
+  max-height: 380px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px;
+  background: var(--bg-elevated);
+}
+.teach-event {
+  display: grid;
+  grid-template-columns: 24px 74px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+}
+.teach-event.outside {
+  opacity: 0.45;
+}
+.teach-event.excluded {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.retention-preview {
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+  padding: 14px;
+}
