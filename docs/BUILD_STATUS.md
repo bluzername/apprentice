@@ -84,3 +84,21 @@ Findings and resolution:
 | Low | `app:openExternal` accepted any URL scheme | Restricted to http(s) |
 | Low | `disable-library-validation` entitlement widens same-user dylib injection | Documented as residual risk in the threat model |
 | Info | LGPL-3.0 (`@img/sharp-libvips-darwin-arm64`) and CC-BY-4.0 (`caniuse-lite`) packages | Build-time transitive dependencies of electron-builder and browserslist; not shipped in the app bundle |
+
+## Independent UX and accessibility review (2026-09-02)
+
+A separate read-only review of the renderer (84 files, contrast computed from the token file)
+rated the UI as partially conforming to WCAG 2.2 AA before fixes: 3 high findings (dark-mode
+Stop button contrast 2.39:1, toast/approval live regions inserted with their first message,
+focus dropped to body when a busy button became disabled), 12 medium (status chip menu
+semantics and focus return, Escape stopping a run while dismissing a menu, table rows as
+tab stops without a role, input border contrast, small chip targets, no title or focus change on
+route change, title-only explanations on disabled buttons, onboarding consent not persisted on
+Continue, no confirmation for "Never learn this pattern", failed status calls shown as
+"Stopped", typed text hiding line breaks, de-emphasised teach rows below 4.5:1), and 11 low.
+All high and medium findings and the quick low findings were applied afterwards (see the git
+log entry "a11y: apply UX review fixes"). Confirmed strengths: complete light and dark tokens,
+muted text >= 6.8:1, reduced motion honoured, labelled fields with described errors, native
+dialog with focus trap and restore, keyboard range slider with value text, decorative icons with
+named icon-only buttons, real empty/loading/error states on every page, evidence-first candidate
+language, exact action and typed text in the approval panel, typed-phrase delete-all.
