@@ -1,0 +1,106 @@
+{
+  "completeChain": [
+    {
+      "index": 0,
+      "awaitFinish": false,
+      "actions": [
+        "pyautogui.click(1, 1)"
+      ]
+    },
+    {
+      "index": 1,
+      "awaitFinish": false,
+      "actions": [
+        "WAIT"
+      ]
+    },
+    {
+      "index": 2,
+      "awaitFinish": false,
+      "actions": [
+        "WAIT"
+      ]
+    },
+    {
+      "index": 2,
+      "awaitFinish": true,
+      "actions": [
+        "WAIT"
+      ]
+    },
+    {
+      "index": 2,
+      "awaitFinish": false,
+      "actions": [
+        "pyautogui.click(1, 1)"
+      ]
+    },
+    {
+      "index": 2,
+      "awaitFinish": true,
+      "actions": [
+        "WAIT"
+      ]
+    }
+  ],
+  "earlyDone": [
+    {
+      "index": 1,
+      "awaitFinish": false,
+      "actions": [
+        "WAIT"
+      ]
+    },
+    {
+      "index": 2,
+      "awaitFinish": false,
+      "actions": [
+        "WAIT"
+      ]
+    },
+    {
+      "index": 2,
+      "awaitFinish": false,
+      "actions": [
+        "DONE"
+      ]
+    }
+  ],
+  "resetAwait": [
+    {
+      "index": 1,
+      "awaitFinish": false,
+      "actions": [
+        "WAIT"
+      ]
+    },
+    {
+      "index": 2,
+      "awaitFinish": false,
+      "actions": [
+        "WAIT"
+      ]
+    },
+    {
+      "index": 2,
+      "awaitFinish": true,
+      "actions": [
+        "WAIT"
+      ]
+    },
+    {
+      "index": 2,
+      "awaitFinish": false,
+      "actions": [
+        "pyautogui.click(1, 1)"
+      ]
+    },
+    {
+      "index": 2,
+      "awaitFinish": true,
+      "actions": [
+        "WAIT"
+      ]
+    }
+  ]
+}

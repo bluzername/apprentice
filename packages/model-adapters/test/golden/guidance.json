@@ -1,0 +1,33 @@
+{
+  "plan": [
+    {
+      "title": "Open the CRM contact",
+      "goal": "Open the contact record for the customer\nfrom the meeting.",
+      "completionFlag": "The contact detail page is visible.",
+      "keySteps": [
+        "Click the search field",
+        "Type the contact name",
+        "Open the top result"
+      ]
+    },
+    {
+      "title": "",
+      "goal": "  Log the meeting notes as an activity.  ",
+      "completionFlag": "An activity with the meeting notes is listed.",
+      "keySteps": []
+    },
+    {
+      "title": "Confirm the summary",
+      "goal": "Verify the activity summary shows today's date",
+      "completionFlag": "",
+      "keySteps": [
+        "Scroll to the activity list"
+      ]
+    }
+  ],
+  "guidance": [
+    "<workflow_progress>\n【➡️】subtask 0: Open the contact record for the customer from the meeting.\n【 】subtask 1: Log the meeting notes as an activity.\n【 】subtask 2: Verify the activity summary shows today's date\n</workflow_progress>\n\n<current_subtask>\nindex: 0\nsub_instruction: Open the contact record for the customer\nfrom the meeting.\nsubtask_complete_flag: The contact detail page is visible.\nintent_summary: Open the CRM contact\n</current_subtask>\n\n<current_subtask_action_list>\nKey Step 0: Click the search field\nKey Step 1: Type the contact name\nKey Step 2: Open the top result\n</current_subtask_action_list>\nPlease generate the next move according to the UI screenshot, workflow context and instruction.",
+    "<workflow_progress>\n【✅】subtask 0: Open the contact record for the customer from the meeting.\n【➡️】subtask 1: Log the meeting notes as an activity.\n【 】subtask 2: Verify the activity summary shows today's date\n</workflow_progress>\n\n<current_subtask>\nindex: 1\nsub_instruction: Log the meeting notes as an activity.\nsubtask_complete_flag: An activity with the meeting notes is listed.\n</current_subtask>\n\n<current_subtask_action_list>\nNone\n</current_subtask_action_list>\nPlease generate the next move according to the UI screenshot, workflow context and instruction.",
+    "<workflow_progress>\n【✅】subtask 0: Open the contact record for the customer from the meeting.\n【✅】subtask 1: Log the meeting notes as an activity.\n【➡️】subtask 2: Verify the activity summary shows today's date\n</workflow_progress>\n\n<current_subtask>\nindex: 2\nsub_instruction: Verify the activity summary shows today's date\nsubtask_complete_flag: \nintent_summary: Confirm the summary\n</current_subtask>\n\n<current_subtask_action_list>\nKey Step 0: Scroll to the activity list\n</current_subtask_action_list>\nPlease generate the next move according to the UI screenshot, workflow context and instruction."
+  ]
+}

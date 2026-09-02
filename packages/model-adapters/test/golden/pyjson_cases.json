@@ -1,0 +1,72 @@
+[
+  {
+    "value": {
+      "a": 1,
+      "b": [
+        1,
+        2,
+        {
+          "c": "d"
+        }
+      ],
+      "e": null,
+      "f": true,
+      "g": false
+    },
+    "dumps": "{\"a\": 1, \"b\": [1, 2, {\"c\": \"d\"}], \"e\": null, \"f\": true, \"g\": false}"
+  },
+  {
+    "value": {
+      "unicode": "café 中文 😀 — 【✅】"
+    },
+    "dumps": "{\"unicode\": \"caf\\u00e9 \\u4e2d\\u6587 \\ud83d\\ude00 \\u2014 \\u3010\\u2705\\u3011\"}"
+  },
+  {
+    "value": {
+      "escapes": "quote\" backslash\\ nl\n tab\t cr\r bs\b ff\f ctrl\u0001 del"
+    },
+    "dumps": "{\"escapes\": \"quote\\\" backslash\\\\ nl\\n tab\\t cr\\r bs\\b ff\\f ctrl\\u0001 del\\u007f\"}"
+  },
+  {
+    "value": {
+      "nested": {
+        "empty_obj": {},
+        "empty_list": [],
+        "neg": -5,
+        "float": 0.5
+      }
+    },
+    "dumps": "{\"nested\": {\"empty_obj\": {}, \"empty_list\": [], \"neg\": -5, \"float\": 0.5}}"
+  },
+  {
+    "value": [
+      "z",
+      "a",
+      {
+        "k2": 2,
+        "k1": 1
+      }
+    ],
+    "dumps": "[\"z\", \"a\", {\"k2\": 2, \"k1\": 1}]"
+  },
+  {
+    "value": "plain string / with slash",
+    "dumps": "\"plain string / with slash\""
+  },
+  {
+    "value": 12,
+    "dumps": "12"
+  },
+  {
+    "value": -3.25,
+    "dumps": "-3.25"
+  },
+  {
+    "value": null,
+    "dumps": "null"
+  },
+  {
+    "value": true,
+    "dumps": "true"
+  }
+]

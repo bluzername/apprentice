@@ -1,0 +1,708 @@
+{
+  "screenshots": [
+    "IMG0",
+    "IMG1",
+    "IMG2",
+    "IMG3",
+    "IMG4"
+  ],
+  "responses": [
+    "<think>\nthought 0\n</think>\n\n<action>\nStep action 0\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>",
+    "<think>\nthought 1\n</think>\n\n<action>\nStep action 1\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>",
+    "<think>\nthought 2\n</think>\n\n<action>\nStep action 2\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>",
+    "<think>\nthought 3\n</think>\n\n<action>\nStep action 3\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+  ],
+  "actions": [
+    "Step action 0",
+    "Step action 1",
+    "Step action 2",
+    "Step action 3"
+  ],
+  "instruction": "Do the thing",
+  "plain": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "You are a helpful GUI agent.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"computer_use\", \"description\": \"Use a mouse and keyboard to interact with a computer, and take screenshots.\\n* This is an interface to a desktop GUI. You do not have access to a terminal or applications menu. You must click on desktop icons to start applications.\\n* Some applications may take time to start or process actions, so you may need to wait and take successive screenshots to see the results of your actions. E.g. if you click on Firefox and a window doesn't open, try wait and taking another screenshot.\\n* The screen's resolution is 1000x1000.\\n* Whenever you intend to move the cursor to click on an element like an icon, you should consult a screenshot to determine the coordinates of the element before moving the cursor.\\n* If you tried clicking on a program or link but it failed to load even after waiting, try adjusting your cursor position so that the tip of the cursor visually falls on the element that you want to click.\\n* Make sure to click any buttons, links, icons, etc with the cursor tip in the center of the element. Don't click boxes on their edges unless asked.\", \"parameters\": {\"properties\": {\"action\": {\"description\": \"* `left_click`: Click the left mouse button at the specified (x, y) coordinate.\\n* `right_click`: Click the right mouse button at the specified (x, y) coordinate.\\n* `middle_click`: Click the middle mouse button at the specified (x, y) coordinate.\\n* `double_click`: Double-click the left mouse button at the specified (x, y) coordinate.\\n* `triple_click`: Triple-click the left mouse button at a specified (x, y) coordinate.\\n* `drag`: Click and drag the mouse cursor from its current position to the specified (x, y) coordinate.\\n* `mouse_move`: Move the cursor to the specified (x, y) coordinate without clicking.\\n* `type`: Type a specified string of text.\\n* `hotkey`: Press a combination of keys (e.g., [\\\"ctrl\\\", \\\"v\\\"]).\\n* `press`: Press a single key or a sequence of keys, provided as an array of strings (e.g., [\\\"backspace\\\"], [\\\"enter\\\"], [\\\"a\\\", \\\"b\\\", \\\"c\\\"]).\\n* `key_down`: Press and HOLD the specified key(s) down in order (no release). Use this for stateful holds like holding Shift while clicking.\\n* `key_up`: Release the specified key(s) in reverse order.\\n* `scroll`: Scroll the mouse wheel by a specified number of pixels. Use \\\"direction\\\" to specify vertical (default, positive for up, negative for down) or horizontal (positive for right, negative for left) scrolling.\\n* `wait`: Pause execution for a specified number of seconds.\\n* `call_user`: Ask the user for information or confirmation. Use this when you genuinely need user input, or when the task cannot be completed (in that case clearly state why it is infeasible).\\n* `finished`: Terminate the task and indicate whether it was a 'success' or 'failure'.\", \"enum\": [\"left_click\", \"right_click\", \"middle_click\", \"double_click\", \"triple_click\", \"drag\", \"mouse_move\", \"type\", \"hotkey\", \"press\", \"key_down\", \"key_up\", \"scroll\", \"wait\", \"call_user\", \"finished\"], \"type\": \"string\"}, \"coordinate\": {\"description\": \"The (x, y) coordinates (0-999). Required for: clicks, mouse_move, drag.\", \"type\": \"array\"}, \"text\": {\"description\": \"The text to type, or the message to the user. Required for `action=type` and `action=call_user`.\", \"type\": \"string\"}, \"keys\": {\"description\": \"An array of key names (e.g. ['a'], ['ctrl', 'c']). Required for: hotkey, press, key_down, key_up.\", \"type\": \"array\"}, \"pixels\": {\"description\": \"The number of pixels to scroll. Required only for `action=scroll`.\", \"type\": \"number\"}, \"direction\": {\"type\": \"string\", \"enum\": [\"vertical\", \"horizontal\"], \"description\": \"The scroll direction. 'vertical' (default) for up/down scrolling, 'horizontal' for left/right scrolling. Required only for `action=scroll`.\"}, \"time\": {\"description\": \"Seconds to wait. Required only for `action=wait`.\", \"type\": \"number\"}, \"status\": {\"description\": \"The outcome of the task. Required only for `action=finished`.\", \"type\": \"string\", \"enum\": [\"success\", \"failure\"]}}, \"required\": [\"action\"], \"type\": \"object\"}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT>\n\n<IMPORTANT_NOTES>\n* DO NOT use LibreOffice macros or GIMP Script-Fu to complete tasks. Always use the GUI interface directly with mouse and keyboard actions. Macros and scripting cause reliability issues and task failures.\n* For GIMP tasks, do NOT save or export files unless the instruction explicitly asks you to. Note that existing tasks that require file output will ask you to \"export\", not \"save\". Most GIMP tasks are evaluated automatically without requiring you to save.\n* Before starting a task, consider whether it is achievable with the designated application's native GUI features. If the app fundamentally lacks the requested capability, declare it infeasible (finish with status=failure) instead of using CLI tools, Python scripts, or other applications as workarounds.\n* After completing a task, verify the visible or functional result. If your actions had no real effect, reconsider whether the task is feasible.\n</IMPORTANT_NOTES>\n\n# Response format\n\nResponse format for every step:\n1) Thought: A single <think>...</think> block containing step by step progress assessment and next action analysis.\n2) Action: A single <action>...</action> block containing a short imperative describing what to do in the UI.\n3) Tool Execution: A single or multiple <tool_call>...</tool_call> blocks.\n\nRules:\n- Output exactly in the order: <think>...</think>, <action>...</action>, <tool_call>...</tool_call>.\n- From a first-person perspective, systematically assess progress and errors, evaluate potential next steps, and precisely plan text inputs (cursor position and expected outcomes)\n- Be brief for Action: one sentence for action description.\n- Do not output anything else outside those parts.\n- If finishing, use action=finished in the tool call. If the task is infeasible, finish with status=failure."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG0"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\nPlease generate the next move according to the UI screenshot, instruction and previous actions.\n\nInstruction: Do the thing\n\nPrevious actions:\nNone"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 0\n</think>\n\n<action>\nStep action 0\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG1"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 1\n</think>\n\n<action>\nStep action 1\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG2"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 2\n</think>\n\n<action>\nStep action 2\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG3"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 3\n</think>\n\n<action>\nStep action 3\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG4"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    }
+  ],
+  "collapsedKeep2": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "You are a helpful GUI agent.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"computer_use\", \"description\": \"Use a mouse and keyboard to interact with a computer, and take screenshots.\\n* This is an interface to a desktop GUI. You do not have access to a terminal or applications menu. You must click on desktop icons to start applications.\\n* Some applications may take time to start or process actions, so you may need to wait and take successive screenshots to see the results of your actions. E.g. if you click on Firefox and a window doesn't open, try wait and taking another screenshot.\\n* The screen's resolution is 1000x1000.\\n* Whenever you intend to move the cursor to click on an element like an icon, you should consult a screenshot to determine the coordinates of the element before moving the cursor.\\n* If you tried clicking on a program or link but it failed to load even after waiting, try adjusting your cursor position so that the tip of the cursor visually falls on the element that you want to click.\\n* Make sure to click any buttons, links, icons, etc with the cursor tip in the center of the element. Don't click boxes on their edges unless asked.\", \"parameters\": {\"properties\": {\"action\": {\"description\": \"* `left_click`: Click the left mouse button at the specified (x, y) coordinate.\\n* `right_click`: Click the right mouse button at the specified (x, y) coordinate.\\n* `middle_click`: Click the middle mouse button at the specified (x, y) coordinate.\\n* `double_click`: Double-click the left mouse button at the specified (x, y) coordinate.\\n* `triple_click`: Triple-click the left mouse button at a specified (x, y) coordinate.\\n* `drag`: Click and drag the mouse cursor from its current position to the specified (x, y) coordinate.\\n* `mouse_move`: Move the cursor to the specified (x, y) coordinate without clicking.\\n* `type`: Type a specified string of text.\\n* `hotkey`: Press a combination of keys (e.g., [\\\"ctrl\\\", \\\"v\\\"]).\\n* `press`: Press a single key or a sequence of keys, provided as an array of strings (e.g., [\\\"backspace\\\"], [\\\"enter\\\"], [\\\"a\\\", \\\"b\\\", \\\"c\\\"]).\\n* `key_down`: Press and HOLD the specified key(s) down in order (no release). Use this for stateful holds like holding Shift while clicking.\\n* `key_up`: Release the specified key(s) in reverse order.\\n* `scroll`: Scroll the mouse wheel by a specified number of pixels. Use \\\"direction\\\" to specify vertical (default, positive for up, negative for down) or horizontal (positive for right, negative for left) scrolling.\\n* `wait`: Pause execution for a specified number of seconds.\\n* `call_user`: Ask the user for information or confirmation. Use this when you genuinely need user input, or when the task cannot be completed (in that case clearly state why it is infeasible).\\n* `finished`: Terminate the task and indicate whether it was a 'success' or 'failure'.\", \"enum\": [\"left_click\", \"right_click\", \"middle_click\", \"double_click\", \"triple_click\", \"drag\", \"mouse_move\", \"type\", \"hotkey\", \"press\", \"key_down\", \"key_up\", \"scroll\", \"wait\", \"call_user\", \"finished\"], \"type\": \"string\"}, \"coordinate\": {\"description\": \"The (x, y) coordinates (0-999). Required for: clicks, mouse_move, drag.\", \"type\": \"array\"}, \"text\": {\"description\": \"The text to type, or the message to the user. Required for `action=type` and `action=call_user`.\", \"type\": \"string\"}, \"keys\": {\"description\": \"An array of key names (e.g. ['a'], ['ctrl', 'c']). Required for: hotkey, press, key_down, key_up.\", \"type\": \"array\"}, \"pixels\": {\"description\": \"The number of pixels to scroll. Required only for `action=scroll`.\", \"type\": \"number\"}, \"direction\": {\"type\": \"string\", \"enum\": [\"vertical\", \"horizontal\"], \"description\": \"The scroll direction. 'vertical' (default) for up/down scrolling, 'horizontal' for left/right scrolling. Required only for `action=scroll`.\"}, \"time\": {\"description\": \"Seconds to wait. Required only for `action=wait`.\", \"type\": \"number\"}, \"status\": {\"description\": \"The outcome of the task. Required only for `action=finished`.\", \"type\": \"string\", \"enum\": [\"success\", \"failure\"]}}, \"required\": [\"action\"], \"type\": \"object\"}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT>\n\n<IMPORTANT_NOTES>\n* DO NOT use LibreOffice macros or GIMP Script-Fu to complete tasks. Always use the GUI interface directly with mouse and keyboard actions. Macros and scripting cause reliability issues and task failures.\n* For GIMP tasks, do NOT save or export files unless the instruction explicitly asks you to. Note that existing tasks that require file output will ask you to \"export\", not \"save\". Most GIMP tasks are evaluated automatically without requiring you to save.\n* Before starting a task, consider whether it is achievable with the designated application's native GUI features. If the app fundamentally lacks the requested capability, declare it infeasible (finish with status=failure) instead of using CLI tools, Python scripts, or other applications as workarounds.\n* After completing a task, verify the visible or functional result. If your actions had no real effect, reconsider whether the task is feasible.\n</IMPORTANT_NOTES>\n\n# Response format\n\nResponse format for every step:\n1) Thought: A single <think>...</think> block containing step by step progress assessment and next action analysis.\n2) Action: A single <action>...</action> block containing a short imperative describing what to do in the UI.\n3) Tool Execution: A single or multiple <tool_call>...</tool_call> blocks.\n\nRules:\n- Output exactly in the order: <think>...</think>, <action>...</action>, <tool_call>...</tool_call>.\n- From a first-person perspective, systematically assess progress and errors, evaluate potential next steps, and precisely plan text inputs (cursor position and expected outcomes)\n- Be brief for Action: one sentence for action description.\n- Do not output anything else outside those parts.\n- If finishing, use action=finished in the tool call. If the task is infeasible, finish with status=failure."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG0"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\nPlease generate the next move according to the UI screenshot, instruction and previous actions.\n\nInstruction: Do the thing\n\nPrevious actions:\nNone"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 0\n</think>\n\n<action>\nStep action 0\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\nThis screenshot has been collapsed.\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 1\n</think>\n\n<action>\nStep action 1\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\nThis screenshot has been collapsed.\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 2\n</think>\n\n<action>\nStep action 2\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\nThis screenshot has been collapsed.\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 3\n</think>\n\n<action>\nStep action 3\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG4"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    }
+  ],
+  "collapsedKeep2Flag": true,
+  "collapsedKeep2Threshold10": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "You are a helpful GUI agent.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"computer_use\", \"description\": \"Use a mouse and keyboard to interact with a computer, and take screenshots.\\n* This is an interface to a desktop GUI. You do not have access to a terminal or applications menu. You must click on desktop icons to start applications.\\n* Some applications may take time to start or process actions, so you may need to wait and take successive screenshots to see the results of your actions. E.g. if you click on Firefox and a window doesn't open, try wait and taking another screenshot.\\n* The screen's resolution is 1000x1000.\\n* Whenever you intend to move the cursor to click on an element like an icon, you should consult a screenshot to determine the coordinates of the element before moving the cursor.\\n* If you tried clicking on a program or link but it failed to load even after waiting, try adjusting your cursor position so that the tip of the cursor visually falls on the element that you want to click.\\n* Make sure to click any buttons, links, icons, etc with the cursor tip in the center of the element. Don't click boxes on their edges unless asked.\", \"parameters\": {\"properties\": {\"action\": {\"description\": \"* `left_click`: Click the left mouse button at the specified (x, y) coordinate.\\n* `right_click`: Click the right mouse button at the specified (x, y) coordinate.\\n* `middle_click`: Click the middle mouse button at the specified (x, y) coordinate.\\n* `double_click`: Double-click the left mouse button at the specified (x, y) coordinate.\\n* `triple_click`: Triple-click the left mouse button at a specified (x, y) coordinate.\\n* `drag`: Click and drag the mouse cursor from its current position to the specified (x, y) coordinate.\\n* `mouse_move`: Move the cursor to the specified (x, y) coordinate without clicking.\\n* `type`: Type a specified string of text.\\n* `hotkey`: Press a combination of keys (e.g., [\\\"ctrl\\\", \\\"v\\\"]).\\n* `press`: Press a single key or a sequence of keys, provided as an array of strings (e.g., [\\\"backspace\\\"], [\\\"enter\\\"], [\\\"a\\\", \\\"b\\\", \\\"c\\\"]).\\n* `key_down`: Press and HOLD the specified key(s) down in order (no release). Use this for stateful holds like holding Shift while clicking.\\n* `key_up`: Release the specified key(s) in reverse order.\\n* `scroll`: Scroll the mouse wheel by a specified number of pixels. Use \\\"direction\\\" to specify vertical (default, positive for up, negative for down) or horizontal (positive for right, negative for left) scrolling.\\n* `wait`: Pause execution for a specified number of seconds.\\n* `call_user`: Ask the user for information or confirmation. Use this when you genuinely need user input, or when the task cannot be completed (in that case clearly state why it is infeasible).\\n* `finished`: Terminate the task and indicate whether it was a 'success' or 'failure'.\", \"enum\": [\"left_click\", \"right_click\", \"middle_click\", \"double_click\", \"triple_click\", \"drag\", \"mouse_move\", \"type\", \"hotkey\", \"press\", \"key_down\", \"key_up\", \"scroll\", \"wait\", \"call_user\", \"finished\"], \"type\": \"string\"}, \"coordinate\": {\"description\": \"The (x, y) coordinates (0-999). Required for: clicks, mouse_move, drag.\", \"type\": \"array\"}, \"text\": {\"description\": \"The text to type, or the message to the user. Required for `action=type` and `action=call_user`.\", \"type\": \"string\"}, \"keys\": {\"description\": \"An array of key names (e.g. ['a'], ['ctrl', 'c']). Required for: hotkey, press, key_down, key_up.\", \"type\": \"array\"}, \"pixels\": {\"description\": \"The number of pixels to scroll. Required only for `action=scroll`.\", \"type\": \"number\"}, \"direction\": {\"type\": \"string\", \"enum\": [\"vertical\", \"horizontal\"], \"description\": \"The scroll direction. 'vertical' (default) for up/down scrolling, 'horizontal' for left/right scrolling. Required only for `action=scroll`.\"}, \"time\": {\"description\": \"Seconds to wait. Required only for `action=wait`.\", \"type\": \"number\"}, \"status\": {\"description\": \"The outcome of the task. Required only for `action=finished`.\", \"type\": \"string\", \"enum\": [\"success\", \"failure\"]}}, \"required\": [\"action\"], \"type\": \"object\"}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT>\n\n<IMPORTANT_NOTES>\n* DO NOT use LibreOffice macros or GIMP Script-Fu to complete tasks. Always use the GUI interface directly with mouse and keyboard actions. Macros and scripting cause reliability issues and task failures.\n* For GIMP tasks, do NOT save or export files unless the instruction explicitly asks you to. Note that existing tasks that require file output will ask you to \"export\", not \"save\". Most GIMP tasks are evaluated automatically without requiring you to save.\n* Before starting a task, consider whether it is achievable with the designated application's native GUI features. If the app fundamentally lacks the requested capability, declare it infeasible (finish with status=failure) instead of using CLI tools, Python scripts, or other applications as workarounds.\n* After completing a task, verify the visible or functional result. If your actions had no real effect, reconsider whether the task is feasible.\n</IMPORTANT_NOTES>\n\n# Response format\n\nResponse format for every step:\n1) Thought: A single <think>...</think> block containing step by step progress assessment and next action analysis.\n2) Action: A single <action>...</action> block containing a short imperative describing what to do in the UI.\n3) Tool Execution: A single or multiple <tool_call>...</tool_call> blocks.\n\nRules:\n- Output exactly in the order: <think>...</think>, <action>...</action>, <tool_call>...</tool_call>.\n- From a first-person perspective, systematically assess progress and errors, evaluate potential next steps, and precisely plan text inputs (cursor position and expected outcomes)\n- Be brief for Action: one sentence for action description.\n- Do not output anything else outside those parts.\n- If finishing, use action=finished in the tool call. If the task is infeasible, finish with status=failure."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG0"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\nPlease generate the next move according to the UI screenshot, instruction and previous actions.\n\nInstruction: Do the thing\n\nPrevious actions:\nNone"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 0\n</think>\n\n<action>\nStep action 0\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG1"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 1\n</think>\n\n<action>\nStep action 1\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG2"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 2\n</think>\n\n<action>\nStep action 2\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG3"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 3\n</think>\n\n<action>\nStep action 3\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG4"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    }
+  ],
+  "collapsedKeep2Threshold10Flag": false,
+  "guided": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "You are a helpful GUI agent.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"computer_use\", \"description\": \"Use a mouse and keyboard to interact with a computer, and take screenshots.\\n* This is an interface to a desktop GUI. You do not have access to a terminal or applications menu. You must click on desktop icons to start applications.\\n* Some applications may take time to start or process actions, so you may need to wait and take successive screenshots to see the results of your actions. E.g. if you click on Firefox and a window doesn't open, try wait and taking another screenshot.\\n* The screen's resolution is 1000x1000.\\n* Whenever you intend to move the cursor to click on an element like an icon, you should consult a screenshot to determine the coordinates of the element before moving the cursor.\\n* If you tried clicking on a program or link but it failed to load even after waiting, try adjusting your cursor position so that the tip of the cursor visually falls on the element that you want to click.\\n* Make sure to click any buttons, links, icons, etc with the cursor tip in the center of the element. Don't click boxes on their edges unless asked.\", \"parameters\": {\"properties\": {\"action\": {\"description\": \"* `left_click`: Click the left mouse button at the specified (x, y) coordinate.\\n* `right_click`: Click the right mouse button at the specified (x, y) coordinate.\\n* `middle_click`: Click the middle mouse button at the specified (x, y) coordinate.\\n* `double_click`: Double-click the left mouse button at the specified (x, y) coordinate.\\n* `triple_click`: Triple-click the left mouse button at a specified (x, y) coordinate.\\n* `drag`: Click and drag the mouse cursor from its current position to the specified (x, y) coordinate.\\n* `mouse_move`: Move the cursor to the specified (x, y) coordinate without clicking.\\n* `type`: Type a specified string of text.\\n* `hotkey`: Press a combination of keys (e.g., [\\\"ctrl\\\", \\\"v\\\"]).\\n* `press`: Press a single key or a sequence of keys, provided as an array of strings (e.g., [\\\"backspace\\\"], [\\\"enter\\\"], [\\\"a\\\", \\\"b\\\", \\\"c\\\"]).\\n* `key_down`: Press and HOLD the specified key(s) down in order (no release). Use this for stateful holds like holding Shift while clicking.\\n* `key_up`: Release the specified key(s) in reverse order.\\n* `scroll`: Scroll the mouse wheel by a specified number of pixels. Use \\\"direction\\\" to specify vertical (default, positive for up, negative for down) or horizontal (positive for right, negative for left) scrolling.\\n* `wait`: Pause execution for a specified number of seconds.\\n* `call_user`: Ask the user for information or confirmation. Use this when you genuinely need user input, or when the task cannot be completed (in that case clearly state why it is infeasible).\\n* `finished`: Terminate the task and indicate whether it was a 'success' or 'failure'.\\n* `subtask_complete`: Signal that the CURRENT subtask is complete and advance the workflow. Use this INSTEAD OF a GUI action, only when the current screenshot already satisfies the subtask's completion criterion; never combine it with another action.\", \"enum\": [\"left_click\", \"right_click\", \"middle_click\", \"double_click\", \"triple_click\", \"drag\", \"mouse_move\", \"type\", \"hotkey\", \"press\", \"key_down\", \"key_up\", \"scroll\", \"wait\", \"call_user\", \"finished\", \"subtask_complete\"], \"type\": \"string\"}, \"coordinate\": {\"description\": \"The (x, y) coordinates (0-999). Required for: clicks, mouse_move, drag.\", \"type\": \"array\"}, \"text\": {\"description\": \"The text to type, or the message to the user. Required for `action=type` and `action=call_user`.\", \"type\": \"string\"}, \"keys\": {\"description\": \"An array of key names (e.g. ['a'], ['ctrl', 'c']). Required for: hotkey, press, key_down, key_up.\", \"type\": \"array\"}, \"pixels\": {\"description\": \"The number of pixels to scroll. Required only for `action=scroll`.\", \"type\": \"number\"}, \"direction\": {\"type\": \"string\", \"enum\": [\"vertical\", \"horizontal\"], \"description\": \"The scroll direction. 'vertical' (default) for up/down scrolling, 'horizontal' for left/right scrolling. Required only for `action=scroll`.\"}, \"time\": {\"description\": \"Seconds to wait. Required only for `action=wait`.\", \"type\": \"number\"}, \"status\": {\"description\": \"The outcome of the task. Required only for `action=finished`.\", \"type\": \"string\", \"enum\": [\"success\", \"failure\"]}, \"current_subtask_idx\": {\"description\": \"0-indexed pointer of the subtask you are finishing. Required only for `action=subtask_complete`.\", \"type\": \"integer\"}, \"evidence\": {\"description\": \"One sentence pointing to the screenshot evidence that the completion criterion is satisfied. Required only for `action=subtask_complete`.\", \"type\": \"string\"}}, \"required\": [\"action\"], \"type\": \"object\"}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT>\n\n<IMPORTANT_NOTES>\n* DO NOT use LibreOffice macros or GIMP Script-Fu to complete tasks. Always use the GUI interface directly with mouse and keyboard actions. Macros and scripting cause reliability issues and task failures.\n* For GIMP tasks, do NOT save or export files unless the instruction explicitly asks you to. Note that existing tasks that require file output will ask you to \"export\", not \"save\". Most GIMP tasks are evaluated automatically without requiring you to save.\n* Before starting a task, consider whether it is achievable with the designated application's native GUI features. If the app fundamentally lacks the requested capability, declare it infeasible (finish with status=failure) instead of using CLI tools, Python scripts, or other applications as workarounds.\n* After completing a task, verify the visible or functional result. If your actions had no real effect, reconsider whether the task is feasible.\n</IMPORTANT_NOTES>\n\n# Response format\n\nResponse format for every step:\n1) Thought: A single <think>...</think> block containing step by step progress assessment and next action analysis.\n2) Action: A single <action>...</action> block containing a short imperative describing what to do in the UI.\n3) Tool Execution: A single or multiple <tool_call>...</tool_call> blocks.\n\nRules:\n- Output exactly in the order: <think>...</think>, <action>...</action>, <tool_call>...</tool_call>.\n- From a first-person perspective, systematically assess progress and errors, evaluate potential next steps, and precisely plan text inputs (cursor position and expected outcomes)\n- Be brief for Action: one sentence for action description.\n- Do not output anything else outside those parts.\n- If finishing, use action=finished in the tool call. If the task is infeasible, finish with status=failure.\n\n# Workflow\n\nAn external runtime injects a workflow into every user turn, right after the current screenshot:\n- `<workflow_progress>` — the subtask checklist with markers (【✅】completed, 【➡️】current, 【 】upcoming).\n- `<current_subtask>` — the current subtask's `sub_instruction` + `subtask_complete_flag` (+ optional `intent_summary`). Work on THIS subtask only; `sub_instruction` is your per-turn goal.\n- `<current_subtask_action_list>` — an ordered list of the current subtask's KEY milestones (lines like \"Key Step N: ...\"). It is a reference plan of milestones, not every low-level primitive and not pixel coordinates. Reaching one key step often takes several primitives on the live screen (focus clicks, scrolls, submit keys, dismissing popups). The live screenshot is authoritative: follow the list when it agrees, and adapt when the screen has diverged, an element is missing, a popup appears, or a recovery step is needed.\n\nWorkflow rules:\n- Reason inside `<think>` within the scope of the CURRENT subtask, and compare the current screenshot against its `subtask_complete_flag`.\n- Every response makes exactly one `computer_use` call. Keep using a GUI action (click/type/scroll/…) until the current screenshot satisfies the current subtask's `subtask_complete_flag`; then call `computer_use` with `action=subtask_complete` (instead of a GUI action) to let the runtime advance the subtask pointer on the next turn.\n- If this was the final subtask, the runtime shows you the resulting screenshot on one more turn; then emit `computer_use` with `action=finished` (status=success) to terminate the task."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG0"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n<workflow_progress>\n【➡️】subtask 0: Open the contact record for the customer from the meeting.\n【 】subtask 1: Log the meeting notes as an activity.\n【 】subtask 2: Verify the activity summary shows today's date\n</workflow_progress>\n\n<current_subtask>\nindex: 0\nsub_instruction: Open the contact record for the customer\nfrom the meeting.\nsubtask_complete_flag: The contact detail page is visible.\nintent_summary: Open the CRM contact\n</current_subtask>\n\n<current_subtask_action_list>\nKey Step 0: Click the search field\nKey Step 1: Type the contact name\nKey Step 2: Open the top result\n</current_subtask_action_list>\nPlease generate the next move according to the UI screenshot, workflow context and instruction.\n\nInstruction: Do the thing"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 0\n</think>\n\n<action>\nStep action 0\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG1"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 1\n</think>\n\n<action>\nStep action 1\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG2"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 2\n</think>\n\n<action>\nStep action 2\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG3"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 3\n</think>\n\n<action>\nStep action 3\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG4"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    }
+  ],
+  "windowedHistory2RecentThink1": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "You are a helpful GUI agent.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"computer_use\", \"description\": \"Use a mouse and keyboard to interact with a computer, and take screenshots.\\n* This is an interface to a desktop GUI. You do not have access to a terminal or applications menu. You must click on desktop icons to start applications.\\n* Some applications may take time to start or process actions, so you may need to wait and take successive screenshots to see the results of your actions. E.g. if you click on Firefox and a window doesn't open, try wait and taking another screenshot.\\n* The screen's resolution is 1000x1000.\\n* Whenever you intend to move the cursor to click on an element like an icon, you should consult a screenshot to determine the coordinates of the element before moving the cursor.\\n* If you tried clicking on a program or link but it failed to load even after waiting, try adjusting your cursor position so that the tip of the cursor visually falls on the element that you want to click.\\n* Make sure to click any buttons, links, icons, etc with the cursor tip in the center of the element. Don't click boxes on their edges unless asked.\", \"parameters\": {\"properties\": {\"action\": {\"description\": \"* `left_click`: Click the left mouse button at the specified (x, y) coordinate.\\n* `right_click`: Click the right mouse button at the specified (x, y) coordinate.\\n* `middle_click`: Click the middle mouse button at the specified (x, y) coordinate.\\n* `double_click`: Double-click the left mouse button at the specified (x, y) coordinate.\\n* `triple_click`: Triple-click the left mouse button at a specified (x, y) coordinate.\\n* `drag`: Click and drag the mouse cursor from its current position to the specified (x, y) coordinate.\\n* `mouse_move`: Move the cursor to the specified (x, y) coordinate without clicking.\\n* `type`: Type a specified string of text.\\n* `hotkey`: Press a combination of keys (e.g., [\\\"ctrl\\\", \\\"v\\\"]).\\n* `press`: Press a single key or a sequence of keys, provided as an array of strings (e.g., [\\\"backspace\\\"], [\\\"enter\\\"], [\\\"a\\\", \\\"b\\\", \\\"c\\\"]).\\n* `key_down`: Press and HOLD the specified key(s) down in order (no release). Use this for stateful holds like holding Shift while clicking.\\n* `key_up`: Release the specified key(s) in reverse order.\\n* `scroll`: Scroll the mouse wheel by a specified number of pixels. Use \\\"direction\\\" to specify vertical (default, positive for up, negative for down) or horizontal (positive for right, negative for left) scrolling.\\n* `wait`: Pause execution for a specified number of seconds.\\n* `call_user`: Ask the user for information or confirmation. Use this when you genuinely need user input, or when the task cannot be completed (in that case clearly state why it is infeasible).\\n* `finished`: Terminate the task and indicate whether it was a 'success' or 'failure'.\", \"enum\": [\"left_click\", \"right_click\", \"middle_click\", \"double_click\", \"triple_click\", \"drag\", \"mouse_move\", \"type\", \"hotkey\", \"press\", \"key_down\", \"key_up\", \"scroll\", \"wait\", \"call_user\", \"finished\"], \"type\": \"string\"}, \"coordinate\": {\"description\": \"The (x, y) coordinates (0-999). Required for: clicks, mouse_move, drag.\", \"type\": \"array\"}, \"text\": {\"description\": \"The text to type, or the message to the user. Required for `action=type` and `action=call_user`.\", \"type\": \"string\"}, \"keys\": {\"description\": \"An array of key names (e.g. ['a'], ['ctrl', 'c']). Required for: hotkey, press, key_down, key_up.\", \"type\": \"array\"}, \"pixels\": {\"description\": \"The number of pixels to scroll. Required only for `action=scroll`.\", \"type\": \"number\"}, \"direction\": {\"type\": \"string\", \"enum\": [\"vertical\", \"horizontal\"], \"description\": \"The scroll direction. 'vertical' (default) for up/down scrolling, 'horizontal' for left/right scrolling. Required only for `action=scroll`.\"}, \"time\": {\"description\": \"Seconds to wait. Required only for `action=wait`.\", \"type\": \"number\"}, \"status\": {\"description\": \"The outcome of the task. Required only for `action=finished`.\", \"type\": \"string\", \"enum\": [\"success\", \"failure\"]}}, \"required\": [\"action\"], \"type\": \"object\"}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT>\n\n<IMPORTANT_NOTES>\n* DO NOT use LibreOffice macros or GIMP Script-Fu to complete tasks. Always use the GUI interface directly with mouse and keyboard actions. Macros and scripting cause reliability issues and task failures.\n* For GIMP tasks, do NOT save or export files unless the instruction explicitly asks you to. Note that existing tasks that require file output will ask you to \"export\", not \"save\". Most GIMP tasks are evaluated automatically without requiring you to save.\n* Before starting a task, consider whether it is achievable with the designated application's native GUI features. If the app fundamentally lacks the requested capability, declare it infeasible (finish with status=failure) instead of using CLI tools, Python scripts, or other applications as workarounds.\n* After completing a task, verify the visible or functional result. If your actions had no real effect, reconsider whether the task is feasible.\n</IMPORTANT_NOTES>\n\n# Response format\n\nResponse format for every step:\n1) Thought: A single <think>...</think> block containing step by step progress assessment and next action analysis.\n2) Action: A single <action>...</action> block containing a short imperative describing what to do in the UI.\n3) Tool Execution: A single or multiple <tool_call>...</tool_call> blocks.\n\nRules:\n- Output exactly in the order: <think>...</think>, <action>...</action>, <tool_call>...</tool_call>.\n- From a first-person perspective, systematically assess progress and errors, evaluate potential next steps, and precisely plan text inputs (cursor position and expected outcomes)\n- Be brief for Action: one sentence for action description.\n- Do not output anything else outside those parts.\n- If finishing, use action=finished in the tool call. If the task is infeasible, finish with status=failure."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG2"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\nPlease generate the next move according to the UI screenshot, instruction and previous actions.\n\nInstruction: Do the thing\n\nPrevious actions:\nStep 1: Step action 0\nStep 2: Step action 1"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<action>\nStep action 2\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG3"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<think>\nthought 3\n</think>\n\n<action>\nStep action 3\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG4"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    }
+  ],
+  "releasedNoThink": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "You are a helpful GUI agent.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"computer_use\", \"description\": \"Use a mouse and keyboard to interact with a computer, and take screenshots.\\n* This is an interface to a desktop GUI. You do not have access to a terminal or applications menu. You must click on desktop icons to start applications.\\n* Some applications may take time to start or process actions, so you may need to wait and take successive screenshots to see the results of your actions. E.g. if you click on Firefox and a window doesn't open, try wait and taking another screenshot.\\n* The screen's resolution is 1000x1000.\\n* Whenever you intend to move the cursor to click on an element like an icon, you should consult a screenshot to determine the coordinates of the element before moving the cursor.\\n* If you tried clicking on a program or link but it failed to load even after waiting, try adjusting your cursor position so that the tip of the cursor visually falls on the element that you want to click.\\n* Make sure to click any buttons, links, icons, etc with the cursor tip in the center of the element. Don't click boxes on their edges unless asked.\", \"parameters\": {\"properties\": {\"action\": {\"description\": \"* `left_click`: Click the left mouse button at the specified (x, y) coordinate.\\n* `right_click`: Click the right mouse button at the specified (x, y) coordinate.\\n* `middle_click`: Click the middle mouse button at the specified (x, y) coordinate.\\n* `double_click`: Double-click the left mouse button at the specified (x, y) coordinate.\\n* `triple_click`: Triple-click the left mouse button at a specified (x, y) coordinate.\\n* `drag`: Click and drag the mouse cursor from its current position to the specified (x, y) coordinate.\\n* `mouse_move`: Move the cursor to the specified (x, y) coordinate without clicking.\\n* `type`: Type a specified string of text.\\n* `hotkey`: Press a combination of keys (e.g., [\\\"ctrl\\\", \\\"v\\\"]).\\n* `press`: Press a single key or a sequence of keys, provided as an array of strings (e.g., [\\\"backspace\\\"], [\\\"enter\\\"], [\\\"a\\\", \\\"b\\\", \\\"c\\\"]).\\n* `key_down`: Press and HOLD the specified key(s) down in order (no release). Use this for stateful holds like holding Shift while clicking.\\n* `key_up`: Release the specified key(s) in reverse order.\\n* `scroll`: Scroll the mouse wheel by a specified number of pixels. Use \\\"direction\\\" to specify vertical (default, positive for up, negative for down) or horizontal (positive for right, negative for left) scrolling.\\n* `wait`: Pause execution for a specified number of seconds.\\n* `call_user`: Ask the user for information or confirmation. Use this when you genuinely need user input, or when the task cannot be completed (in that case clearly state why it is infeasible).\\n* `finished`: Terminate the task and indicate whether it was a 'success' or 'failure'.\", \"enum\": [\"left_click\", \"right_click\", \"middle_click\", \"double_click\", \"triple_click\", \"drag\", \"mouse_move\", \"type\", \"hotkey\", \"press\", \"key_down\", \"key_up\", \"scroll\", \"wait\", \"call_user\", \"finished\"], \"type\": \"string\"}, \"coordinate\": {\"description\": \"The (x, y) coordinates (0-999). Required for: clicks, mouse_move, drag.\", \"type\": \"array\"}, \"text\": {\"description\": \"The text to type, or the message to the user. Required for `action=type` and `action=call_user`.\", \"type\": \"string\"}, \"keys\": {\"description\": \"An array of key names (e.g. ['a'], ['ctrl', 'c']). Required for: hotkey, press, key_down, key_up.\", \"type\": \"array\"}, \"pixels\": {\"description\": \"The number of pixels to scroll. Required only for `action=scroll`.\", \"type\": \"number\"}, \"direction\": {\"type\": \"string\", \"enum\": [\"vertical\", \"horizontal\"], \"description\": \"The scroll direction. 'vertical' (default) for up/down scrolling, 'horizontal' for left/right scrolling. Required only for `action=scroll`.\"}, \"time\": {\"description\": \"Seconds to wait. Required only for `action=wait`.\", \"type\": \"number\"}, \"status\": {\"description\": \"The outcome of the task. Required only for `action=finished`.\", \"type\": \"string\", \"enum\": [\"success\", \"failure\"]}}, \"required\": [\"action\"], \"type\": \"object\"}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT>\n\n<IMPORTANT_NOTES>\n* DO NOT use LibreOffice macros or GIMP Script-Fu to complete tasks. Always use the GUI interface directly with mouse and keyboard actions. Macros and scripting cause reliability issues and task failures.\n* For GIMP tasks, do NOT save or export files unless the instruction explicitly asks you to. Note that existing tasks that require file output will ask you to \"export\", not \"save\". Most GIMP tasks are evaluated automatically without requiring you to save.\n* Before starting a task, consider whether it is achievable with the designated application's native GUI features. If the app fundamentally lacks the requested capability, declare it infeasible (finish with status=failure) instead of using CLI tools, Python scripts, or other applications as workarounds.\n* After completing a task, verify the visible or functional result. If your actions had no real effect, reconsider whether the task is feasible.\n</IMPORTANT_NOTES>\n\n# Response format\n\nResponse format for every step:\n1) Thought: A single <think>...</think> block containing step by step progress assessment and next action analysis.\n2) Action: A single <action>...</action> block containing a short imperative describing what to do in the UI.\n3) Tool Execution: A single or multiple <tool_call>...</tool_call> blocks.\n\nRules:\n- Output exactly in the order: <think>...</think>, <action>...</action>, <tool_call>...</tool_call>.\n- From a first-person perspective, systematically assess progress and errors, evaluate potential next steps, and precisely plan text inputs (cursor position and expected outcomes)\n- Be brief for Action: one sentence for action description.\n- Do not output anything else outside those parts.\n- If finishing, use action=finished in the tool call. If the task is infeasible, finish with status=failure."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG0"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\nPlease generate the next move according to the UI screenshot, instruction and previous actions.\n\nInstruction: Do the thing\n\nPrevious actions:\nNone"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<action>\nStep action 0\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "text",
+          "text": "This screenshot has been collapsed."
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "<action>\nStep action 1\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<tool_response>\n"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,IMG2"
+          }
+        },
+        {
+          "type": "text",
+          "text": "\n</tool_response>"
+        }
+      ]
+    }
+  ]
+}

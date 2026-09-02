@@ -1,0 +1,38 @@
+[
+  {
+    "text": "<tool_call>{\"name\": \"subtask_complete\", \"arguments\": {}}</tool_call>",
+    "detected": false
+  },
+  {
+    "text": "<tool_call>{\"action\": \"subtask.complete\"}</tool_call>",
+    "detected": true
+  },
+  {
+    "text": "<tool_call><function=computer_use><parameter=action>subtask_complete</parameter></function></tool_call>",
+    "detected": true
+  },
+  {
+    "text": "<tool_call>```python\ncomputer_use(action=subtask_complete)\nsubtask_complete()\n```</tool_call>",
+    "detected": true
+  },
+  {
+    "text": "<TOOL_CALL>subtask_complete(0)</TOOL_CALL>",
+    "detected": true
+  },
+  {
+    "text": "I will call subtask_complete now <tool_call><function=computer_use><parameter=action>left_click</parameter></function></tool_call>",
+    "detected": false
+  },
+  {
+    "text": "subtask_complete( ) with no tool call",
+    "detected": false
+  },
+  {
+    "text": "<tool_call><parameter = action> Subtask_Complete </parameter></tool_call>",
+    "detected": true
+  },
+  {
+    "text": "",
+    "detected": false
+  }
+]

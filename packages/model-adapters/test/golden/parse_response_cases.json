@@ -1,0 +1,582 @@
+[
+  {
+    "name": "click",
+    "response": "<think>\nplanning\n</think>\n\n<action>\nClick it.\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[19, 561]\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "Click it.",
+    "toolCalls": [
+      {
+        "action": "left_click",
+        "coordinate": [
+          19,
+          561
+        ]
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<think>\nplanning\n</think>\n\n<action>\nClick it.\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[19, 561]\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nClick it.\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[19, 561]\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "Click it.",
+      [
+        "pyautogui.click(36, 606)"
+      ]
+    ],
+    "parsedAbsolute": [
+      "Click it.",
+      [
+        "pyautogui.click(19, 561)"
+      ]
+    ]
+  },
+  {
+    "name": "no_action_block",
+    "response": "<think>\nplanning\n</think>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[19, 561]\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "",
+    "toolCalls": [
+      {
+        "action": "left_click",
+        "coordinate": [
+          19,
+          561
+        ]
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<think>\nplanning\n</think>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[19, 561]\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<think>\nplanning\n</think>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[19, 561]\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "<Error>: no <action> block found in response",
+      [
+        "FAIL"
+      ]
+    ],
+    "parsedAbsolute": [
+      "<Error>: no <action> block found in response",
+      [
+        "FAIL"
+      ]
+    ]
+  },
+  {
+    "name": "no_tool_call",
+    "response": "<think>\nplanning\n</think>\n\n<action>\nDone.\n</action>",
+    "actionText": "Done.",
+    "toolCalls": [],
+    "infeasible": false,
+    "compactWithThink": "<think>\nplanning\n</think>\n\n<action>\nDone.\n</action>",
+    "compactNoThink": "<action>\nDone.\n</action>",
+    "subtaskComplete": false,
+    "parsed": [
+      "<Error>: no <tool_call> blocks found in response",
+      [
+        "DONE"
+      ]
+    ],
+    "parsedAbsolute": [
+      "<Error>: no <tool_call> blocks found in response",
+      [
+        "DONE"
+      ]
+    ]
+  },
+  {
+    "name": "no_tool_call_infeasible",
+    "response": "<think>\nplanning\n</think>\n\n<action>\nThis task is infeasible.\n</action>",
+    "actionText": "This task is infeasible.",
+    "toolCalls": [],
+    "infeasible": true,
+    "compactWithThink": "<think>\nplanning\n</think>\n\n<action>\nThis task is infeasible.\n</action>",
+    "compactNoThink": "<action>\nThis task is infeasible.\n</action>",
+    "subtaskComplete": false,
+    "parsed": [
+      "<Error>: no <tool_call> blocks found in response",
+      [
+        "FAIL"
+      ]
+    ],
+    "parsedAbsolute": [
+      "<Error>: no <tool_call> blocks found in response",
+      [
+        "FAIL"
+      ]
+    ]
+  },
+  {
+    "name": "empty_action_name",
+    "response": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=coordinate>\n[1, 2]\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "x",
+    "toolCalls": [
+      {
+        "coordinate": [
+          1,
+          2
+        ]
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=coordinate>\n[1, 2]\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=coordinate>\n[1, 2]\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "x",
+      [
+        "FAIL"
+      ]
+    ],
+    "parsedAbsolute": [
+      "x",
+      [
+        "FAIL"
+      ]
+    ]
+  },
+  {
+    "name": "call_user",
+    "response": "<action>\nAsk.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\ncall_user\n</parameter>\n<parameter=text>\nWhich file?\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "Ask.",
+    "toolCalls": [
+      {
+        "action": "call_user",
+        "text": "Which file?"
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<action>\nAsk.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\ncall_user\n</parameter>\n<parameter=text>\nWhich file?\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nAsk.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\ncall_user\n</parameter>\n<parameter=text>\nWhich file?\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "Ask.",
+      [
+        "DONE"
+      ]
+    ],
+    "parsedAbsolute": [
+      "Ask.",
+      [
+        "DONE"
+      ]
+    ]
+  },
+  {
+    "name": "call_user_infeasible",
+    "response": "<action>\nCannot be done.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\ncall_user\n</parameter>\n<parameter=text>\nnot possible\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "Cannot be done.",
+    "toolCalls": [
+      {
+        "action": "call_user",
+        "text": "not possible"
+      }
+    ],
+    "infeasible": true,
+    "compactWithThink": "<action>\nCannot be done.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\ncall_user\n</parameter>\n<parameter=text>\nnot possible\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nCannot be done.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\ncall_user\n</parameter>\n<parameter=text>\nnot possible\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "Cannot be done.",
+      [
+        "FAIL"
+      ]
+    ],
+    "parsedAbsolute": [
+      "Cannot be done.",
+      [
+        "FAIL"
+      ]
+    ]
+  },
+  {
+    "name": "unknown_action",
+    "response": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nlaunch\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "x",
+    "toolCalls": [
+      {
+        "action": "launch"
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nlaunch\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nlaunch\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "x",
+      [
+        "FAIL"
+      ]
+    ],
+    "parsedAbsolute": [
+      "x",
+      [
+        "FAIL"
+      ]
+    ]
+  },
+  {
+    "name": "two_clicks",
+    "response": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[10, 10]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[20, 20]\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "x",
+    "toolCalls": [
+      {
+        "action": "left_click",
+        "coordinate": [
+          10,
+          10
+        ]
+      },
+      {
+        "action": "left_click",
+        "coordinate": [
+          20,
+          20
+        ]
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[10, 10]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[20, 20]\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[10, 10]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[20, 20]\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "x",
+      [
+        "pyautogui.click(19, 10)\npyautogui.click(38, 21)"
+      ]
+    ],
+    "parsedAbsolute": [
+      "x",
+      [
+        "pyautogui.click(10, 10)\npyautogui.click(20, 20)"
+      ]
+    ]
+  },
+  {
+    "name": "keydown_click_keyup",
+    "response": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nkey_down\n</parameter>\n<parameter=keys>\n[\"shift\"]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[10, 10]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nkey_up\n</parameter>\n<parameter=keys>\n[\"shift\"]\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "x",
+    "toolCalls": [
+      {
+        "action": "key_down",
+        "keys": [
+          "shift"
+        ]
+      },
+      {
+        "action": "left_click",
+        "coordinate": [
+          10,
+          10
+        ]
+      },
+      {
+        "action": "key_up",
+        "keys": [
+          "shift"
+        ]
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nkey_down\n</parameter>\n<parameter=keys>\n[\"shift\"]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[10, 10]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nkey_up\n</parameter>\n<parameter=keys>\n[\"shift\"]\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nkey_down\n</parameter>\n<parameter=keys>\n[\"shift\"]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[10, 10]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nkey_up\n</parameter>\n<parameter=keys>\n[\"shift\"]\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "x",
+      [
+        "pyautogui.keyDown('shift')",
+        "pyautogui.click(19, 10)",
+        "pyautogui.keyUp('shift')"
+      ]
+    ],
+    "parsedAbsolute": [
+      "x",
+      [
+        "pyautogui.keyDown('shift')",
+        "pyautogui.click(10, 10)",
+        "pyautogui.keyUp('shift')"
+      ]
+    ]
+  },
+  {
+    "name": "keydown_alt_click",
+    "response": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nkey_down\n</parameter>\n<parameter=keys>\n[\"alt\"]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[10, 10]\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "x",
+    "toolCalls": [
+      {
+        "action": "key_down",
+        "keys": [
+          "alt"
+        ]
+      },
+      {
+        "action": "left_click",
+        "coordinate": [
+          10,
+          10
+        ]
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nkey_down\n</parameter>\n<parameter=keys>\n[\"alt\"]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[10, 10]\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nkey_down\n</parameter>\n<parameter=keys>\n[\"alt\"]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[10, 10]\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "x",
+      [
+        "pyautogui.keyDown('alt')\npyautogui.click(19, 10)"
+      ]
+    ],
+    "parsedAbsolute": [
+      "x",
+      [
+        "pyautogui.keyDown('alt')\npyautogui.click(10, 10)"
+      ]
+    ]
+  },
+  {
+    "name": "keydown_shift_enter",
+    "response": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nkey_down\n</parameter>\n<parameter=keys>\n[\"shift\"]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\npress\n</parameter>\n<parameter=keys>\n[\"enter\"]\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "x",
+    "toolCalls": [
+      {
+        "action": "key_down",
+        "keys": [
+          "shift"
+        ]
+      },
+      {
+        "action": "press",
+        "keys": [
+          "enter"
+        ]
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nkey_down\n</parameter>\n<parameter=keys>\n[\"shift\"]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\npress\n</parameter>\n<parameter=keys>\n[\"enter\"]\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nkey_down\n</parameter>\n<parameter=keys>\n[\"shift\"]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\npress\n</parameter>\n<parameter=keys>\n[\"enter\"]\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "x",
+      [
+        "pyautogui.keyDown('shift')\npyautogui.press('enter')"
+      ]
+    ],
+    "parsedAbsolute": [
+      "x",
+      [
+        "pyautogui.keyDown('shift')\npyautogui.press('enter')"
+      ]
+    ]
+  },
+  {
+    "name": "click_then_finished",
+    "response": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[10, 10]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nfinished\n</parameter>\n<parameter=status>\nsuccess\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "x",
+    "toolCalls": [
+      {
+        "action": "left_click",
+        "coordinate": [
+          10,
+          10
+        ]
+      },
+      {
+        "action": "finished",
+        "status": "success"
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[10, 10]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nfinished\n</parameter>\n<parameter=status>\nsuccess\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[10, 10]\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=computer_use>\n<parameter=action>\nfinished\n</parameter>\n<parameter=status>\nsuccess\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "x",
+      [
+        "DONE"
+      ]
+    ],
+    "parsedAbsolute": [
+      "x",
+      [
+        "DONE"
+      ]
+    ]
+  },
+  {
+    "name": "type_multiline",
+    "response": "<action>\nType.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\ntype\n</parameter>\n<parameter=text>\nhello world\nsecond\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "Type.",
+    "toolCalls": [
+      {
+        "action": "type",
+        "text": "hello world\nsecond"
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<action>\nType.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\ntype\n</parameter>\n<parameter=text>\nhello world\nsecond\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nType.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\ntype\n</parameter>\n<parameter=text>\nhello world\nsecond\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "Type.",
+      [
+        "pyautogui.press('h')\npyautogui.press('e')\npyautogui.press('l')\npyautogui.press('l')\npyautogui.press('o')\npyautogui.press(' ')\npyautogui.press('w')\npyautogui.press('o')\npyautogui.press('r')\npyautogui.press('l')\npyautogui.press('d')\npyautogui.press('enter')\npyautogui.press('s')\npyautogui.press('e')\npyautogui.press('c')\npyautogui.press('o')\npyautogui.press('n')\npyautogui.press('d')\n"
+      ]
+    ],
+    "parsedAbsolute": [
+      "Type.",
+      [
+        "pyautogui.press('h')\npyautogui.press('e')\npyautogui.press('l')\npyautogui.press('l')\npyautogui.press('o')\npyautogui.press(' ')\npyautogui.press('w')\npyautogui.press('o')\npyautogui.press('r')\npyautogui.press('l')\npyautogui.press('d')\npyautogui.press('enter')\npyautogui.press('s')\npyautogui.press('e')\npyautogui.press('c')\npyautogui.press('o')\npyautogui.press('n')\npyautogui.press('d')\n"
+      ]
+    ]
+  },
+  {
+    "name": "wait",
+    "response": "<action>\nWait.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n<parameter=time>\n2\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "Wait.",
+    "toolCalls": [
+      {
+        "action": "wait",
+        "time": "2"
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<action>\nWait.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n<parameter=time>\n2\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nWait.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n<parameter=time>\n2\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "Wait.",
+      [
+        "WAIT"
+      ]
+    ],
+    "parsedAbsolute": [
+      "Wait.",
+      [
+        "WAIT"
+      ]
+    ]
+  },
+  {
+    "name": "wrong_function",
+    "response": "<action>\nx\n</action><tool_call>\n<function=other>\n<parameter=action>\nleft_click\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "x",
+    "toolCalls": [],
+    "infeasible": false,
+    "compactWithThink": "<action>\nx\n</action><tool_call>\n<function=other>\n<parameter=action>\nleft_click\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nx\n</action><tool_call>\n<function=other>\n<parameter=action>\nleft_click\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "<Error>: no <tool_call> blocks found in response",
+      [
+        "DONE"
+      ]
+    ],
+    "parsedAbsolute": [
+      "<Error>: no <tool_call> blocks found in response",
+      [
+        "DONE"
+      ]
+    ]
+  },
+  {
+    "name": "action_case_insensitive",
+    "response": "<ACTION> Upper </ACTION><tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "Upper",
+    "toolCalls": [
+      {
+        "action": "wait"
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<ACTION> Upper </ACTION><tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<ACTION> Upper </ACTION><tool_call>\n<function=computer_use>\n<parameter=action>\nwait\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "Upper",
+      [
+        "WAIT"
+      ]
+    ],
+    "parsedAbsolute": [
+      "Upper",
+      [
+        "WAIT"
+      ]
+    ]
+  },
+  {
+    "name": "coordinate_malformed",
+    "response": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[19, 561\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "x",
+    "toolCalls": [
+      {
+        "action": "left_click",
+        "coordinate": "[19, 561"
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[19, 561\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nx\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[19, 561\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": false,
+    "parsed": [
+      "x",
+      [
+        "pyautogui.click()"
+      ]
+    ],
+    "parsedAbsolute": [
+      "x",
+      [
+        "pyautogui.click()"
+      ]
+    ]
+  },
+  {
+    "name": "subtask_complete",
+    "response": "<action>\nDone with subtask.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nsubtask_complete\n</parameter>\n<parameter=current_subtask_idx>\n0\n</parameter>\n<parameter=evidence>\nThe page is visible.\n</parameter>\n</function>\n</tool_call>",
+    "actionText": "Done with subtask.",
+    "toolCalls": [
+      {
+        "action": "subtask_complete",
+        "current_subtask_idx": "0",
+        "evidence": "The page is visible."
+      }
+    ],
+    "infeasible": false,
+    "compactWithThink": "<action>\nDone with subtask.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nsubtask_complete\n</parameter>\n<parameter=current_subtask_idx>\n0\n</parameter>\n<parameter=evidence>\nThe page is visible.\n</parameter>\n</function>\n</tool_call>",
+    "compactNoThink": "<action>\nDone with subtask.\n</action><tool_call>\n<function=computer_use>\n<parameter=action>\nsubtask_complete\n</parameter>\n<parameter=current_subtask_idx>\n0\n</parameter>\n<parameter=evidence>\nThe page is visible.\n</parameter>\n</function>\n</tool_call>",
+    "subtaskComplete": true,
+    "parsed": [
+      "Done with subtask.",
+      [
+        "WAIT"
+      ]
+    ],
+    "parsedAbsolute": [
+      "Done with subtask.",
+      [
+        "WAIT"
+      ]
+    ]
+  },
+  {
+    "name": "empty",
+    "response": "",
+    "actionText": "",
+    "toolCalls": [],
+    "infeasible": false,
+    "compactWithThink": "",
+    "compactNoThink": "",
+    "subtaskComplete": false,
+    "parsed": [
+      "<Error>: no <action> block found in response",
+      [
+        "FAIL"
+      ]
+    ],
+    "parsedAbsolute": [
+      "<Error>: no <action> block found in response",
+      [
+        "FAIL"
+      ]
+    ]
+  }
+]

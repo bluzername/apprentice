@@ -1,0 +1,54 @@
+[
+  {
+    "text": "",
+    "infeasible": false
+  },
+  {
+    "text": "all good",
+    "infeasible": false
+  },
+  {
+    "text": "This is INFEASIBLE",
+    "infeasible": true
+  },
+  {
+    "text": "the feature is not available",
+    "infeasible": true
+  },
+  {
+    "text": "there is no export button",
+    "infeasible": true
+  },
+  {
+    "text": "no python in the app list",
+    "infeasible": true
+  },
+  {
+    "text": "requires an extension",
+    "infeasible": true
+  },
+  {
+    "text": "Needs credentials",
+    "infeasible": true
+  },
+  {
+    "text": "without plugins it cannot work",
+    "infeasible": true
+  },
+  {
+    "text": "without plugins ok",
+    "infeasible": false
+  },
+  {
+    "text": "could you clarify?",
+    "infeasible": true
+  },
+  {
+    "text": "I need a language pack",
+    "infeasible": true
+  },
+  {
+    "text": "the folder is empty",
+    "infeasible": true
+  }
+]
