@@ -1,0 +1,652 @@
+{
+  "events": [
+    {
+      "id": "fixture-postMeetingFollowup-3-e0",
+      "ts": 1787731200000,
+      "seq": 0,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "native_helper",
+      "type": "app_activated",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "screenshotRef": "fixture-postMeetingFollowup-3-s0",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 0
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e1",
+      "ts": 1787731204000,
+      "seq": 1,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "notes.example",
+      "routePattern": "/meeting/5d606cff",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 4000
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e2",
+      "ts": 1787731208000,
+      "seq": 2,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "page_title",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "notes.example",
+      "routePattern": "/meeting/5d606cff",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 4000,
+      "payload": {
+        "title": "Meeting notes"
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e3",
+      "ts": 1787731210000,
+      "seq": 3,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "native_helper",
+      "type": "idle_changed",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 2000,
+      "payload": {
+        "idle": false
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e4",
+      "ts": 1787731239000,
+      "seq": 4,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "copy",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "notes.example",
+      "routePattern": "/meeting/5d606cff",
+      "element": {
+        "role": "textbox",
+        "name": "Summary"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 29000,
+      "payload": {
+        "length": 229
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e5",
+      "ts": 1787731241000,
+      "seq": 5,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "native_helper",
+      "type": "clipboard_changed",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 2000,
+      "payload": {
+        "kind": "text",
+        "length": 229
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e6",
+      "ts": 1787731249000,
+      "seq": 6,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "crm.example",
+      "routePattern": "/contact/972f324dce4e",
+      "screenshotRef": "fixture-postMeetingFollowup-3-s6",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 8000
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e7",
+      "ts": 1787731252000,
+      "seq": 7,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "native_helper",
+      "type": "window_title_changed",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 3000,
+      "payload": {
+        "title": "Taylor Brennan - Contacts"
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e8",
+      "ts": 1787731258000,
+      "seq": 8,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "crm.example",
+      "routePattern": "/contact/972f324dce4e",
+      "element": {
+        "role": "button",
+        "name": "Log activity"
+      },
+      "screenshotRef": "fixture-postMeetingFollowup-3-s8",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 6000
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e9",
+      "ts": 1787731265000,
+      "seq": 9,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "crm.example",
+      "routePattern": "/contact/972f324dce4e",
+      "element": {
+        "role": "combobox",
+        "name": "Activity type"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 7000,
+      "payload": {
+        "fieldLabel": "Activity type",
+        "valueLength": 7,
+        "inputType": "select"
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e10",
+      "ts": 1787731271000,
+      "seq": 10,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "paste",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "crm.example",
+      "routePattern": "/contact/972f324dce4e",
+      "element": {
+        "role": "textbox",
+        "name": "Notes"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 6000,
+      "payload": {
+        "length": 229
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e11",
+      "ts": 1787731296000,
+      "seq": 11,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "crm.example",
+      "routePattern": "/contact/972f324dce4e",
+      "element": {
+        "role": "textbox",
+        "name": "Notes"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 25000,
+      "payload": {
+        "fieldLabel": "Notes",
+        "valueLength": 293,
+        "inputType": "textarea"
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e12",
+      "ts": 1787731300000,
+      "seq": 12,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "crm.example",
+      "routePattern": "/contact/972f324dce4e",
+      "element": {
+        "role": "button",
+        "name": "Save"
+      },
+      "screenshotRef": "fixture-postMeetingFollowup-3-s12",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 4000
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e13",
+      "ts": 1787731309000,
+      "seq": 13,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "mail.example",
+      "routePattern": "/compose",
+      "screenshotRef": "fixture-postMeetingFollowup-3-s13",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 9000
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e14",
+      "ts": 1787731311000,
+      "seq": 14,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "native_helper",
+      "type": "window_title_changed",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 2000,
+      "payload": {
+        "title": "New message - Mail"
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e15",
+      "ts": 1787731323000,
+      "seq": 15,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "mail.example",
+      "routePattern": "/compose",
+      "element": {
+        "role": "textbox",
+        "name": "To"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 12000,
+      "payload": {
+        "fieldLabel": "To",
+        "valueLength": 23,
+        "inputType": "email"
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e16",
+      "ts": 1787731333000,
+      "seq": 16,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "mail.example",
+      "routePattern": "/compose",
+      "element": {
+        "role": "textbox",
+        "name": "Subject"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 10000,
+      "payload": {
+        "fieldLabel": "Subject",
+        "valueLength": 60,
+        "inputType": "text"
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e17",
+      "ts": 1787731371000,
+      "seq": 17,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "mail.example",
+      "routePattern": "/compose",
+      "element": {
+        "role": "textbox",
+        "name": "Body"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 38000,
+      "payload": {
+        "fieldLabel": "Body",
+        "valueLength": 533,
+        "inputType": "textarea"
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e18",
+      "ts": 1787731379000,
+      "seq": 18,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "mail.example",
+      "routePattern": "/compose",
+      "element": {
+        "role": "button",
+        "name": "Send"
+      },
+      "screenshotRef": "fixture-postMeetingFollowup-3-s18",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 8000
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e19",
+      "ts": 1787731392000,
+      "seq": 19,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "tasks.example",
+      "routePattern": "/board/1f2311",
+      "screenshotRef": "fixture-postMeetingFollowup-3-s19",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 13000
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e20",
+      "ts": 1787731395000,
+      "seq": 20,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "page_title",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "tasks.example",
+      "routePattern": "/board/1f2311",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 3000,
+      "payload": {
+        "title": "Board - Tasks"
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e21",
+      "ts": 1787731405000,
+      "seq": 21,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "tasks.example",
+      "routePattern": "/board/1f2311",
+      "element": {
+        "role": "button",
+        "name": "New task"
+      },
+      "screenshotRef": "fixture-postMeetingFollowup-3-s21",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 10000
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e22",
+      "ts": 1787731423000,
+      "seq": 22,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "tasks.example",
+      "routePattern": "/board/1f2311",
+      "element": {
+        "role": "textbox",
+        "name": "Title"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 18000,
+      "payload": {
+        "fieldLabel": "Title",
+        "valueLength": 25,
+        "inputType": "text"
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-e23",
+      "ts": 1787731427000,
+      "seq": 23,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "source": "extension",
+      "type": "form_submit",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "tasks.example",
+      "routePattern": "/board/1f2311",
+      "element": {
+        "role": "form",
+        "name": "Create task"
+      },
+      "screenshotRef": "fixture-postMeetingFollowup-3-s23",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 4000,
+      "payload": {
+        "purpose": "create"
+      }
+    }
+  ],
+  "screenshotRefs": [
+    {
+      "id": "fixture-postMeetingFollowup-3-s0",
+      "eventId": "fixture-postMeetingFollowup-3-e0",
+      "ts": 1787731200000,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "fixtureName": "notesPage",
+      "reason": "app_change",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      }
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-s6",
+      "eventId": "fixture-postMeetingFollowup-3-e6",
+      "ts": 1787731249000,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "fixtureName": "crmContact",
+      "reason": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "crm.example"
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-s8",
+      "eventId": "fixture-postMeetingFollowup-3-e8",
+      "ts": 1787731258000,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "fixtureName": "crmLogActivity",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "crm.example"
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-s12",
+      "eventId": "fixture-postMeetingFollowup-3-e12",
+      "ts": 1787731300000,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "fixtureName": "crmContact",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "crm.example"
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-s13",
+      "eventId": "fixture-postMeetingFollowup-3-e13",
+      "ts": 1787731309000,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "fixtureName": "mailCompose",
+      "reason": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "mail.example"
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-s18",
+      "eventId": "fixture-postMeetingFollowup-3-e18",
+      "ts": 1787731379000,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "fixtureName": "mailCompose",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "mail.example"
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-s19",
+      "eventId": "fixture-postMeetingFollowup-3-e19",
+      "ts": 1787731392000,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "fixtureName": "taskBoard",
+      "reason": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "tasks.example"
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-s21",
+      "eventId": "fixture-postMeetingFollowup-3-e21",
+      "ts": 1787731405000,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "fixtureName": "taskBoard",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "tasks.example"
+    },
+    {
+      "id": "fixture-postMeetingFollowup-3-s23",
+      "eventId": "fixture-postMeetingFollowup-3-e23",
+      "ts": 1787731427000,
+      "sessionId": "fixture-postMeetingFollowup-3",
+      "fixtureName": "taskBoard",
+      "reason": "form_submit",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "tasks.example"
+    }
+  ],
+  "expected": {
+    "apps": [
+      "com.google.Chrome"
+    ],
+    "domains": [
+      "notes.example",
+      "crm.example",
+      "mail.example",
+      "tasks.example"
+    ],
+    "outcomeType": "form_submit:create",
+    "activeDurationMs": 227000
+  }
+}

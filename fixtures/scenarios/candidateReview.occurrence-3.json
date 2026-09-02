@@ -1,0 +1,601 @@
+{
+  "events": [
+    {
+      "id": "fixture-candidateReview-3-e0",
+      "ts": 1787738400000,
+      "seq": 0,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "native_helper",
+      "type": "app_activated",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "screenshotRef": "fixture-candidateReview-3-s0",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 0
+    },
+    {
+      "id": "fixture-candidateReview-3-e1",
+      "ts": 1787738405000,
+      "seq": 1,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "ats.example",
+      "routePattern": "/candidates/6b8d8c2b6107",
+      "screenshotRef": "fixture-candidateReview-3-s1",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 5000
+    },
+    {
+      "id": "fixture-candidateReview-3-e2",
+      "ts": 1787738408000,
+      "seq": 2,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "page_title",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "ats.example",
+      "routePattern": "/candidates/6b8d8c2b6107",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 3000,
+      "payload": {
+        "title": "Candidate - ATS"
+      }
+    },
+    {
+      "id": "fixture-candidateReview-3-e3",
+      "ts": 1787738412000,
+      "seq": 3,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "native_helper",
+      "type": "window_title_changed",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 4000,
+      "payload": {
+        "title": "Noor Haddad - ATS"
+      }
+    },
+    {
+      "id": "fixture-candidateReview-3-e4",
+      "ts": 1787738425000,
+      "seq": 4,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "ats.example",
+      "routePattern": "/candidates/6b8d8c2b6107",
+      "element": {
+        "role": "tab",
+        "name": "Resume"
+      },
+      "screenshotRef": "fixture-candidateReview-3-s4",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 13000
+    },
+    {
+      "id": "fixture-candidateReview-3-e5",
+      "ts": 1787738453000,
+      "seq": 5,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "shortcut",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "ats.example",
+      "routePattern": "/candidates/6b8d8c2b6107",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 28000,
+      "payload": {
+        "keys": "pagedown",
+        "intent": "scroll"
+      }
+    },
+    {
+      "id": "fixture-candidateReview-3-e6",
+      "ts": 1787738466000,
+      "seq": 6,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "notes.example",
+      "routePattern": "/doc/cdadd3a2",
+      "screenshotRef": "fixture-candidateReview-3-s6",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 13000
+    },
+    {
+      "id": "fixture-candidateReview-3-e7",
+      "ts": 1787738468000,
+      "seq": 7,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "page_title",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "notes.example",
+      "routePattern": "/doc/cdadd3a2",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 2000,
+      "payload": {
+        "title": "Interview notes"
+      }
+    },
+    {
+      "id": "fixture-candidateReview-3-e8",
+      "ts": 1787738483000,
+      "seq": 8,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "notes.example",
+      "routePattern": "/doc/cdadd3a2",
+      "element": {
+        "role": "textbox",
+        "name": "Title"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 15000,
+      "payload": {
+        "fieldLabel": "Title",
+        "valueLength": 17,
+        "inputType": "text"
+      }
+    },
+    {
+      "id": "fixture-candidateReview-3-e9",
+      "ts": 1787738523000,
+      "seq": 9,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "notes.example",
+      "routePattern": "/doc/cdadd3a2",
+      "element": {
+        "role": "textbox",
+        "name": "Body"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 40000,
+      "payload": {
+        "fieldLabel": "Body",
+        "valueLength": 555,
+        "inputType": "textarea"
+      }
+    },
+    {
+      "id": "fixture-candidateReview-3-e10",
+      "ts": 1787738525000,
+      "seq": 10,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "native_helper",
+      "type": "idle_changed",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 2000,
+      "payload": {
+        "idle": false
+      }
+    },
+    {
+      "id": "fixture-candidateReview-3-e11",
+      "ts": 1787738534000,
+      "seq": 11,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "ats.example",
+      "routePattern": "/candidates/6b8d8c2b6107",
+      "screenshotRef": "fixture-candidateReview-3-s11",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 9000
+    },
+    {
+      "id": "fixture-candidateReview-3-e12",
+      "ts": 1787738543000,
+      "seq": 12,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "ats.example",
+      "routePattern": "/candidates/6b8d8c2b6107",
+      "element": {
+        "role": "button",
+        "name": "Change status"
+      },
+      "screenshotRef": "fixture-candidateReview-3-s12",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 9000
+    },
+    {
+      "id": "fixture-candidateReview-3-e13",
+      "ts": 1787738548000,
+      "seq": 13,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "ats.example",
+      "routePattern": "/candidates/6b8d8c2b6107",
+      "element": {
+        "role": "combobox",
+        "name": "Status"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 5000,
+      "payload": {
+        "fieldLabel": "Status",
+        "valueLength": 10,
+        "inputType": "select"
+      }
+    },
+    {
+      "id": "fixture-candidateReview-3-e14",
+      "ts": 1787738554000,
+      "seq": 14,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "ats.example",
+      "routePattern": "/candidates/6b8d8c2b6107",
+      "element": {
+        "role": "button",
+        "name": "Update"
+      },
+      "screenshotRef": "fixture-candidateReview-3-s14",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 6000
+    },
+    {
+      "id": "fixture-candidateReview-3-e15",
+      "ts": 1787738564000,
+      "seq": 15,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "calendar.example",
+      "routePattern": "/schedule",
+      "screenshotRef": "fixture-candidateReview-3-s15",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 10000
+    },
+    {
+      "id": "fixture-candidateReview-3-e16",
+      "ts": 1787738576000,
+      "seq": 16,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "calendar.example",
+      "routePattern": "/schedule",
+      "element": {
+        "role": "button",
+        "name": "Schedule"
+      },
+      "screenshotRef": "fixture-candidateReview-3-s16",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 12000
+    },
+    {
+      "id": "fixture-candidateReview-3-e17",
+      "ts": 1787738589000,
+      "seq": 17,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "calendar.example",
+      "routePattern": "/schedule",
+      "element": {
+        "role": "textbox",
+        "name": "Title"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 13000,
+      "payload": {
+        "fieldLabel": "Title",
+        "valueLength": 20,
+        "inputType": "text"
+      }
+    },
+    {
+      "id": "fixture-candidateReview-3-e18",
+      "ts": 1787738600000,
+      "seq": 18,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "calendar.example",
+      "routePattern": "/schedule",
+      "element": {
+        "role": "textbox",
+        "name": "Date"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 11000,
+      "payload": {
+        "fieldLabel": "Date",
+        "valueLength": 16,
+        "inputType": "datetime"
+      }
+    },
+    {
+      "id": "fixture-candidateReview-3-e19",
+      "ts": 1787738612000,
+      "seq": 19,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "calendar.example",
+      "routePattern": "/schedule",
+      "element": {
+        "role": "textbox",
+        "name": "Guests"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 12000,
+      "payload": {
+        "fieldLabel": "Guests",
+        "valueLength": 44,
+        "inputType": "email"
+      }
+    },
+    {
+      "id": "fixture-candidateReview-3-e20",
+      "ts": 1787738617000,
+      "seq": 20,
+      "sessionId": "fixture-candidateReview-3",
+      "source": "extension",
+      "type": "form_submit",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "calendar.example",
+      "routePattern": "/schedule",
+      "element": {
+        "role": "form",
+        "name": "Schedule interview"
+      },
+      "screenshotRef": "fixture-candidateReview-3-s20",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 5000,
+      "payload": {
+        "purpose": "create"
+      }
+    }
+  ],
+  "screenshotRefs": [
+    {
+      "id": "fixture-candidateReview-3-s0",
+      "eventId": "fixture-candidateReview-3-e0",
+      "ts": 1787738400000,
+      "sessionId": "fixture-candidateReview-3",
+      "fixtureName": "atsCandidate",
+      "reason": "app_change",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      }
+    },
+    {
+      "id": "fixture-candidateReview-3-s1",
+      "eventId": "fixture-candidateReview-3-e1",
+      "ts": 1787738405000,
+      "sessionId": "fixture-candidateReview-3",
+      "fixtureName": "atsCandidate",
+      "reason": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "ats.example"
+    },
+    {
+      "id": "fixture-candidateReview-3-s4",
+      "eventId": "fixture-candidateReview-3-e4",
+      "ts": 1787738425000,
+      "sessionId": "fixture-candidateReview-3",
+      "fixtureName": "atsCandidate",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "ats.example"
+    },
+    {
+      "id": "fixture-candidateReview-3-s6",
+      "eventId": "fixture-candidateReview-3-e6",
+      "ts": 1787738466000,
+      "sessionId": "fixture-candidateReview-3",
+      "fixtureName": "notesPage",
+      "reason": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "notes.example"
+    },
+    {
+      "id": "fixture-candidateReview-3-s11",
+      "eventId": "fixture-candidateReview-3-e11",
+      "ts": 1787738534000,
+      "sessionId": "fixture-candidateReview-3",
+      "fixtureName": "atsCandidate",
+      "reason": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "ats.example"
+    },
+    {
+      "id": "fixture-candidateReview-3-s12",
+      "eventId": "fixture-candidateReview-3-e12",
+      "ts": 1787738543000,
+      "sessionId": "fixture-candidateReview-3",
+      "fixtureName": "atsStatusDialog",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "ats.example"
+    },
+    {
+      "id": "fixture-candidateReview-3-s14",
+      "eventId": "fixture-candidateReview-3-e14",
+      "ts": 1787738554000,
+      "sessionId": "fixture-candidateReview-3",
+      "fixtureName": "atsCandidate",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "ats.example"
+    },
+    {
+      "id": "fixture-candidateReview-3-s15",
+      "eventId": "fixture-candidateReview-3-e15",
+      "ts": 1787738564000,
+      "sessionId": "fixture-candidateReview-3",
+      "fixtureName": "calendarSchedule",
+      "reason": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "calendar.example"
+    },
+    {
+      "id": "fixture-candidateReview-3-s16",
+      "eventId": "fixture-candidateReview-3-e16",
+      "ts": 1787738576000,
+      "sessionId": "fixture-candidateReview-3",
+      "fixtureName": "calendarSchedule",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "calendar.example"
+    },
+    {
+      "id": "fixture-candidateReview-3-s20",
+      "eventId": "fixture-candidateReview-3-e20",
+      "ts": 1787738617000,
+      "sessionId": "fixture-candidateReview-3",
+      "fixtureName": "calendarSchedule",
+      "reason": "form_submit",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "calendar.example"
+    }
+  ],
+  "expected": {
+    "apps": [
+      "com.google.Chrome"
+    ],
+    "domains": [
+      "ats.example",
+      "notes.example",
+      "calendar.example"
+    ],
+    "outcomeType": "form_submit:create",
+    "activeDurationMs": 217000
+  }
+}

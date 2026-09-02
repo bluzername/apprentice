@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "screenshots": [
+    {
+      "name": "crmContact",
+      "file": "crmContact.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "4771104b41e8fcbe6d78f4da055ffd91412ace06b8e5853e27f78f257b0290f0",
+      "target": {
+        "label": "Log activity",
+        "x": 1280,
+        "y": 152
+      }
+    },
+    {
+      "name": "crmLogActivity",
+      "file": "crmLogActivity.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "8d4b041035e8c9bbf89d13707d613c91f9c7892550f3383b222a8c943165ae36",
+      "target": {
+        "label": "Save",
+        "x": 948,
+        "y": 688
+      }
+    },
+    {
+      "name": "mailCompose",
+      "file": "mailCompose.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "aedff222c5e1c40355ca2a1f1a4aa813eff970c75aec9587d74f45938ead514e",
+      "target": {
+        "label": "Send",
+        "x": 360,
+        "y": 820
+      }
+    },
+    {
+      "name": "taskBoard",
+      "file": "taskBoard.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "687ad1e87f1412b5617d60e22c18713f69a5b1ad3e53a021504f91ccfad45faa",
+      "target": {
+        "label": "New task",
+        "x": 1280,
+        "y": 152
+      }
+    },
+    {
+      "name": "notesPage",
+      "file": "notesPage.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "05472a58c38ae5e7c465dd7340be504c6ef033181a48ca13d2d4314ce533bb62",
+      "target": {
+        "label": "Share",
+        "x": 1290,
+        "y": 152
+      }
+    },
+    {
+      "name": "invoiceEmail",
+      "file": "invoiceEmail.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "c215440cf0d2333e3a40929dfc2c1634ed56e88e2ed2f81c5061f8e3b64c3adc",
+      "target": {
+        "label": "Download",
+        "x": 375,
+        "y": 740
+      }
+    },
+    {
+      "name": "finderWindow",
+      "file": "finderWindow.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "0767901e115822f81c703b41a499c2f9e7297cfd5ac131663ca665bda2ec58fb",
+      "target": {
+        "label": "Move to",
+        "x": 1320,
+        "y": 840
+      }
+    },
+    {
+      "name": "previewPdf",
+      "file": "previewPdf.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "c24619a5faae4e295d5d2b839d24dc8720afcd714c154d91576b3c201f9f7df7",
+      "target": {
+        "label": "Save",
+        "x": 1080,
+        "y": 580
+      }
+    },
+    {
+      "name": "accountingUpload",
+      "file": "accountingUpload.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "a6c09e1588ada214f06fe112c76cc7348863759fbc4a6f7e7de6cec62c3a898e",
+      "target": {
+        "label": "Upload",
+        "x": 380,
+        "y": 320
+      }
+    },
+    {
+      "name": "atsCandidate",
+      "file": "atsCandidate.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "10ba7972dd6c9c1b30508e21ec4c0e7fbd48691afb647c1d41efcb47114c9813",
+      "target": {
+        "label": "Change status",
+        "x": 1270,
+        "y": 152
+      }
+    },
+    {
+      "name": "atsStatusDialog",
+      "file": "atsStatusDialog.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "023a85a415c4e8fd557b235c078a27ada0c12b70577dc64ab9a324dd0d97b91b",
+      "target": {
+        "label": "Update",
+        "x": 940,
+        "y": 580
+      }
+    },
+    {
+      "name": "calendarSchedule",
+      "file": "calendarSchedule.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "32a3f32e65799eea55872f346bff530d9beb7b04ab023e32ea9c6d8d29dc871c",
+      "target": {
+        "label": "Schedule",
+        "x": 1280,
+        "y": 152
+      }
+    },
+    {
+      "name": "chatMessage",
+      "file": "chatMessage.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "9240cb0fb7f88ab5f5264ee04073b0284f7a8c7d996c3aeb637951d9f46fb337",
+      "target": {
+        "label": "Send",
+        "x": 1300,
+        "y": 832
+      }
+    },
+    {
+      "name": "newsFeed",
+      "file": "newsFeed.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "ad68a158de4c719d9d9031cdba31533cf11314fe311636caa245a580d1963dab",
+      "target": {
+        "label": "Read more",
+        "x": 370,
+        "y": 520
+      }
+    },
+    {
+      "name": "genericBlank",
+      "file": "genericBlank.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "e724f53f72b6fe6db8a8889619238e0a1e69b5b9dd387d0d47dd3a44640747a6",
+      "target": {
+        "label": "Continue",
+        "x": 720,
+        "y": 450
+      }
+    }
+  ]
+}

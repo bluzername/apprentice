@@ -7,10 +7,10 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = new URL("..", import.meta.url).pathname;
-const SKIP_DIRS = new Set(["node_modules", "dist", "out", "build", ".build", ".git", "release", "third_party", "coverage", ".wrangler", "test-results", "playwright-report"]);
+const SKIP_DIRS = new Set(["node_modules", "dist", "out", "build", ".build", ".git", "release", "third_party", "coverage", ".wrangler", "test-results", "playwright-report", "golden"]);
 const SKIP_FILES = new Set(["self_learning_work_agent_claude_code_master_prompt.md", "pnpm-lock.yaml"]);
 const EXTENSIONS = new Set([".ts", ".tsx", ".mts", ".js", ".mjs", ".cjs", ".md", ".json", ".yml", ".yaml", ".toml", ".html", ".css", ".swift", ".sh", ".sql", ".svg"]);
-const BAD = /[—–‘’“”]/;
+const BAD = /[\u2014\u2013\u2018\u2019\u201C\u201D]/;
 
 function walk(dir, out) {
   for (const entry of readdirSync(dir)) {

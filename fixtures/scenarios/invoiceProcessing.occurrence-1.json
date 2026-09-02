@@ -1,0 +1,755 @@
+{
+  "events": [
+    {
+      "id": "fixture-invoiceProcessing-1-e0",
+      "ts": 1787562000000,
+      "seq": 0,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "app_activated",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "screenshotRef": "fixture-invoiceProcessing-1-s0",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 0
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e1",
+      "ts": 1787562006000,
+      "seq": 1,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "extension",
+      "type": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "mail.example",
+      "routePattern": "/inbox/12ac4b82f9",
+      "screenshotRef": "fixture-invoiceProcessing-1-s1",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 6000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e2",
+      "ts": 1787562008000,
+      "seq": 2,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "extension",
+      "type": "page_title",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "mail.example",
+      "routePattern": "/inbox/12ac4b82f9",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 2000,
+      "payload": {
+        "title": "Invoice INV-2274 - Mail"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e3",
+      "ts": 1787562012000,
+      "seq": 3,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "idle_changed",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 4000,
+      "payload": {
+        "idle": false
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e4",
+      "ts": 1787562040000,
+      "seq": 4,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "extension",
+      "type": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "mail.example",
+      "routePattern": "/inbox/12ac4b82f9",
+      "element": {
+        "role": "button",
+        "name": "Download"
+      },
+      "screenshotRef": "fixture-invoiceProcessing-1-s4",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 28000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e5",
+      "ts": 1787562046000,
+      "seq": 5,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "extension",
+      "type": "download",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "mail.example",
+      "routePattern": "/inbox/12ac4b82f9",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 6000,
+      "payload": {
+        "extension": "pdf",
+        "filenameLength": 17
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e6",
+      "ts": 1787562052000,
+      "seq": 6,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "app_activated",
+      "app": {
+        "bundleId": "com.apple.finder",
+        "name": "Finder"
+      },
+      "screenshotRef": "fixture-invoiceProcessing-1-s6",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 6000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e7",
+      "ts": 1787562056000,
+      "seq": 7,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "window_title_changed",
+      "app": {
+        "bundleId": "com.apple.finder",
+        "name": "Finder"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 4000,
+      "payload": {
+        "title": "Downloads"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e8",
+      "ts": 1787562064000,
+      "seq": 8,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "click",
+      "app": {
+        "bundleId": "com.apple.finder",
+        "name": "Finder"
+      },
+      "element": {
+        "role": "AXRow",
+        "name": "PDF document"
+      },
+      "screenshotRef": "fixture-invoiceProcessing-1-s8",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 8000,
+      "payload": {
+        "clicks": 2
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e9",
+      "ts": 1787562068000,
+      "seq": 9,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "app_activated",
+      "app": {
+        "bundleId": "com.apple.Preview",
+        "name": "Preview"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 4000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e10",
+      "ts": 1787562070000,
+      "seq": 10,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "window_title_changed",
+      "app": {
+        "bundleId": "com.apple.Preview",
+        "name": "Preview"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 2000,
+      "payload": {
+        "title": "INV-2274.pdf"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e11",
+      "ts": 1787562084000,
+      "seq": 11,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "shortcut",
+      "app": {
+        "bundleId": "com.apple.Preview",
+        "name": "Preview"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 14000,
+      "payload": {
+        "keys": "cmd+shift+s"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e12",
+      "ts": 1787562101000,
+      "seq": 12,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.apple.Preview",
+        "name": "Preview"
+      },
+      "element": {
+        "role": "AXTextField",
+        "name": "Save As"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 17000,
+      "payload": {
+        "fieldLabel": "Save As",
+        "valueLength": 34,
+        "inputType": "text"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e13",
+      "ts": 1787562105000,
+      "seq": 13,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "click",
+      "app": {
+        "bundleId": "com.apple.Preview",
+        "name": "Preview"
+      },
+      "element": {
+        "role": "AXButton",
+        "name": "Save"
+      },
+      "screenshotRef": "fixture-invoiceProcessing-1-s13",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 4000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e14",
+      "ts": 1787562113000,
+      "seq": 14,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "app_activated",
+      "app": {
+        "bundleId": "com.apple.finder",
+        "name": "Finder"
+      },
+      "screenshotRef": "fixture-invoiceProcessing-1-s14",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 8000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e15",
+      "ts": 1787562125000,
+      "seq": 15,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "click",
+      "app": {
+        "bundleId": "com.apple.finder",
+        "name": "Finder"
+      },
+      "element": {
+        "role": "AXRow",
+        "name": "PDF document"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 12000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e16",
+      "ts": 1787562136000,
+      "seq": 16,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "click",
+      "app": {
+        "bundleId": "com.apple.finder",
+        "name": "Finder"
+      },
+      "element": {
+        "role": "AXMenuItem",
+        "name": "Move to"
+      },
+      "screenshotRef": "fixture-invoiceProcessing-1-s16",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 11000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e17",
+      "ts": 1787562144000,
+      "seq": 17,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "click",
+      "app": {
+        "bundleId": "com.apple.finder",
+        "name": "Finder"
+      },
+      "element": {
+        "role": "AXMenuItem",
+        "name": "Invoices"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 8000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e18",
+      "ts": 1787562152000,
+      "seq": 18,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "native_helper",
+      "type": "app_activated",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "screenshotRef": "fixture-invoiceProcessing-1-s18",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 8000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e19",
+      "ts": 1787562158000,
+      "seq": 19,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "extension",
+      "type": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "accounting.example",
+      "routePattern": "/bills/new",
+      "screenshotRef": "fixture-invoiceProcessing-1-s19",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 6000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e20",
+      "ts": 1787562161000,
+      "seq": 20,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "extension",
+      "type": "page_title",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "accounting.example",
+      "routePattern": "/bills/new",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 3000,
+      "payload": {
+        "title": "New bill - Accounting"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e21",
+      "ts": 1787562173000,
+      "seq": 21,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "extension",
+      "type": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "accounting.example",
+      "routePattern": "/bills/new",
+      "element": {
+        "role": "button",
+        "name": "Upload"
+      },
+      "screenshotRef": "fixture-invoiceProcessing-1-s21",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 12000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e22",
+      "ts": 1787562191000,
+      "seq": 22,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "accounting.example",
+      "routePattern": "/bills/new",
+      "element": {
+        "role": "textbox",
+        "name": "Amount"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 18000,
+      "payload": {
+        "fieldLabel": "Amount",
+        "valueLength": 6,
+        "inputType": "text"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e23",
+      "ts": 1787562203000,
+      "seq": 23,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "accounting.example",
+      "routePattern": "/bills/new",
+      "element": {
+        "role": "textbox",
+        "name": "Due date"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 12000,
+      "payload": {
+        "fieldLabel": "Due date",
+        "valueLength": 10,
+        "inputType": "date"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e24",
+      "ts": 1787562209000,
+      "seq": 24,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "extension",
+      "type": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "accounting.example",
+      "routePattern": "/bills/new",
+      "element": {
+        "role": "button",
+        "name": "Save bill"
+      },
+      "screenshotRef": "fixture-invoiceProcessing-1-s24",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 6000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e25",
+      "ts": 1787562223000,
+      "seq": 25,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "extension",
+      "type": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "chat.example",
+      "routePattern": "/channel/8d5d84",
+      "screenshotRef": "fixture-invoiceProcessing-1-s25",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 14000
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e26",
+      "ts": 1787562255000,
+      "seq": 26,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "extension",
+      "type": "field_input",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "chat.example",
+      "routePattern": "/channel/8d5d84",
+      "element": {
+        "role": "textbox",
+        "name": "Message"
+      },
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 32000,
+      "payload": {
+        "fieldLabel": "Message",
+        "valueLength": 65,
+        "inputType": "textarea"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-e27",
+      "ts": 1787562260000,
+      "seq": 27,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "source": "extension",
+      "type": "form_submit",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "chat.example",
+      "routePattern": "/channel/8d5d84",
+      "element": {
+        "role": "form",
+        "name": "Send message"
+      },
+      "screenshotRef": "fixture-invoiceProcessing-1-s27",
+      "privacy": "allowed",
+      "redaction": "none_needed",
+      "activeDurationMs": 5000,
+      "payload": {
+        "purpose": "message"
+      }
+    }
+  ],
+  "screenshotRefs": [
+    {
+      "id": "fixture-invoiceProcessing-1-s0",
+      "eventId": "fixture-invoiceProcessing-1-e0",
+      "ts": 1787562000000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "invoiceEmail",
+      "reason": "app_change",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-s1",
+      "eventId": "fixture-invoiceProcessing-1-e1",
+      "ts": 1787562006000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "invoiceEmail",
+      "reason": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "mail.example"
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-s4",
+      "eventId": "fixture-invoiceProcessing-1-e4",
+      "ts": 1787562040000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "invoiceEmail",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "mail.example"
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-s6",
+      "eventId": "fixture-invoiceProcessing-1-e6",
+      "ts": 1787562052000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "finderWindow",
+      "reason": "app_change",
+      "app": {
+        "bundleId": "com.apple.finder",
+        "name": "Finder"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-s8",
+      "eventId": "fixture-invoiceProcessing-1-e8",
+      "ts": 1787562064000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "finderWindow",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.apple.finder",
+        "name": "Finder"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-s13",
+      "eventId": "fixture-invoiceProcessing-1-e13",
+      "ts": 1787562105000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "previewPdf",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.apple.Preview",
+        "name": "Preview"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-s14",
+      "eventId": "fixture-invoiceProcessing-1-e14",
+      "ts": 1787562113000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "finderWindow",
+      "reason": "app_change",
+      "app": {
+        "bundleId": "com.apple.finder",
+        "name": "Finder"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-s16",
+      "eventId": "fixture-invoiceProcessing-1-e16",
+      "ts": 1787562136000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "finderWindow",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.apple.finder",
+        "name": "Finder"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-s18",
+      "eventId": "fixture-invoiceProcessing-1-e18",
+      "ts": 1787562152000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "accountingUpload",
+      "reason": "app_change",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      }
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-s19",
+      "eventId": "fixture-invoiceProcessing-1-e19",
+      "ts": 1787562158000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "accountingUpload",
+      "reason": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "accounting.example"
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-s21",
+      "eventId": "fixture-invoiceProcessing-1-e21",
+      "ts": 1787562173000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "accountingUpload",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "accounting.example"
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-s24",
+      "eventId": "fixture-invoiceProcessing-1-e24",
+      "ts": 1787562209000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "accountingUpload",
+      "reason": "click",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "accounting.example"
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-s25",
+      "eventId": "fixture-invoiceProcessing-1-e25",
+      "ts": 1787562223000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "chatMessage",
+      "reason": "navigation",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "chat.example"
+    },
+    {
+      "id": "fixture-invoiceProcessing-1-s27",
+      "eventId": "fixture-invoiceProcessing-1-e27",
+      "ts": 1787562260000,
+      "sessionId": "fixture-invoiceProcessing-1",
+      "fixtureName": "chatMessage",
+      "reason": "form_submit",
+      "app": {
+        "bundleId": "com.google.Chrome",
+        "name": "Google Chrome"
+      },
+      "domain": "chat.example"
+    }
+  ],
+  "expected": {
+    "apps": [
+      "com.google.Chrome",
+      "com.apple.finder",
+      "com.apple.Preview"
+    ],
+    "domains": [
+      "mail.example",
+      "accounting.example",
+      "chat.example"
+    ],
+    "outcomeType": "form_submit:message",
+    "activeDurationMs": 260000
+  }
+}
