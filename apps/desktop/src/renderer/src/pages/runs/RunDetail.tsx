@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState, type JSX } from "react";
-import type { RunDetail as RunDetailData } from "@apprentice/schemas";
+import type { ApprovalRequest, FailureCategory, RunDetail as RunDetailData, RunStatus } from "@apprentice/schemas";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { TextInput } from "../../components/Field";
 import { CardSkeleton } from "../../components/Skeleton";
 import { ErrorState } from "../../components/States";
+import { describeAction } from "../../lib/annotation";
 import { invoke } from "../../lib/api";
 import { failureLabel, formatDateTime, formatDuration, humanize, isRunActive, runStatusLabel } from "../../lib/format";
 import { errorMessage, useIpcEvent, useLoader } from "../../lib/hooks";
@@ -16,12 +17,33 @@ import { DiagnosticsButton } from "./DiagnosticsDialog";
 import { RunFeedbackForm } from "./RunFeedbackForm";
 import { RunTrace } from "./RunTrace";
 
+const TEXT_INPUT_TYPES = new Set(["text", "search", "url", "email", "tel", "password", "number"]);
+
 function statusTone(status: string): "success" | "danger" | "warning" | "info" | "neutral" {
   if (status === "completed") return "success";
   if (status === "failed" || status.startsWith("aborted")) return "danger";
   if (status === "interrupted" || status === "timed_out") return "warning";
   if (status === "running" || status.startsWith("awaiting")) return "info";
   return "neutral";
+}
+
+/** Text for the persistent status region; changes only when the run or the pending approval changes. */
+export function liveStatusMessage(status: RunStatus, failure: FailureCategory, approval: ApprovalRequest | null): string {
+  if (approval && isRunActive(status)) return `Approval needed: step ${approval.stepIndex + 1}, ${approval.actionSummary || describeAction(approval.proposed)}`;
+  if (status === "completed") return "Run completed";
+  if (status === "failed") return `Run failed: ${failureLabel(failure)}`;
+  if (status === "awaiting_user") return "The run has a question";
+  if (status === "running" || status === "pending") return "Run in progress";
+  return `Run ${runStatusLabel(status).toLowerCase()}`;
+}
+
+/** True when Escape should be left to the focused control instead of stopping the run. */
+function escapeBelongsToTarget(target: EventTarget | null): boolean {
+  if (document.querySelector("dialog[open]")) return true;
+  if (!(target instanceof Element)) return false;
+  if (target.closest('[aria-expanded="true"], .menu, [role="dialog"]')) return true;
+  if (target instanceof HTMLTextAreaElement) return true;
+  return target instanceof HTMLInputElement && TEXT_INPUT_TYPES.has(target.type);
 }
 
 export function RunDetail({ id }: { id: string }): JSX.Element {
@@ -32,6 +54,7 @@ export function RunDetail({ id }: { id: string }): JSX.Element {
   const [answer, setAnswer] = useState("");
   const [confirmSubtask, setConfirmSubtask] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
+  const [liveStatus, setLiveStatus] = useState("");
 
   useIpcEvent("event:run", ({ detail }) => {
     if (detail.run.id === id) setData(() => detail);
@@ -41,6 +64,15 @@ export function RunDetail({ id }: { id: string }): JSX.Element {
   const approval = data?.pendingApproval ?? globalApproval;
   const run = data?.run;
   const active = run ? isRunActive(run.status) : false;
+  const runStatus = run?.status;
+  const failureCategory = run?.failureCategory;
+
+  // Setting an identical string is a no-op, so the region only re-announces when
+  // the run status or the pending approval actually changes.
+  useEffect(() => {
+    if (!runStatus || !failureCategory) return;
+    setLiveStatus(liveStatusMessage(runStatus, failureCategory, approval));
+  }, [runStatus, failureCategory, approval]);
 
   const apply = useCallback(
     async (fn: () => Promise<RunDetailData>): Promise<void> => {
@@ -65,22 +97,42 @@ export function RunDetail({ id }: { id: string }): JSX.Element {
   useEffect(() => {
     if (!active) return;
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === "Escape" && !(document.activeElement instanceof HTMLDialogElement)) {
-        e.preventDefault();
-        stop();
-      }
+      if (e.key !== "Escape" || e.defaultPrevented || escapeBelongsToTarget(e.target)) return;
+      e.preventDefault();
+      stop();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [active, stop]);
 
-  if (error) return <ErrorState title="Could not load run" message={error} onRetry={reload} />;
-  if (loading || !data || !run) return <CardSkeleton count={3} />;
+  const statusRegion = (
+    <div role="status" className="visually-hidden">
+      {liveStatus}
+    </div>
+  );
+
+  if (error) {
+    return (
+      <>
+        {statusRegion}
+        <ErrorState title="Could not load run" message={error} onRetry={reload} />
+      </>
+    );
+  }
+  if (loading || !data || !run) {
+    return (
+      <>
+        {statusRegion}
+        <CardSkeleton count={3} />
+      </>
+    );
+  }
 
   const currentSubtask = Math.min(run.currentSubtaskIndex + 1, run.subtaskCount);
 
   return (
     <div className="page">
+      {statusRegion}
       <a href={buildHash("runs")}>Back to runs</a>
       <div className="page-header">
         <div>

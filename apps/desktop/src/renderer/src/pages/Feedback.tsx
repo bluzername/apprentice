@@ -79,11 +79,16 @@ export function FeedbackPage(): JSX.Element {
             <FeedbackConsent compact />
             <hr className="divider" />
             <div className="row">
-              <Button busy={uploading} disabled={!consent} onClick={() => void upload()} title={consent ? undefined : "Enable remote consent first"}>
+              <Button busy={uploading} disabled={!consent} onClick={() => void upload()} aria-describedby={consent ? undefined : "upload-hint"}>
                 Upload now
               </Button>
               <Button onClick={() => setExportOpen(true)}>Export feedback bundle</Button>
             </div>
+            {!consent ? (
+              <span className="field-hint" id="upload-hint">
+                Upload is off until you turn on remote consent above.
+              </span>
+            ) : null}
           </div>
         </Card>
       </div>

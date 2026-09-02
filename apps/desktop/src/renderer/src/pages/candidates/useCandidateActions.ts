@@ -12,12 +12,26 @@ interface Options {
   onRejected: (candidateId: string) => void;
 }
 
-/** Shared candidate action handler: try once navigates to the run, edit navigates to the skill, rejections open feedback. */
-export function useCandidateActions({ onUpdated, onRejected }: Options): { act: (id: string, action: CandidateUserAction) => Promise<void>; busyAction: CandidateUserAction | null } {
+export interface CandidateActions {
+  act: (candidate: WorkflowCandidate, action: CandidateUserAction) => Promise<void>;
+  busyAction: CandidateUserAction | null;
+  /** Candidate awaiting confirmation of "Never learn this pattern", if any. */
+  pendingNeverLearn: WorkflowCandidate | null;
+  confirmNeverLearn: () => Promise<void>;
+  cancelNeverLearn: () => void;
+}
+
+/**
+ * Shared candidate action handler: try once navigates to the run, edit navigates
+ * to the skill, rejections open feedback. "Never learn" is permanent, so it is
+ * held until the caller's confirmation dialog confirms it.
+ */
+export function useCandidateActions({ onUpdated, onRejected }: Options): CandidateActions {
   const { toast } = useStore();
   const [busyAction, setBusyAction] = useState<CandidateUserAction | null>(null);
+  const [pendingNeverLearn, setPendingNeverLearn] = useState<WorkflowCandidate | null>(null);
 
-  const act = async (id: string, action: CandidateUserAction): Promise<void> => {
+  const perform = async (id: string, action: CandidateUserAction): Promise<void> => {
     setBusyAction(action);
     try {
       const result = await invoke("candidates:act", { id, action });
@@ -40,5 +54,23 @@ export function useCandidateActions({ onUpdated, onRejected }: Options): { act: 
       setBusyAction(null);
     }
   };
-  return { act, busyAction };
+
+  const act = async (candidate: WorkflowCandidate, action: CandidateUserAction): Promise<void> => {
+    if (action === "never_learn") {
+      setPendingNeverLearn(candidate);
+      return;
+    }
+    await perform(candidate.id, action);
+  };
+
+  const confirmNeverLearn = async (): Promise<void> => {
+    const candidate = pendingNeverLearn;
+    if (!candidate) return;
+    await perform(candidate.id, "never_learn");
+    setPendingNeverLearn(null);
+  };
+
+  const cancelNeverLearn = (): void => setPendingNeverLearn(null);
+
+  return { act, busyAction, pendingNeverLearn, confirmNeverLearn, cancelNeverLearn };
 }

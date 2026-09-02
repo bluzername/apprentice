@@ -14,7 +14,9 @@ import { AllowlistEditor } from "./shared/AllowlistEditor";
 import { FeedbackConsent } from "./shared/FeedbackConsent";
 import { ExportBundleDialog } from "./feedback/ExportBundleDialog";
 
-const RETENTION: ReadonlyArray<{ key: "screenshotHours" | "ocrDays" | "eventsDays"; label: string; max: number; unit: string }> = [
+type RetentionKey = "screenshotHours" | "ocrDays" | "eventsDays";
+
+const RETENTION: ReadonlyArray<{ key: RetentionKey; label: string; max: number; unit: string }> = [
   { key: "screenshotHours", label: "Screenshots", max: 24, unit: "hours" },
   { key: "ocrDays", label: "OCR text", max: 7, unit: "days" },
   { key: "eventsDays", label: "Events", max: 30, unit: "days" }
@@ -26,6 +28,8 @@ export function PrivacyPage(): JSX.Element {
   const { data, error, loading, reload } = useLoader(loader);
   const [exportOpen, setExportOpen] = useState(false);
   const [retentionBusy, setRetentionBusy] = useState(false);
+  /** Slider positions being dragged; committed to settings on release, key up or blur. */
+  const [retentionDrafts, setRetentionDrafts] = useState<Partial<Record<RetentionKey, number>>>({});
   const settings = state.settings;
 
   const saveAllowlist = async (allowlist: { apps: { bundleId: string; name: string }[]; domains: string[] }): Promise<void> => {
@@ -36,13 +40,20 @@ export function PrivacyPage(): JSX.Element {
     }
   };
 
-  const saveRetention = async (key: "screenshotHours" | "ocrDays" | "eventsDays", value: number): Promise<void> => {
+  const saveRetention = async (key: RetentionKey, value: number): Promise<void> => {
     if (!settings) return;
     try {
       await updateSettings({ retention: { ...settings.retention, [key]: value } });
     } catch (err) {
       toast("error", errorMessage(err));
     }
+  };
+
+  const commitRetention = (key: RetentionKey): void => {
+    const draft = retentionDrafts[key];
+    setRetentionDrafts(({ [key]: _committed, ...rest }) => rest);
+    if (draft === undefined || !settings || draft === settings.retention[key]) return;
+    void saveRetention(key, draft);
   };
 
   const runRetention = async (): Promise<void> => {
@@ -116,11 +127,28 @@ export function PrivacyPage(): JSX.Element {
           <Card title="Retention" actions={<Button size="sm" busy={retentionBusy} onClick={() => void runRetention()}>Run retention now</Button>}>
             {settings ? (
               <div className="stack">
-                {RETENTION.map((r) => (
-                  <Field key={r.key} label={`${r.label}: ${settings.retention[r.key]} ${r.unit} (max ${r.max})`}>
-                    {({ id }) => <input id={id} type="range" className="range" min={1} max={r.max} step={1} value={settings.retention[r.key]} onChange={(e) => void saveRetention(r.key, Number(e.target.value))} />}
-                  </Field>
-                ))}
+                {RETENTION.map((r) => {
+                  const value = retentionDrafts[r.key] ?? settings.retention[r.key];
+                  return (
+                    <Field key={r.key} label={`${r.label}: ${value} ${r.unit} (max ${r.max})`}>
+                      {({ id }) => (
+                        <input
+                          id={id}
+                          type="range"
+                          className="range"
+                          min={1}
+                          max={r.max}
+                          step={1}
+                          value={value}
+                          onChange={(e) => setRetentionDrafts((d) => ({ ...d, [r.key]: Number(e.target.value) }))}
+                          onPointerUp={() => commitRetention(r.key)}
+                          onKeyUp={() => commitRetention(r.key)}
+                          onBlur={() => commitRetention(r.key)}
+                        />
+                      )}
+                    </Field>
+                  );
+                })}
               </div>
             ) : null}
           </Card>

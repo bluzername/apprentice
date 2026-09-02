@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, type JSX, type ReactNode } from "react";
 import type { AppSettings, ApprovalRequest, ExtensionStatus, IpcRequest, LearningState, MenuBarStatus, ModelStatus } from "@apprentice/schemas";
 import { invoke, subscribe } from "../lib/api";
+import { errorMessage } from "../lib/hooks";
 import { normalizeRouteInput, parseRoute, type Route } from "../lib/router";
 import type { ToastItem, ToastKind } from "../components/Toast";
 
@@ -27,7 +28,11 @@ export interface AppState {
   settings: AppSettings | null;
   settingsError: string | null;
   learning: LearningStatus | null;
+  /** Set when the last learning:status call failed; cleared by the next successful status. */
+  learningError: string | null;
   model: ModelStatus | null;
+  /** Set when the last model:status call failed; cleared by the next successful status. */
+  modelError: string | null;
   helper: HelperStatus | null;
   extension: ExtensionStatus | null;
   version: VersionInfo | null;
@@ -41,7 +46,9 @@ export type Action =
   | { type: "settings"; settings: AppSettings }
   | { type: "settingsError"; message: string }
   | { type: "learning"; learning: LearningStatus }
+  | { type: "learningError"; message: string }
   | { type: "model"; model: ModelStatus }
+  | { type: "modelError"; message: string }
   | { type: "helper"; helper: HelperStatus }
   | { type: "extension"; extension: ExtensionStatus }
   | { type: "version"; version: VersionInfo }
@@ -59,9 +66,13 @@ export function reducer(state: AppState, action: Action): AppState {
     case "settingsError":
       return { ...state, settingsError: action.message };
     case "learning":
-      return { ...state, learning: action.learning };
+      return { ...state, learning: action.learning, learningError: null };
+    case "learningError":
+      return { ...state, learningError: action.message };
     case "model":
-      return { ...state, model: action.model };
+      return { ...state, model: action.model, modelError: null };
+    case "modelError":
+      return { ...state, modelError: action.message };
     case "helper":
       return { ...state, helper: action.helper };
     case "extension":
@@ -84,7 +95,9 @@ export const initialState: AppState = {
   settings: null,
   settingsError: null,
   learning: null,
+  learningError: null,
   model: null,
+  modelError: null,
   helper: null,
   extension: null,
   version: null,
@@ -101,6 +114,8 @@ interface StoreValue {
   toast: (kind: ToastKind, message: string) => void;
   updateSettings: (patch: SettingsPatch) => Promise<AppSettings>;
   reloadSettings: () => Promise<void>;
+  reloadLearning: () => Promise<void>;
+  reloadModel: () => Promise<void>;
   setLearning: (state: LearningState, pauseMinutes?: number) => Promise<void>;
 }
 
@@ -120,7 +135,23 @@ export function StoreProvider({ children }: { children: ReactNode }): JSX.Elemen
     try {
       dispatch({ type: "settings", settings: await invoke("settings:get") });
     } catch (err) {
-      dispatch({ type: "settingsError", message: err instanceof Error ? err.message : String(err) });
+      dispatch({ type: "settingsError", message: errorMessage(err) });
+    }
+  }, []);
+
+  const reloadLearning = useCallback(async () => {
+    try {
+      dispatch({ type: "learning", learning: await invoke("learning:status") });
+    } catch (err) {
+      dispatch({ type: "learningError", message: errorMessage(err) });
+    }
+  }, []);
+
+  const reloadModel = useCallback(async () => {
+    try {
+      dispatch({ type: "model", model: await invoke("model:status") });
+    } catch (err) {
+      dispatch({ type: "modelError", message: errorMessage(err) });
     }
   }, []);
 
@@ -144,8 +175,8 @@ export function StoreProvider({ children }: { children: ReactNode }): JSX.Elemen
       return;
     }
     void reloadSettings();
-    invoke("learning:status").then((learning) => dispatch({ type: "learning", learning })).catch(() => undefined);
-    invoke("model:status").then((model) => dispatch({ type: "model", model })).catch(() => undefined);
+    void reloadLearning();
+    void reloadModel();
     invoke("app:version").then((version) => dispatch({ type: "version", version })).catch(() => undefined);
     invoke("extension:status").then((extension) => dispatch({ type: "extension", extension })).catch(() => undefined);
     const unsubscribers = [
@@ -166,7 +197,7 @@ export function StoreProvider({ children }: { children: ReactNode }): JSX.Elemen
       })
     ];
     return () => unsubscribers.forEach((u) => u());
-  }, [reloadSettings, toast]);
+  }, [reloadSettings, reloadLearning, reloadModel, toast]);
 
   useEffect(() => {
     const onHash = (): void => dispatch({ type: "route", route: parseRoute(window.location.hash) });
@@ -182,8 +213,8 @@ export function StoreProvider({ children }: { children: ReactNode }): JSX.Elemen
   }, [state.settings?.appearance]);
 
   const value = useMemo<StoreValue>(
-    () => ({ state, dispatch, toast, updateSettings, reloadSettings, setLearning }),
-    [state, toast, updateSettings, reloadSettings, setLearning]
+    () => ({ state, dispatch, toast, updateSettings, reloadSettings, reloadLearning, reloadModel, setLearning }),
+    [state, toast, updateSettings, reloadSettings, reloadLearning, reloadModel, setLearning]
   );
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

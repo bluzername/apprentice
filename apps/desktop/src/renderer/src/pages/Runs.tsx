@@ -7,7 +7,7 @@ import { Table, type Column } from "../components/Table";
 import { invoke } from "../lib/api";
 import { failureLabel, formatDuration, formatRelative, humanize, runStatusLabel } from "../lib/format";
 import { useIpcEvent, useLoader } from "../lib/hooks";
-import { navigate } from "../lib/router";
+import { buildHash, navigate } from "../lib/router";
 import { RunDetail } from "./runs/RunDetail";
 
 export function RunsPage({ id }: { id?: string }): JSX.Element {
@@ -16,7 +16,15 @@ export function RunsPage({ id }: { id?: string }): JSX.Element {
 }
 
 const COLUMNS: ReadonlyArray<Column<Run>> = [
-  { key: "skill", header: "Skill", render: (r) => <strong>{r.skillName}</strong> },
+  {
+    key: "skill",
+    header: "Skill",
+    render: (r) => (
+      <a href={buildHash("runs", r.id)}>
+        <strong>{r.skillName}</strong>
+      </a>
+    )
+  },
   { key: "status", header: "Status", render: (r) => <Badge tone={r.status === "completed" ? "success" : r.status === "failed" ? "danger" : r.status.startsWith("awaiting") ? "warning" : "neutral"}>{runStatusLabel(r.status)}</Badge> },
   { key: "mode", header: "Mode", render: (r) => humanize(r.mode) },
   { key: "progress", header: "Subtask", render: (r) => `${Math.min(r.currentSubtaskIndex + 1, r.subtaskCount)}/${r.subtaskCount}` },

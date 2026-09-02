@@ -3,12 +3,22 @@ import type { RunStep } from "@apprentice/schemas";
 import { Badge, RiskBadge } from "../../components/Badge";
 import { describeAction } from "../../lib/annotation";
 import { failureLabel, formatDuration, formatPercent, formatTimeWithSeconds, humanize } from "../../lib/format";
+import { TypedTextPreview } from "./TypedTextPreview";
 
 function approvalTone(decision: string): "success" | "danger" | "warning" | "neutral" {
   if (decision === "approved" || decision === "auto") return "success";
   if (decision === "rejected") return "danger";
   if (decision === "timed_out" || decision === "interrupted") return "warning";
   return "neutral";
+}
+
+function validationText(step: RunStep): string {
+  const v = step.validation;
+  if (!v) return "Not validated";
+  if (!v.ok) return `Failed: ${v.errors.join("; ")}`;
+  const target = v.resolvedTarget ? ` (${v.resolvedTarget.source}${v.resolvedTarget.label ? `: ${v.resolvedTarget.label}` : ""})` : "";
+  const drift = v.targetDriftPx !== undefined ? `, drift ${Math.round(v.targetDriftPx)} px` : "";
+  return `OK${target}${drift}`;
 }
 
 export function RunTrace({ steps }: { steps: ReadonlyArray<RunStep> }): JSX.Element {
@@ -27,7 +37,11 @@ export function RunTrace({ steps }: { steps: ReadonlyArray<RunStep> }): JSX.Elem
               <span className="small muted">{formatTimeWithSeconds(step.ts)}, subtask {step.subtaskIndex + 1}</span>
             </div>
             {step.actionSummary ? <div className="small">{step.actionSummary}</div> : null}
-            {step.proposed?.type === "type_text" ? <div className="typed-text small" style={{ marginTop: 4 }}>{step.proposed.text}</div> : null}
+            {step.proposed?.type === "type_text" ? (
+              <div style={{ marginTop: 4 }}>
+                <TypedTextPreview text={step.proposed.text} id={`typed-${step.id}`} small />
+              </div>
+            ) : null}
             <div className="trace-grid">
               <div>
                 <strong>Risk reasons</strong>
@@ -35,8 +49,7 @@ export function RunTrace({ steps }: { steps: ReadonlyArray<RunStep> }): JSX.Elem
               </div>
               <div>
                 <strong>Validation</strong>
-                {step.validation ? (step.validation.ok ? `OK${step.validation.resolvedTarget ? ` (${step.validation.resolvedTarget.source}${step.validation.resolvedTarget.label ? `: ${step.validation.resolvedTarget.label}` : ""})` : ""}` : `Failed: ${step.validation.errors.join("; ")}`) : "Not validated"}
-                {step.validation?.targetDriftPx !== undefined ? ` , drift ${Math.round(step.validation.targetDriftPx)} px` : ""}
+                {validationText(step)}
               </div>
               <div>
                 <strong>Approval</strong>

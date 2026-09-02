@@ -74,7 +74,7 @@ export function PulsePrompt({ day, onDone }: PulsePromptProps): JSX.Element {
   };
 
   return (
-    <Card title={`Day ${day} check-in`} aria-live="polite">
+    <Card title={`Day ${day} check-in`}>
       <p className="muted small">One minute, stored locally. You will not be asked again today.</p>
       <div className="stack">
         <Checkbox label="I am still using Apprentice" checked={stillUsing} onCheckedChange={setStillUsing} />

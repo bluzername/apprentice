@@ -15,8 +15,11 @@ interface ToastRegionProps {
   onDismiss: (id: number) => void;
 }
 
-export function ToastRegion({ toasts, onDismiss }: ToastRegionProps): JSX.Element | null {
-  if (toasts.length === 0) return null;
+/**
+ * Always mounted so assistive technology registers the live region before the
+ * first toast is added; an empty region announces nothing.
+ */
+export function ToastRegion({ toasts, onDismiss }: ToastRegionProps): JSX.Element {
   return (
     <div className="toast-region" aria-live="polite" aria-relevant="additions">
       {toasts.map((t) => (

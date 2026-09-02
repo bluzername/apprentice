@@ -20,6 +20,10 @@ export function candidateTitle(c: WorkflowCandidate): string {
   return c.refinedTitle ?? c.deterministicTitle;
 }
 
+export function observedLabel(count: number): string {
+  return count === 1 ? "Observed once" : `Observed ${count} times`;
+}
+
 interface CandidateCardProps {
   candidate: WorkflowCandidate;
   detailed?: boolean;
@@ -36,7 +40,7 @@ export function CandidateCard({ candidate, detailed = false, busyAction = null, 
         <div>
           <h3 id={`cand-${candidate.id}`}>{candidateTitle(candidate)}</h3>
           <div className="row small">
-            <Badge tone="accent">Observed {candidate.repeatCount} times</Badge>
+            <Badge tone="accent">{observedLabel(candidate.repeatCount)}</Badge>
             <RiskBadge risk={candidate.riskClass} />
             {candidate.source === "taught" ? <Badge tone="neutral">Taught</Badge> : null}
             {suppressed ? <Badge tone="warning">{humanize(candidate.suppression.state)}</Badge> : null}

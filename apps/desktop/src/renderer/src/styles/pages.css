@@ -188,6 +188,7 @@
   gap: 12px;
 }
 .pairing-code {
+  display: block;
   font-family: var(--font-mono);
   font-size: 32px;
   letter-spacing: 6px;
@@ -212,7 +213,10 @@
   border-radius: var(--radius-sm);
 }
 .teach-event.outside {
-  opacity: 0.45;
+  color: var(--text-muted);
+}
+.teach-event.outside img {
+  opacity: 0.6;
 }
 .teach-event.excluded {
   text-decoration: line-through;

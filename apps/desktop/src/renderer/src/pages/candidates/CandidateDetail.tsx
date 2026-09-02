@@ -12,16 +12,18 @@ import { buildHash } from "../../lib/router";
 import { EventBody } from "../activity/EventBody";
 import { CandidateCard } from "./CandidateCard";
 import { CandidateFeedbackForm } from "./CandidateFeedbackForm";
+import { NeverLearnDialog } from "./NeverLearnDialog";
 import { useCandidateActions } from "./useCandidateActions";
 
 export function CandidateDetail({ id }: { id: string }): JSX.Element {
   const loader = useCallback(() => invoke("candidates:get", { id }), [id]);
   const { data, error, loading, reload, setData } = useLoader(loader);
   const [feedbackFor, setFeedbackFor] = useState<string | null>(null);
-  const { act, busyAction } = useCandidateActions({
+  const actions = useCandidateActions({
     onUpdated: (candidate) => setData((current) => (current ? { ...current, candidate } : current)),
     onRejected: (candidateId) => setFeedbackFor(candidateId)
   });
+  const { act, busyAction } = actions;
 
   if (error) return <ErrorState title="Could not load candidate" message={error} onRetry={reload} />;
   if (loading || !data) return <CardSkeleton count={2} />;
@@ -39,7 +41,7 @@ export function CandidateDetail({ id }: { id: string }): JSX.Element {
   return (
     <div className="page">
       <a href={buildHash("candidates")}>Back to candidates</a>
-      <CandidateCard candidate={data.candidate} detailed busyAction={busyAction} onAction={(action: CandidateUserAction) => void act(data.candidate.id, action)} />
+      <CandidateCard candidate={data.candidate} detailed busyAction={busyAction} onAction={(action: CandidateUserAction) => void act(data.candidate, action)} />
       {feedbackFor ? <CandidateFeedbackForm candidateId={feedbackFor} onDone={() => setFeedbackFor(null)} /> : null}
       <Card title="Evidence timeline">
         <p className="small muted">Each occurrence that contributed to this candidate, with the events that were captured. Privacy gaps are shown as grey bands.</p>
@@ -53,6 +55,7 @@ export function CandidateDetail({ id }: { id: string }): JSX.Element {
         ))}
         <Timeline groups={groups} label="Candidate evidence" />
       </Card>
+      <NeverLearnDialog {...actions} />
     </div>
   );
 }

@@ -28,6 +28,9 @@ export function RangeSlider({ bounds, value, onChange, ticks = [], minSpanMs, la
       if (!track) return;
       e.preventDefault();
       const target = e.currentTarget;
+      // preventDefault suppresses the browser's pointerdown focus, so focus explicitly:
+      // keyboard adjustments must continue from the handle that was just grabbed.
+      target.focus();
       target.setPointerCapture(e.pointerId);
       const rect = track.getBoundingClientRect();
       const onMove = (ev: PointerEvent): void => {

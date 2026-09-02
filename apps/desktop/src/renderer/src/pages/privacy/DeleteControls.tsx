@@ -3,6 +3,7 @@ import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { ConfirmDialog, Dialog } from "../../components/Dialog";
 import { Checkbox, Select, TextInput } from "../../components/Field";
+import { ErrorState } from "../../components/States";
 import { invoke } from "../../lib/api";
 import { errorMessage, useLoader } from "../../lib/hooks";
 import { useStore } from "../../state/store";
@@ -12,7 +13,7 @@ const DELETE_PHRASE = "delete everything";
 export function DeleteControls({ onChanged }: { onChanged: () => void }): JSX.Element {
   const { toast, reloadSettings } = useStore();
   const skillsLoader = useCallback(() => invoke("skills:list"), []);
-  const { data: skills } = useLoader(skillsLoader);
+  const { data: skills, error: skillsError, reload: reloadSkills } = useLoader(skillsLoader);
   const [confirmToday, setConfirmToday] = useState(false);
   const [skillId, setSkillId] = useState("");
   const [confirmSkill, setConfirmSkill] = useState(false);
@@ -52,6 +53,7 @@ export function DeleteControls({ onChanged }: { onChanged: () => void }): JSX.El
             Delete today
           </Button>
         </div>
+        {skillsError ? <ErrorState title="Could not load the skill list" message={skillsError} onRetry={reloadSkills} /> : null}
         <div className="row-between">
           <div className="row" style={{ flex: 1 }}>
             <Select label="Delete data for one workflow" value={skillId} onValueChange={setSkillId} options={[{ value: "", label: "Choose a skill" }, ...(skills ?? []).map((s) => ({ value: s.id, label: `${s.name} (v${s.version})` }))]} />

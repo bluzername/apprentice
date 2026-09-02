@@ -1,4 +1,4 @@
-import { useEffect, useRef, type JSX, type ReactNode } from "react";
+import { useEffect, useId, useRef, type JSX, type ReactNode, type RefObject } from "react";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
 
@@ -10,14 +10,17 @@ interface DialogProps {
   footer?: ReactNode;
   wide?: boolean;
   closeLabel?: string;
+  /** Element to focus when the dialog opens. Defaults to the first focusable element. */
+  initialFocus?: RefObject<HTMLElement | null>;
 }
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** Modal dialog built on the native element; adds an explicit Tab trap and focus restore. */
-export function Dialog({ open, title, onClose, children, footer, wide = false, closeLabel = "Close" }: DialogProps): JSX.Element | null {
+export function Dialog({ open, title, onClose, children, footer, wide = false, closeLabel = "Close", initialFocus }: DialogProps): JSX.Element | null {
   const ref = useRef<HTMLDialogElement>(null);
   const previousFocus = useRef<Element | null>(null);
+  const titleId = useId();
 
   useEffect(() => {
     const el = ref.current;
@@ -25,12 +28,13 @@ export function Dialog({ open, title, onClose, children, footer, wide = false, c
     if (open && !el.open) {
       previousFocus.current = document.activeElement;
       el.showModal();
+      const preferred = initialFocus?.current;
       const first = el.querySelector<HTMLElement>(FOCUSABLE);
-      (first ?? el).focus();
+      (preferred ?? first ?? el).focus();
     } else if (!open && el.open) {
       el.close();
     }
-  }, [open]);
+  }, [open, initialFocus]);
 
   useEffect(() => {
     if (!open) return;
@@ -62,7 +66,7 @@ export function Dialog({ open, title, onClose, children, footer, wide = false, c
     <dialog
       ref={ref}
       className={`dialog ${wide ? "dialog-wide" : ""}`.trim()}
-      aria-labelledby="dialog-title"
+      aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -73,7 +77,7 @@ export function Dialog({ open, title, onClose, children, footer, wide = false, c
       }}
     >
       <div className="dialog-header">
-        <h2 id="dialog-title" style={{ fontSize: "var(--text-lg)" }}>
+        <h2 id={titleId} style={{ fontSize: "var(--text-lg)" }}>
           {title}
         </h2>
         <Button variant="ghost" size="sm" onClick={onClose} aria-label={closeLabel}>
@@ -97,15 +101,18 @@ interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
+/** Confirmation dialog. Destructive confirmations focus Cancel first so Enter does not destroy anything by accident. */
 export function ConfirmDialog({ open, title, message, confirmLabel = "Confirm", danger = false, busy = false, onConfirm, onCancel }: ConfirmDialogProps): JSX.Element | null {
+  const cancelRef = useRef<HTMLButtonElement>(null);
   return (
     <Dialog
       open={open}
       title={title}
       onClose={onCancel}
+      initialFocus={danger ? cancelRef : undefined}
       footer={
         <>
-          <Button onClick={onCancel} disabled={busy}>
+          <Button ref={cancelRef} onClick={onCancel} disabled={busy}>
             Cancel
           </Button>
           <Button variant={danger ? "danger" : "primary"} onClick={onConfirm} busy={busy}>

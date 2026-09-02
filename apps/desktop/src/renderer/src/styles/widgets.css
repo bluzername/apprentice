@@ -139,31 +139,6 @@
   }
 }
 
-/* Tabs */
-.tabs {
-  display: flex;
-  gap: 2px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 12px;
-}
-.tab {
-  padding: 8px 12px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  cursor: pointer;
-  color: var(--text-muted);
-  margin-bottom: -1px;
-}
-.tab[aria-selected="true"] {
-  color: var(--text);
-  border-bottom-color: var(--accent);
-  font-weight: 500;
-}
-.tab:hover {
-  color: var(--text);
-}
-
 /* Empty / error states */
 .empty-state {
   padding: 40px 24px;

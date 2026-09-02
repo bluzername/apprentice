@@ -21,6 +21,10 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+.btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: progress;
+}
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
@@ -45,7 +49,8 @@
     color: var(--text-inverse);
   }
 }
-.btn-danger:hover:not(:disabled) {
+.btn-danger:hover:not(:disabled),
+.btn-stop:hover:not(:disabled) {
   background: var(--danger-hover);
   border-color: var(--danger-hover);
 }
@@ -69,7 +74,7 @@
 .btn-stop {
   background: var(--danger);
   border-color: var(--danger);
-  color: #ffffff;
+  color: var(--text-inverse);
   font-weight: 600;
   min-height: 40px;
   padding: 8px 20px;

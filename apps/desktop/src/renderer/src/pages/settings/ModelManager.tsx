@@ -4,6 +4,7 @@ import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import { ConfirmDialog } from "../../components/Dialog";
 import { Switch } from "../../components/Field";
+import { ErrorState } from "../../components/States";
 import { invoke } from "../../lib/api";
 import { formatBytes, formatRelative, humanize } from "../../lib/format";
 import { errorMessage } from "../../lib/hooks";
@@ -22,7 +23,7 @@ const CONFIRMS: Record<RuntimeAction, { title: string; message: string; label: s
 };
 
 export function ModelManager(): JSX.Element {
-  const { state, dispatch, updateSettings, toast } = useStore();
+  const { state, dispatch, updateSettings, toast, reloadModel } = useStore();
   const model = state.model;
   const settings = state.settings;
   const [pending, setPending] = useState<RuntimeAction | null>(null);
@@ -51,6 +52,7 @@ export function ModelManager(): JSX.Element {
     }
   };
 
+  if (!model && state.modelError) return <ErrorState title="Could not read the model status" message={state.modelError} onRetry={() => void reloadModel()} />;
   if (!model) return <p className="muted">Model status is not available.</p>;
   const rt = model.runtime;
   const download = rt.download;

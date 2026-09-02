@@ -10,6 +10,7 @@ import { navigate } from "../lib/router";
 import { CandidateCard } from "./candidates/CandidateCard";
 import { CandidateDetail } from "./candidates/CandidateDetail";
 import { CandidateFeedbackForm } from "./candidates/CandidateFeedbackForm";
+import { NeverLearnDialog } from "./candidates/NeverLearnDialog";
 import { useCandidateActions } from "./candidates/useCandidateActions";
 
 export function CandidatesPage({ id }: { id?: string }): JSX.Element {
@@ -22,10 +23,11 @@ function CandidateList(): JSX.Element {
   const loader = useCallback(() => invoke("candidates:list", { includeSuppressed }), [includeSuppressed]);
   const { data, error, loading, reload, setData } = useLoader(loader);
   const [feedbackFor, setFeedbackFor] = useState<string | null>(null);
-  const { act, busyAction } = useCandidateActions({
+  const actions = useCandidateActions({
     onUpdated: (candidate) => setData((current) => (current ? current.map((c) => (c.id === candidate.id ? candidate : c)) : current)),
     onRejected: (candidateId) => setFeedbackFor(candidateId)
   });
+  const { act, busyAction } = actions;
   useIpcEvent("event:candidate", ({ candidate }) => {
     setData((current) => {
       if (!current) return current;
@@ -57,10 +59,11 @@ function CandidateList(): JSX.Element {
       ) : null}
       {visible.map((c) => (
         <div key={c.id} className="stack">
-          <CandidateCard candidate={c} busyAction={busyAction} onAction={(action: CandidateUserAction) => void act(c.id, action)} />
+          <CandidateCard candidate={c} busyAction={busyAction} onAction={(action: CandidateUserAction) => void act(c, action)} />
           {feedbackFor === c.id ? <CandidateFeedbackForm candidateId={c.id} onDone={() => setFeedbackFor(null)} /> : null}
         </div>
       ))}
+      <NeverLearnDialog {...actions} />
     </div>
   );
 }

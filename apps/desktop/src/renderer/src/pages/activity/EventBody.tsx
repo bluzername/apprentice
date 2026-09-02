@@ -41,10 +41,7 @@ export function EventBody({ event, screenshot }: EventBodyProps): JSX.Element {
         {event.redaction === "redacted" ? <Badge tone="neutral">Redacted</Badge> : null}
         {event.source === "extension" ? <Badge tone="neutral">Browser</Badge> : null}
       </div>
-      <div className="event-meta">
-        {eventLocation(event)}
-        {event.element?.role ? ` , ${event.element.role}` : ""}
-      </div>
+      <div className="event-meta">{[eventLocation(event), event.element?.role].filter(Boolean).join(", ")}</div>
       {screenshot ? (
         <div className="event-shot">
           <ScreenshotThumb id={screenshot.id} width={screenshot.width} height={screenshot.height} maxWidth={200} label={eventTitle(event)} />

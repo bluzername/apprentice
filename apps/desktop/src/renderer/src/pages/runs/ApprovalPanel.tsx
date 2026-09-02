@@ -3,7 +3,8 @@ import type { ApprovalRequest } from "@apprentice/schemas";
 import { Badge, RiskBadge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import { actionTarget, describeAction, hotkeyLabel, keyLabel, markerRadius, scalePoint } from "../../lib/annotation";
-import { formatPercent } from "../../lib/format";
+import { formatPercent, humanize } from "../../lib/format";
+import { TypedTextPreview } from "./TypedTextPreview";
 
 interface ApprovalPanelProps {
   request: ApprovalRequest;
@@ -11,7 +12,10 @@ interface ApprovalPanelProps {
   onDecide: (decision: "approved" | "rejected", scope: "once" | "run_low_risk") => void;
 }
 
-/** Shows exactly what will happen, annotated on the screenshot, before anything executes. */
+/**
+ * Shows exactly what will happen, annotated on the screenshot, before anything
+ * executes. Announcements are handled by the run page's status region.
+ */
 export function ApprovalPanel({ request, busy, onDecide }: ApprovalPanelProps): JSX.Element {
   const imgRef = useRef<HTMLImageElement>(null);
   const [displayed, setDisplayed] = useState({ width: 0, height: 0 });
@@ -34,7 +38,7 @@ export function ApprovalPanel({ request, busy, onDecide }: ApprovalPanelProps): 
   const action = request.proposed;
 
   return (
-    <section className="approval-panel" aria-labelledby="approval-title" aria-live="assertive">
+    <section className="approval-panel" aria-labelledby="approval-title">
       <div className="row-between">
         <h3 id="approval-title">Approval needed: step {request.stepIndex + 1}, {request.subtaskTitle}</h3>
         <RiskBadge risk={request.risk.riskClass} />
@@ -48,9 +52,8 @@ export function ApprovalPanel({ request, busy, onDecide }: ApprovalPanelProps): 
         {marker && displayed.width > 0 ? <div className="approval-marker" style={{ left: marker.x, top: marker.y, width: radius * 2, height: radius * 2 }} aria-hidden="true" /> : null}
       </div>
       {action.type === "type_text" ? (
-        <div className="field" style={{ marginTop: 12 }}>
-          <span className="field-label">Exact text that will be typed</span>
-          <div className="typed-text" aria-label="Text to type">{action.text}</div>
+        <div style={{ marginTop: 12 }}>
+          <TypedTextPreview text={action.text} id="approval-typed-text" />
         </div>
       ) : null}
       {action.type === "hotkey" ? (
@@ -77,7 +80,7 @@ export function ApprovalPanel({ request, busy, onDecide }: ApprovalPanelProps): 
         </dd>
         <dt>Policy decision</dt>
         <dd>
-          <Badge tone={request.risk.decision === "approve_strong" ? "warning" : "neutral"}>{request.risk.decision.replace("_", " ")}</Badge>
+          <Badge tone={request.risk.decision === "approve_strong" ? "warning" : "neutral"}>{humanize(request.risk.decision)}</Badge>
         </dd>
       </dl>
       <div className="approval-actions">
@@ -85,7 +88,7 @@ export function ApprovalPanel({ request, busy, onDecide }: ApprovalPanelProps): 
           Approve once
         </Button>
         {request.canApproveRunLowRisk ? (
-          <Button busy={busy} onClick={() => onDecide("approved", "run_low_risk")} title="Read-only and scroll actions continue without asking for the rest of this run">
+          <Button busy={busy} onClick={() => onDecide("approved", "run_low_risk")} aria-describedby="approval-low-risk-hint">
             Approve low-risk for this run
           </Button>
         ) : null}
@@ -93,6 +96,11 @@ export function ApprovalPanel({ request, busy, onDecide }: ApprovalPanelProps): 
           Reject
         </Button>
       </div>
+      {request.canApproveRunLowRisk ? (
+        <p className="field-hint" id="approval-low-risk-hint" style={{ marginTop: 6 }}>
+          Low-risk covers read-only and scroll actions for the rest of this run. Typing and sending still ask.
+        </p>
+      ) : null}
     </section>
   );
 }

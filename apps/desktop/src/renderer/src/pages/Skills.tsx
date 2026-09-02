@@ -21,7 +21,15 @@ export function SkillsPage({ id }: { id?: string }): JSX.Element {
 }
 
 const COLUMNS: ReadonlyArray<Column<Skill>> = [
-  { key: "name", header: "Skill", render: (s) => <strong>{s.name}</strong> },
+  {
+    key: "name",
+    header: "Skill",
+    render: (s) => (
+      <a href={buildHash("skills", s.id)}>
+        <strong>{s.name}</strong>
+      </a>
+    )
+  },
   { key: "version", header: "Version", render: (s) => `v${s.version}` },
   { key: "policy", header: "Policy", render: (s) => humanize(s.policy.mode) },
   { key: "risk", header: "Risk", render: (s) => <RiskBadge risk={s.riskClass} /> },

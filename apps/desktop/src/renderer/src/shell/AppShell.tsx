@@ -1,4 +1,5 @@
-import type { JSX, ReactNode } from "react";
+import { useEffect, useRef, type JSX, type ReactNode } from "react";
+import { PRODUCT_NAME } from "@apprentice/schemas";
 import { Sidebar } from "./Sidebar";
 import { StatusChip } from "./StatusChip";
 import { Badge } from "../components/Badge";
@@ -20,23 +21,49 @@ const TITLES: Record<string, string> = {
 
 export function AppShell({ children }: { children: ReactNode }): JSX.Element {
   const { state } = useStore();
-  const title = TITLES[state.route.page] ?? "Apprentice";
+  const title = TITLES[state.route.page] ?? PRODUCT_NAME;
   const approval = state.pendingApproval;
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const previousRoute = useRef<string | null>(null);
+  const routeKey = `${state.route.page}/${state.route.id ?? ""}`;
+
+  // Route changes in a hash router do not reload the document: update the window
+  // title and move focus to the page heading so the change is announced.
+  useEffect(() => {
+    document.title = `${title} - ${PRODUCT_NAME}`;
+    if (previousRoute.current !== null && previousRoute.current !== routeKey) headingRef.current?.focus();
+    previousRoute.current = routeKey;
+  }, [title, routeKey]);
+
   return (
     <div className="shell">
+      <a
+        className="skip-link"
+        href="#main"
+        onClick={(e) => {
+          // Plain hash navigation would be parsed as a route; focus the landmark directly.
+          e.preventDefault();
+          mainRef.current?.focus();
+        }}
+      >
+        Skip to content
+      </a>
       <Sidebar />
       <header className="header">
-        <h1>{title}</h1>
+        <h1 ref={headingRef} tabIndex={-1}>
+          {title}
+        </h1>
         <span className="spacer" />
         {approval && !(state.route.page === "runs" && state.route.id === approval.runId) ? (
-          <a className="badge badge-warning" href={buildHash("runs", approval.runId)}>
+          <a className="btn btn-sm" href={buildHash("runs", approval.runId)}>
             Approval needed: {approval.subtaskTitle}
           </a>
         ) : null}
         {state.helper && !state.helper.connected ? <Badge tone="warning">Helper disconnected</Badge> : null}
         <StatusChip />
       </header>
-      <main className="main" id="main">
+      <main className="main" id="main" ref={mainRef} tabIndex={-1}>
         {children}
       </main>
     </div>

@@ -23,7 +23,7 @@ interface TimelineProps {
 
 export function Timeline({ groups, label }: TimelineProps): JSX.Element {
   return (
-    <div aria-label={label}>
+    <section aria-label={label}>
       {groups.map((group) => (
         <section key={group.key} className="timeline-group" aria-label={group.title}>
           <h4 className="timeline-group-title">{group.title}</h4>
@@ -49,6 +49,6 @@ export function Timeline({ groups, label }: TimelineProps): JSX.Element {
           </ol>
         </section>
       ))}
-    </div>
+    </section>
   );
 }
