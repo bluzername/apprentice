@@ -1,0 +1,134 @@
+import { describe, expect, it } from "vitest";
+import { createRecordingEmitter } from "../src/main/services/events.js";
+import { FakeHelperClient } from "../src/main/services/helper/fake-helper-client.js";
+import { nodePngResizer } from "../src/main/services/images/png-resize.js";
+import { silentLogger } from "../src/main/services/logger.js";
+import { systemClock } from "../src/main/services/clock.js";
+import { CaptureService } from "../src/main/services/observation/capture-service.js";
+import { ObservationPipeline } from "../src/main/services/observation/pipeline.js";
+import { FixtureScreenSource } from "../src/main/services/observation/screen-source.js";
+import { fixtures, makeContext, sleep } from "./helpers.js";
+
+async function setup() {
+  const context = makeContext();
+  context.settings.update({ allowlist: { apps: [{ bundleId: "com.google.Chrome", name: "Google Chrome" }], domains: ["crm.example"] } });
+  const helper = new FakeHelperClient({ ocr: () => ({ width: 100, height: 60, blocks: [{ text: "Log activity", x: 1, y: 1, width: 50, height: 10, confidence: 0.9 }] }) });
+  await helper.start();
+  const screen = new FixtureScreenSource({ readPng: (name) => fixtures.readScreenshotPng(name), initial: "crmContact" });
+  const capture = new CaptureService({ storage: context.storage, screenSource: screen, ocr: (png) => helper.ocrImage(png), resizer: nodePngResizer, metrics: context.metrics, clock: systemClock, logger: silentLogger, sessionId: context.sessionId });
+  const recorder = createRecordingEmitter();
+  const state = { capturing: true };
+  const pipeline = new ObservationPipeline({ storage: context.storage, settings: context.settings, helper, capture, sessionId: context.sessionId, emit: recorder.emit, clock: systemClock, logger: silentLogger, isCapturing: () => state.capturing, flushIntervalMs: 10, clickSettleMs: 5, intervalMs: 60_000 });
+  await pipeline.start();
+  pipeline.flush();
+  return { context, helper, screen, capture, pipeline, recorder, state };
+}
+
+describe("observation pipeline", () => {
+  it("stores exactly one privacy_gap for focus outside the allowlist and nothing else", async () => {
+    const { helper, pipeline, context } = await setup();
+    helper.emit("frontmostAppChanged", { bundleId: "com.apple.Safari", name: "Safari", pid: 1 });
+    helper.emit("windowTitleChanged", { bundleId: "com.apple.Safari", title: "Bank statement" });
+    helper.emit("mouseDown", { x: 10, y: 10, button: "left", bundleId: "com.apple.Safari" });
+    helper.emit("shortcut", { keys: ["cmd", "c"], bundleId: "com.apple.Safari" });
+    pipeline.flush();
+    const events = context.storage.current.events.query({ limit: 100 }, { revealSensitive: true });
+    expect(events.filter((event) => event.type === "privacy_gap")).toHaveLength(1);
+    expect(events.some((event) => event.type === "window_title_changed" || event.type === "mouse_down" || event.type === "shortcut")).toBe(false);
+    expect(JSON.stringify(events)).not.toContain("Bank statement");
+    await pipeline.shutdown();
+  });
+
+  it("stores allowed events with encrypted titles and captures a screenshot with encrypted OCR", async () => {
+    const { helper, pipeline, capture, context, recorder } = await setup();
+    helper.emit("frontmostAppChanged", { bundleId: "com.google.Chrome", name: "Google Chrome", pid: 2 });
+    helper.emit("windowTitleChanged", { bundleId: "com.google.Chrome", windowId: 7, title: "Quarterly plan - Jordan Rivera" });
+    helper.emit("shortcut", { keys: ["cmd", "shift", "p"], bundleId: "com.google.Chrome" });
+    pipeline.flush();
+    await capture.idle();
+    const storage = context.storage.current;
+    const events = storage.events.query({ limit: 100 });
+    expect(events.map((event) => event.type)).toEqual(expect.arrayContaining(["app_activated", "window_title_changed", "shortcut"]));
+    const titled = events.find((event) => event.type === "window_title_changed")!;
+    expect(titled.payload?.title).toBeUndefined();
+    const raw = storage.db.get<{ json: string; sensitive_enc: Uint8Array | null }>("SELECT json, sensitive_enc FROM events WHERE id = ?", titled.id)!;
+    expect(raw.json).not.toContain("Jordan Rivera");
+    expect(raw.sensitive_enc).not.toBeNull();
+    expect(storage.events.byIds([titled.id], { revealSensitive: true })[0]?.payload?.title).toBe("Quarterly plan - Jordan Rivera");
+    expect(capture.stats().captured).toBe(1);
+    expect(storage.screenshots.count()).toBe(1);
+    const shot = storage.screenshots.inRange(0, Date.now() + 1000)[0]!;
+    expect(shot.reason).toBe("app_change");
+    expect(shot.app?.bundleId).toBe("com.google.Chrome");
+    const ocrRow = storage.db.get<{ json_enc: Uint8Array }>("SELECT json_enc FROM ocr WHERE screenshot_id = ?", shot.id)!;
+    expect(Buffer.from(ocrRow.json_enc).toString("utf8")).not.toContain("Log activity");
+    expect(storage.screenshots.getOcrForScreenshot(shot.id)?.blocks[0]?.text).toBe("Log activity");
+    expect(recorder.of("event:activity").length).toBeGreaterThan(0);
+    await pipeline.shutdown();
+  });
+
+  it("honours the capture throttle, click settle, and perceptual dedup", async () => {
+    const { helper, pipeline, capture } = await setup();
+    helper.emit("frontmostAppChanged", { bundleId: "com.google.Chrome", name: "Google Chrome", pid: 2 });
+    helper.emit("windowTitleChanged", { bundleId: "com.google.Chrome", title: "One" });
+    helper.emit("mouseDown", { x: 10, y: 10, button: "left", bundleId: "com.google.Chrome" });
+    await sleep(30);
+    await capture.idle();
+    expect(capture.stats().captured).toBe(1);
+    pipeline.insertTeachMarker();
+    await capture.idle();
+    const stats = capture.stats();
+    expect(stats.captured).toBe(1);
+    expect(stats.deduplicated).toBe(1);
+    await pipeline.shutdown();
+  });
+
+  it("pauses capture on a secure field until the next context change", async () => {
+    const { helper, pipeline, capture, context, screen } = await setup();
+    helper.emit("frontmostAppChanged", { bundleId: "com.google.Chrome", name: "Google Chrome", pid: 2 });
+    await capture.idle();
+    expect(capture.stats().captured).toBe(1);
+    helper.emit("secureFieldFocused", { bundleId: "com.google.Chrome", role: "AXSecureTextField" });
+    screen.setTemplate("mailCompose");
+    pipeline.insertTeachMarker();
+    await capture.idle();
+    expect(capture.stats().captured).toBe(1);
+    pipeline.flush();
+    const sensitive = context.storage.current.events.query({ types: ["secure_field_focused"] });
+    expect(sensitive).toHaveLength(1);
+    expect(sensitive[0]?.privacy).toBe("sensitive");
+    helper.emit("windowTitleChanged", { bundleId: "com.google.Chrome", title: "Back to work" });
+    pipeline.insertTeachMarker();
+    await capture.idle();
+    expect(capture.stats().captured).toBe(2);
+    await pipeline.shutdown();
+  });
+
+  it("re-checks the allowlist for extension events and reports accepted/dropped", async () => {
+    const { pipeline, context } = await setup();
+    const result = pipeline.ingestExtensionBatch([
+      { id: "x1", ts: Date.now(), type: "navigation", domain: "crm.example", path: "/contact/1042" },
+      { id: "x2", ts: Date.now(), type: "click", domain: "crm.example", element: { role: "button", name: "Log activity" } },
+      { id: "x3", ts: Date.now(), type: "navigation", domain: "evil.example", path: "/" },
+      { id: "x4", ts: Date.now(), type: "page_title", domain: "evil.example", title: "Evil" }
+    ]);
+    expect(result).toEqual({ accepted: 2, dropped: 2 });
+    pipeline.flush();
+    const events = context.storage.current.events.query({ limit: 100 });
+    expect(events.find((event) => event.type === "navigation")?.routePattern).toBe("/contact/:id");
+    expect(events.filter((event) => event.type === "privacy_gap")).toHaveLength(1);
+    expect(pipeline.latestNavigation()?.domain).toBe("crm.example");
+    await pipeline.shutdown();
+  });
+
+  it("does nothing while not learning", async () => {
+    const { helper, pipeline, context, state } = await setup();
+    state.capturing = false;
+    const before = context.storage.current.events.count();
+    helper.emit("frontmostAppChanged", { bundleId: "com.google.Chrome", name: "Google Chrome", pid: 2 });
+    expect(pipeline.ingestExtensionBatch([{ id: "y", ts: Date.now(), type: "navigation", domain: "crm.example", path: "/" }])).toEqual({ accepted: 0, dropped: 1 });
+    pipeline.flush();
+    expect(context.storage.current.events.count()).toBe(before);
+    await pipeline.shutdown();
+  });
+});

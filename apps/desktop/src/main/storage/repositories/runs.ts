@@ -6,7 +6,11 @@ export class RunsRepository {
 
   save(run: Run): Run {
     const parsed = RunSchema.parse(run);
-    this.db.run("INSERT OR REPLACE INTO runs (id, skill_id, status, started_at, json) VALUES (?, ?, ?, ?, ?)", parsed.id, parsed.skillId, parsed.status, parsed.startedAt, JSON.stringify(parsed));
+    // Upsert without INSERT OR REPLACE: a replace would delete the row and cascade-delete its steps.
+    this.db.run(
+      "INSERT INTO runs (id, skill_id, status, started_at, json) VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET skill_id = excluded.skill_id, status = excluded.status, started_at = excluded.started_at, json = excluded.json",
+      parsed.id, parsed.skillId, parsed.status, parsed.startedAt, JSON.stringify(parsed)
+    );
     return parsed;
   }
 

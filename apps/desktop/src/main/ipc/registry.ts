@@ -1,6 +1,6 @@
 import type { IpcMain, BrowserWindow, IpcMainInvokeEvent } from "electron";
-import { ipcContract, ipcEvents, type IpcChannel, type IpcEventName, type IpcEventPayload, type IpcRequest, type IpcResponse } from "@apprentice/schemas";
-import { ZodError } from "zod";
+import { ipcContract, ipcEvents, type IpcChannel, type IpcEventName, type IpcEventPayload, type IpcResponse } from "@apprentice/schemas";
+import { ZodError, type z } from "zod";
 
 export const IPC_PREFIX = "ipc:";
 export const EVENT_PREFIX = "evt:";
@@ -9,7 +9,9 @@ export interface IpcContext {
   readonly senderId: number;
 }
 
-export type IpcHandler<C extends IpcChannel> = (payload: IpcRequest<C>, ctx: IpcContext) => Promise<IpcResponse<C>> | IpcResponse<C>;
+/** Handlers receive the parsed request (defaults applied), not the raw renderer input. */
+export type IpcParsedRequest<C extends IpcChannel> = z.output<(typeof ipcContract)[C]["request"]>;
+export type IpcHandler<C extends IpcChannel> = (payload: IpcParsedRequest<C>, ctx: IpcContext) => Promise<IpcResponse<C>> | IpcResponse<C>;
 export type IpcHandlers = { [C in IpcChannel]: IpcHandler<C> };
 
 export interface IpcEnvelope<T> {

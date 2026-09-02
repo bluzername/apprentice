@@ -1,4 +1,5 @@
-import { app } from "electron";
+import { createRequire } from "node:module";
+import type * as Electron from "electron";
 import { join } from "node:path";
 import { mkdirSync } from "node:fs";
 import { APP_SUPPORT_DIR_NAME } from "@apprentice/schemas";
@@ -15,12 +16,18 @@ export interface DataPaths {
   readonly modelCaches: string;
 }
 
+/**
+ * Electron is loaded lazily and only when no override is given, so services and
+ * tests can import this module without an Electron runtime.
+ */
+function electronAppDataRoot(): string {
+  const electron = createRequire(import.meta.url)("electron") as typeof Electron;
+  return join(electron.app.getPath("appData"), APP_SUPPORT_DIR_NAME);
+}
+
 /** Resolve the standard Application Support layout. Honors APPRENTICE_DATA_DIR for tests. */
 export function resolveDataPaths(override?: string): DataPaths {
-  const root =
-    override ??
-    process.env.APPRENTICE_DATA_DIR ??
-    join(app.getPath("appData"), APP_SUPPORT_DIR_NAME);
+  const root = override ?? process.env.APPRENTICE_DATA_DIR ?? electronAppDataRoot();
   return Object.freeze({
     root,
     database: join(root, "apprentice.sqlite"),
