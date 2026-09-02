@@ -51,6 +51,8 @@ export interface HelperClient {
   readonly connected: boolean;
   readonly restarts: number;
   readonly available: boolean;
+  /** Hex session secret shared with the running helper; approval tokens are HMACs under it. Null when this helper cannot verify tokens. */
+  readonly approvalSecret: string | null;
   snapshot(): HelperStateSnapshot;
   onEvent(listener: (event: HelperEvent) => void): () => void;
   onState(listener: (snapshot: HelperStateSnapshot) => void): () => void;

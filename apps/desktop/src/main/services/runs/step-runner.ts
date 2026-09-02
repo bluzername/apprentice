@@ -1,6 +1,6 @@
 import { applyPolicy, classifyRisk, detectSensitiveContext, geometryMatches, isDomainAllowed, isStaleScreen, normalizeAppName, resolveTarget, toExecutableAction, validateProposedAction } from "@apprentice/core";
 import type { ApprovalRequest, ApprovalResult, ExecutableAction, FailureCategory, ProposedAction, ProposedActionResult, RiskResult, Run, RunStatus, RunStep, Skill } from "@apprentice/schemas";
-import { randomBytes } from "node:crypto";
+import { mintApprovalToken } from "../helper/approval-token.js";
 import { InferenceCancelledError } from "../model/inference-queue.js";
 import { addModelLatency, bumpMetrics, failStep, stepWithTiming } from "./run-state.js";
 import { takeSnapshot, type ScreenSnapshot } from "./snapshot.js";
@@ -196,9 +196,17 @@ function isOutcome<T extends object>(value: T | StepOutcome): value is StepOutco
   return "kind" in value;
 }
 
-async function execute(host: RunnerHost, active: ActiveRun, action: ProposedAction, fresh: ScreenSnapshot): Promise<{ executed: ExecutableAction; executeMs: number } | StepOutcome> {
+/**
+ * Only an approved (or policy-auto) action reaches the helper. The approval
+ * token is minted here, from the exact executable action, under the helper's
+ * session secret; the helper recomputes it and refuses anything else.
+ */
+async function execute(host: RunnerHost, active: ActiveRun, action: ProposedAction, fresh: ScreenSnapshot, approval: ApprovalResult): Promise<{ executed: ExecutableAction; executeMs: number } | StepOutcome> {
+  if (approval.decision !== "approved" && approval.decision !== "auto") return finish("failed", "policy_blocked", "Refusing to execute an action that was not approved");
+  const secret = host.deps.approvalSecret();
+  if (secret === null) return finish("failed", "helper_error", "The helper session has no approval secret; the action cannot be authorized");
   const executable = toExecutableAction(action, fresh.transform);
-  const token = randomBytes(16).toString("hex");
+  const token = mintApprovalToken(secret, executable);
   const started = performance.now();
   try {
     const result = await host.deps.actuator().perform(executable, token);
@@ -317,7 +325,7 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
     active.priorActions = [...active.priorActions, { stepIndex: current.index, summary: `Suggested (not executed): ${current.actionSummary}`.slice(0, 300) }];
     return { kind: "continue" };
   }
-  const executionOutcome = await execute(host, active, action, prepared.fresh);
+  const executionOutcome = await execute(host, active, action, prepared.fresh, approval);
   if (isOutcome(executionOutcome)) {
     host.persistStep(active, failStep(current, "helper_error"));
     return executionOutcome;

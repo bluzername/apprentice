@@ -4,16 +4,34 @@ import XCTest
 final class ActionValidatorTests: XCTestCase {
     private let displays = [PointRect(x: 0, y: 0, width: 1440, height: 900),
                             PointRect(x: 1440, y: -100, width: 1920, height: 1080)]
-    private let token: JSONValue = .string("approved-token-1")
+    private let secret = ApprovalSecret(hex: String(repeating: "ab", count: 32))!
 
+    /// Mints the correct token for `action` unless an explicit token is given.
     private func validate(_ action: [String: JSONValue], token: JSONValue? = nil) -> Result<ValidatedAction, HelperError> {
-        ActionValidator.validate(params: ["action": .object(action), "approvalToken": token ?? self.token], displays: displays)
+        let presented = token ?? .string(ApprovalTokenVerifier.expectedToken(secret: secret, action: action))
+        return ActionValidator.validate(params: ["action": .object(action), "approvalToken": presented], displays: displays, secret: secret)
     }
 
     func testValidClickAccepted() {
-        let result = validate(["type": .string("click"), "x": .int(10), "y": .number(20.5), "button": .string("left")])
+        let action: [String: JSONValue] = ["type": .string("click"), "x": .int(10), "y": .number(20.5), "button": .string("left")]
+        let result = validate(action)
         XCTAssertEqual(result.successValue?.action, .click(x: 10, y: 20.5, button: .left))
-        XCTAssertEqual(result.successValue?.approvalToken, "approved-token-1")
+        XCTAssertEqual(result.successValue?.approvalToken, ApprovalTokenVerifier.expectedToken(secret: secret, action: action))
+    }
+
+    func testTokenForDifferentActionRejected() {
+        let approved: [String: JSONValue] = ["type": .string("wait"), "ms": .int(10)]
+        let token = JSONValue.string(ApprovalTokenVerifier.expectedToken(secret: secret, action: approved))
+        XCTAssertNotNil(validate(approved, token: token).successValue)
+        let mutated = validate(["type": .string("wait"), "ms": .int(11)], token: token)
+        XCTAssertEqual(mutated.failureError, ApprovalTokenVerifier.mismatchError)
+    }
+
+    func testMissingSecretRefusesEvenCorrectlyShapedToken() {
+        let action: [String: JSONValue] = ["type": .string("wait"), "ms": .int(10)]
+        let token = JSONValue.string(ApprovalTokenVerifier.expectedToken(secret: secret, action: action))
+        let result = ActionValidator.validate(params: ["action": .object(action), "approvalToken": token], displays: displays, secret: nil)
+        XCTAssertEqual(result.failureError, ApprovalTokenVerifier.missingSecretError)
     }
 
     func testPointOnSecondDisplayAccepted() {
@@ -35,7 +53,7 @@ final class ActionValidatorTests: XCTestCase {
         let result = validate(["type": .string("wait"), "ms": .int(10)], token: .string("short"))
         XCTAssertEqual(result.failureError?.code, .actionRejected)
         XCTAssertNil(ActionValidator.validate(params: ["action": .object(["type": .string("wait"), "ms": .int(1)])],
-                                              displays: displays).successValue)
+                                              displays: displays, secret: secret).successValue)
     }
 
     func testUnknownKeyRejected() {

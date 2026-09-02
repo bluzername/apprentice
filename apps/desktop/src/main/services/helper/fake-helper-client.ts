@@ -8,6 +8,7 @@ import {
   type OcrImageResult,
   type PermissionStatusResult
 } from "@apprentice/schemas";
+import { generateHelperSecret, verifyApprovalToken } from "./approval-token.js";
 import { HelperClientBase } from "./base-client.js";
 import { fixtureLineToEvent, readFixtureLines, type FixtureLine } from "./fixture-lines.js";
 import { HelperError, type HelperRequestOptions, type HelperStateSnapshot, type StartObservationParams } from "./types.js";
@@ -25,6 +26,8 @@ export interface FakeHelperClientOptions {
   readonly capture?: () => CaptureResult;
   readonly ocr?: (pngBase64: string) => OcrImageResult;
   readonly now?: () => number;
+  /** Omit to generate a session secret; pass null to simulate a helper started without one. */
+  readonly approvalSecret?: string | null;
 }
 
 export interface RecordedAction {
@@ -41,10 +44,11 @@ const DEFAULT_FRONTMOST: FrontmostContextResult = {
   displayScale: 1
 };
 
-/** In-process helper for tests, demo mode, smoke, and e2e. Scripted responses; fixture-driven events. */
+/** In-process helper for tests, demo mode, smoke, and e2e. Scripted responses; fixture-driven events; real token verification. */
 export class FakeHelperClient extends HelperClientBase {
   readonly requests: Array<{ cmd: HelperCommand; params?: Record<string, unknown> }> = [];
   readonly actions: RecordedAction[] = [];
+  private readonly secret: string | null;
   private running = false;
   private stopped = false;
   private observing = false;
@@ -54,10 +58,15 @@ export class FakeHelperClient extends HelperClientBase {
 
   constructor(private readonly options: FakeHelperClientOptions = {}) {
     super();
+    this.secret = options.approvalSecret === undefined ? generateHelperSecret() : options.approvalSecret;
   }
 
   get connected(): boolean {
     return this.running;
+  }
+
+  get approvalSecret(): string | null {
+    return this.secret;
   }
 
   get restarts(): number {
@@ -172,10 +181,13 @@ export class FakeHelperClient extends HelperClientBase {
         return { element: null, ancestors: [], bundleId: DEFAULT_FRONTMOST.app.bundleId };
       case "performAction": {
         if (this.stopped) throw new HelperError("emergency_stopped", "emergency stop is set");
-        const action = params?.["action"] as ExecutableAction;
+        const action = params?.["action"];
         const approvalToken = String(params?.["approvalToken"] ?? "");
         if (approvalToken.length < 8) throw new HelperError("action_rejected", "approval token missing");
-        this.actions.push({ action, approvalToken });
+        // Same semantics as the Swift helper: no secret means no actions; the HMAC covers the action as received.
+        if (this.secret === null) throw new HelperError("action_rejected", "helper started without an approval secret");
+        if (!verifyApprovalToken(this.secret, action, approvalToken)) throw new HelperError("action_rejected", "approval token does not match the action");
+        this.actions.push({ action: action as ExecutableAction, approvalToken });
         return { performed: true, durationMs: 1 };
       }
       case "emergencyStop":

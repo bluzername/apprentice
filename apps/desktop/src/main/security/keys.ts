@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 /** Minimal mirror of Electron's safeStorage so tests can inject a fake. */
 export interface KeyProtector {
@@ -69,6 +69,43 @@ export class SecretStore {
     const path = this.pathFor(name);
     if (existsSync(path)) rmSync(path, { force: true });
   }
+}
+
+export const ISOLATED_DATA_DIR_ERROR = "smoke/e2e mode requires APPRENTICE_DATA_DIR pointing at an isolated directory";
+
+/** Absolute path with symlinks resolved through the deepest existing ancestor (the leaf may not exist yet). */
+function canonicalPath(path: string): string {
+  const absolute = resolve(path);
+  let existing = absolute;
+  const missing: string[] = [];
+  while (!existsSync(existing)) {
+    const parent = dirname(existing);
+    if (parent === existing) return absolute;
+    missing.unshift(basename(existing));
+    existing = parent;
+  }
+  try {
+    return join(realpathSync(existing), ...missing);
+  } catch {
+    return absolute;
+  }
+}
+
+/**
+ * Headless modes (smoke, e2e) may fall back to the test-only protector, so they
+ * must never see the real Application Support directory. Throws unless `root`
+ * is set and resolves (realpath when it exists) outside `defaultRoot`; returns
+ * the canonical root to use.
+ */
+export function assertIsolatedDataDir(root: string | undefined, defaultRoot: string): string {
+  const trimmed = root?.trim();
+  if (!trimmed) throw new Error(ISOLATED_DATA_DIR_ERROR);
+  const candidate = canonicalPath(trimmed);
+  const protectedRoot = canonicalPath(defaultRoot);
+  const rel = relative(protectedRoot, candidate);
+  const insideDefault = rel === "" || (rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
+  if (insideDefault) throw new Error(ISOLATED_DATA_DIR_ERROR);
+  return candidate;
 }
 
 /** Test-only protector that XORs with a fixed pad; never used in production. */

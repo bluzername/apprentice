@@ -14,13 +14,13 @@ final class HelperServer {
     private let fixturePath: String?
     private var shuttingDown = false
 
-    init(fixturePath: String?) {
+    init(fixturePath: String?, approvalSecret: ApprovalSecret?) {
         self.fixturePath = fixturePath
         let writer = OutputWriter(sequencer: EventSequencer())
         self.writer = writer
         self.performer = ActionPerformer(stopFlag: stopFlag)
         self.observation = ObservationManager(writer: writer)
-        self.router = CommandRouter(stopFlag: stopFlag, performer: performer, observation: observation)
+        self.router = CommandRouter(stopFlag: stopFlag, performer: performer, observation: observation, approvalSecret: approvalSecret)
     }
 
     func start() {

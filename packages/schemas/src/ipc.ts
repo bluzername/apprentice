@@ -128,6 +128,18 @@ export const DiagnosticsPreviewSchema = z.object({
   redactedFields: z.array(z.string().max(64))
 });
 
+/** The only URL schemes the app will hand to the OS opener. */
+export function isHttpUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+const HttpUrlSchema = z.string().max(2048).url().refine(isHttpUrl, { message: "only http(s) URLs can be opened" });
+
 /**
  * Each entry: request schema and response schema. Keys are channel names.
  */
@@ -136,7 +148,7 @@ export const ipcContract = {
   "app:overview": { request: Void, response: OverviewSchema },
   "app:hardware": { request: Void, response: HardwareInfoSchema },
   "app:openDataFolder": { request: Void, response: z.object({ ok: z.boolean() }) },
-  "app:openExternal": { request: z.object({ url: z.string().url() }), response: z.object({ ok: z.boolean() }) },
+  "app:openExternal": { request: z.object({ url: HttpUrlSchema }), response: z.object({ ok: z.boolean() }) },
   "app:revealPath": { request: z.object({ path: z.string() }), response: z.object({ ok: z.boolean() }) },
 
   "settings:get": { request: Void, response: AppSettingsSchema },

@@ -54,7 +54,18 @@ if options.selfTest {
 let application = NSApplication.shared
 application.setActivationPolicy(.prohibited)
 
-let server = HelperServer(fixturePath: options.fixturePath)
+// The app passes a per-spawn approval secret in the environment. Read it once,
+// then scrub it so it is not inherited by anything else. Never log the value.
+// Without it (standalone or fixture use) performAction is refused.
+let approvalSecret = ApprovalSecret.fromEnvironment()
+unsetenv(ApprovalSecret.environmentVariable)
+if approvalSecret == nil {
+    let present = ProcessInfo.processInfo.environment[ApprovalSecret.environmentVariable] != nil
+    Log.warn(present ? "\(ApprovalSecret.environmentVariable) is malformed; performAction will be refused"
+                     : "no \(ApprovalSecret.environmentVariable) in environment; performAction will be refused")
+}
+
+let server = HelperServer(fixturePath: options.fixturePath, approvalSecret: approvalSecret)
 server.start()
 Log.info("apprentice-helper \(ProtocolConstants.helperVersion) ready (pid \(ProcessInfo.processInfo.processIdentifier))")
 application.run()

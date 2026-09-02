@@ -1,11 +1,14 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { chmodSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { createInterface } from "node:readline";
 import { promisify } from "node:util";
-import { HelperMessageSchema, type HelperEvent } from "@apprentice/schemas";
+import { HELPER_PROTOCOL_VERSION, HelperMessageSchema, type ExecutableAction, type HelperEvent } from "@apprentice/schemas";
 import { beforeAll, describe, expect, it } from "vitest";
+import { HELPER_SECRET_ENV, mintApprovalToken } from "../src/main/services/helper/approval-token.js";
 import { FakeHelperClient } from "../src/main/services/helper/fake-helper-client.js";
 import { ProcessHelperClient } from "../src/main/services/helper/helper-client.js";
+import { HelperError } from "../src/main/services/helper/types.js";
 import { REPO_ROOT, sleep, tempDir, waitFor } from "./helpers.js";
 
 const execFileAsync = promisify(execFile);
@@ -38,6 +41,48 @@ describe("ProcessHelperClient with the real helper binary", () => {
     await client.stop();
     expect(client.connected).toBe(false);
     expect(existsSync(join(dir, "helper.log"))).toBe(true);
+  }, 30_000);
+
+  it("verifies approval tokens against the per-spawn secret it was given", async () => {
+    const dir = tempDir();
+    const client = new ProcessHelperClient({ executablePath: HELPER, args: ["--fixture", FIXTURE], logPath: join(dir, "helper.log") });
+    await client.start();
+    expect(client.approvalSecret).toMatch(/^[0-9a-f]{64}$/);
+    const action: ExecutableAction = { type: "wait", ms: 1 };
+    const token = mintApprovalToken(client.approvalSecret, action);
+    await expect(client.performAction(action, "0".repeat(64))).rejects.toMatchObject({ code: "action_rejected", message: /does not match/ });
+    await expect(client.performAction({ type: "wait", ms: 2 }, token)).rejects.toMatchObject({ code: "action_rejected", message: /does not match/ });
+    await expect(client.performAction(action, mintApprovalToken("ff".repeat(32), action))).rejects.toMatchObject({ code: "action_rejected" });
+    // Accessibility may not be granted to the test runner, so a verified token
+    // either performs the 1 ms wait or fails later on permissions; never on the token.
+    const outcome = await client.performAction(action, token).then(
+      (result) => (result.performed ? "performed" : "not_performed"),
+      (error: unknown) => (error instanceof HelperError ? error.code : "unexpected")
+    );
+    expect(["performed", "permission_denied"]).toContain(outcome);
+    await client.stop();
+  }, 30_000);
+
+  it("refuses performAction when started without a secret in its environment", async () => {
+    const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[0] !== HELPER_SECRET_ENV && typeof entry[1] === "string"));
+    const child = spawn(HELPER, [], { env, stdio: ["pipe", "pipe", "pipe"], shell: false });
+    const lines: string[] = [];
+    createInterface({ input: child.stdout }).on("line", (line) => lines.push(line));
+    const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
+    try {
+      const params = { action: { type: "wait", ms: 1 }, approvalToken: mintApprovalToken("00".repeat(32), { type: "wait", ms: 1 }) };
+      child.stdin.write(`${JSON.stringify({ id: "r1", v: HELPER_PROTOCOL_VERSION, cmd: "performAction", params })}\n`);
+      await waitFor(() => lines.some((line) => line.includes('"id":"r1"')), 15_000);
+      const response = JSON.parse(lines.find((line) => line.includes('"id":"r1"'))!) as { ok: boolean; error?: { code: string; message: string } };
+      expect(response.ok).toBe(false);
+      expect(response.error?.code).toBe("action_rejected");
+      expect(response.error?.message).toMatch(/without an approval secret/);
+    } finally {
+      child.stdin.end();
+      const killer = setTimeout(() => child.kill("SIGKILL"), 5000);
+      await exited;
+      clearTimeout(killer);
+    }
   }, 30_000);
 });
 
@@ -102,13 +147,16 @@ describe("FakeHelperClient", () => {
     await fake.stopObservation();
   });
 
-  it("refuses actions without an approval token and while emergency-stopped", async () => {
+  it("refuses actions without a valid approval token and while emergency-stopped", async () => {
     const fake = new FakeHelperClient();
     await fake.start();
-    await expect(fake.performAction({ type: "click", x: 1, y: 1, button: "left" }, "short")).rejects.toThrow(/approval token/);
-    await expect(fake.performAction({ type: "click", x: 1, y: 1, button: "left" }, "0123456789abcdef")).resolves.toEqual({ performed: true, durationMs: 1 });
+    const click: ExecutableAction = { type: "click", x: 1, y: 1, button: "left" };
+    const wait: ExecutableAction = { type: "wait", ms: 100 };
+    await expect(fake.performAction(click, "short")).rejects.toThrow(/approval token/);
+    await expect(fake.performAction(click, "0123456789abcdef")).rejects.toThrow(/does not match/);
+    await expect(fake.performAction(click, mintApprovalToken(fake.approvalSecret!, click))).resolves.toEqual({ performed: true, durationMs: 1 });
     await fake.emergencyStop();
-    await expect(fake.performAction({ type: "wait", ms: 100 }, "0123456789abcdef")).rejects.toThrow(/emergency/);
+    await expect(fake.performAction(wait, mintApprovalToken(fake.approvalSecret!, wait))).rejects.toThrow(/emergency/);
     await fake.emergencyStop(true);
     expect(fake.emergencyStopped).toBe(false);
     expect(fake.actions).toHaveLength(1);

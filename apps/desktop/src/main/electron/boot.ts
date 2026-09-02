@@ -3,7 +3,8 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { createEventEmitter, registerIpcHandlers } from "../ipc/registry.js";
 import { createIpcHandlers } from "../ipc/handlers.js";
-import { createFakeProtector, type KeyProtector } from "../security/keys.js";
+import { defaultDataRoot } from "../paths.js";
+import { assertIsolatedDataDir, createFakeProtector, type KeyProtector } from "../security/keys.js";
 import { composeServices, type Services } from "../services/composition.js";
 import { createFixtureSource, resolveFixturesDir } from "../services/demo/fixture-source.js";
 import { FakeHelperClient } from "../services/helper/fake-helper-client.js";
@@ -42,6 +43,8 @@ function chooseProtector(allowFake: boolean): KeyProtector {
 /** Wires Electron adapters into the service graph, then window, tray, shortcuts, and IPC. */
 export async function bootApp(options: BootOptions): Promise<BootedApp> {
   const resourcesPath = app.isPackaged ? process.resourcesPath : undefined;
+  // e2e may use the fake protector, so it must run against an isolated data directory (defense in depth; index.ts checks first).
+  const dataDir = options.e2e ? assertIsolatedDataDir(process.env.APPRENTICE_DATA_DIR, defaultDataRoot()) : undefined;
   const fixturesDir = resolveFixturesDir({ resourcesPath, startDir: options.mainDir });
   const helperPath = resolveHelperExecutable({ resourcesPath, devResourcesDir: options.resourcesDir });
   const helper: HelperClient = options.e2e
@@ -50,6 +53,7 @@ export async function bootApp(options: BootOptions): Promise<BootedApp> {
   const fixtures = createFixtureSource(fixturesDir);
   const screenSource: ScreenSource = options.e2e ? new FixtureScreenSource({ readPng: (name) => fixtures.readScreenshotPng(name), initial: "genericBlank" }) : new ElectronScreenSource(helper);
   const services = composeServices({
+    dataDir,
     protector: chooseProtector(options.e2e),
     helper,
     screenSource,

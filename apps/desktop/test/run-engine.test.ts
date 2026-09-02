@@ -80,6 +80,7 @@ function harness(options: HarnessOptions = {}) {
     sessionId: context.sessionId,
     screenSource: options.screen ? options.screen(simulator) : simulator,
     actuator: () => actuator,
+    approvalSecret: () => "ab".repeat(32),
     context: options.context ?? { frontmost: async () => simulator.context() },
     ocr: options.ocr ?? { ocr: async (_png, width, height) => simulator.ocrBlocks(width, height) },
     ax: { elementAt: async () => null },

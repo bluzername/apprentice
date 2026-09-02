@@ -8,11 +8,13 @@ final class CommandRouter {
     private let stopFlag: StopFlag
     private let performer: ActionPerformer
     private let observation: ObservationManager
+    private let approvalSecret: ApprovalSecret?
 
-    init(stopFlag: StopFlag, performer: ActionPerformer, observation: ObservationManager) {
+    init(stopFlag: StopFlag, performer: ActionPerformer, observation: ObservationManager, approvalSecret: ApprovalSecret?) {
         self.stopFlag = stopFlag
         self.performer = performer
         self.observation = observation
+        self.approvalSecret = approvalSecret
     }
 
     func handle(_ request: HelperRequest) -> Result<JSONValue, HelperError> {
@@ -58,16 +60,19 @@ final class CommandRouter {
         }
     }
 
+    /// Order matters: the approval token is verified (inside the validator)
+    /// before any permission or display state is consulted, so an unauthenticated
+    /// caller learns nothing and nothing is performed for it.
     private func performAction(_ params: [String: JSONValue]) -> Result<JSONValue, HelperError> {
         guard !stopFlag.isSet else { return .failure(ActionPerformer.stoppedError) }
-        guard AXIsProcessTrusted() else {
-            return .failure(HelperError(.permissionDenied, "Accessibility permission is required to perform actions"))
-        }
         let displays = DisplayInfo.displayRects()
         guard !displays.isEmpty else {
             return .failure(HelperError(.notAvailable, "no active displays"))
         }
-        return ActionValidator.validate(params: params, displays: displays).flatMap { validated in
+        return ActionValidator.validate(params: params, displays: displays, secret: approvalSecret).flatMap { validated in
+            guard AXIsProcessTrusted() else {
+                return .failure(HelperError(.permissionDenied, "Accessibility permission is required to perform actions"))
+            }
             Log.info("performing \(validated.action.typeName)")
             return performer.perform(validated)
         }

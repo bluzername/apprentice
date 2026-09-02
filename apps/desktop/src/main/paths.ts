@@ -17,17 +17,18 @@ export interface DataPaths {
 }
 
 /**
- * Electron is loaded lazily and only when no override is given, so services and
- * tests can import this module without an Electron runtime.
+ * The real Application Support root. Electron is loaded lazily and only when
+ * no override is given, so services and tests can import this module without
+ * an Electron runtime.
  */
-function electronAppDataRoot(): string {
+export function defaultDataRoot(): string {
   const electron = createRequire(import.meta.url)("electron") as typeof Electron;
   return join(electron.app.getPath("appData"), APP_SUPPORT_DIR_NAME);
 }
 
 /** Resolve the standard Application Support layout. Honors APPRENTICE_DATA_DIR for tests. */
 export function resolveDataPaths(override?: string): DataPaths {
-  const root = override ?? process.env.APPRENTICE_DATA_DIR ?? electronAppDataRoot();
+  const root = override ?? process.env.APPRENTICE_DATA_DIR ?? defaultDataRoot();
   return Object.freeze({
     root,
     database: join(root, "apprentice.sqlite"),

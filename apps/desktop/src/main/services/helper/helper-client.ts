@@ -3,6 +3,7 @@ import { appendFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 import { HELPER_EXECUTABLE_NAME, HELPER_PROTOCOL_VERSION, HelperMessageSchema, type HelperCommand, type HelperResponse } from "@apprentice/schemas";
+import { generateHelperSecret, HELPER_SECRET_ENV } from "./approval-token.js";
 import { HelperClientBase } from "./base-client.js";
 import { HelperError, type HelperConnectionState, type HelperRequestOptions, type HelperStateSnapshot, type StartObservationParams } from "./types.js";
 import { silentLogger, type Logger } from "../logger.js";
@@ -45,7 +46,8 @@ export function resolveHelperExecutable(options: { resourcesPath?: string; devRe
 /**
  * Spawns the native helper and speaks JSON Lines with it. Requests carry ids and
  * timeouts; events stream to listeners; stderr goes to logs/helper.log; crashes
- * restart the process with exponential backoff up to `maxRestarts`.
+ * restart the process with exponential backoff up to `maxRestarts`. Every spawn
+ * gets a fresh approval secret in its environment; it is never logged.
  */
 export class ProcessHelperClient extends HelperClientBase {
   private child: ChildProcessWithoutNullStreams | null = null;
@@ -60,6 +62,7 @@ export class ProcessHelperClient extends HelperClientBase {
   private lastObservation: StartObservationParams | null = null;
   private observing = false;
   private lastMessage: string | undefined;
+  private sessionSecret = generateHelperSecret();
   private readonly logger: Logger;
 
   constructor(private readonly options: ProcessHelperClientOptions) {
@@ -69,6 +72,11 @@ export class ProcessHelperClient extends HelperClientBase {
 
   get connected(): boolean {
     return this.state === "connected";
+  }
+
+  /** Secret of the current helper process; rotates on every (re)spawn so stale tokens never verify. */
+  get approvalSecret(): string {
+    return this.sessionSecret;
   }
 
   get restarts(): number {
@@ -180,8 +188,9 @@ export class ProcessHelperClient extends HelperClientBase {
   private spawnProcess(): void {
     if (this.state !== "restarting") this.setState("starting");
     mkdirSync(dirname(this.options.logPath), { recursive: true, mode: 0o700 });
+    this.sessionSecret = generateHelperSecret();
     const child = spawn(this.options.executablePath, [...(this.options.args ?? [])], {
-      env: { ...process.env, ...(this.options.env ?? {}) },
+      env: { ...process.env, ...(this.options.env ?? {}), [HELPER_SECRET_ENV]: this.sessionSecret },
       stdio: ["pipe", "pipe", "pipe"],
       shell: false
     });

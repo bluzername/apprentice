@@ -1,4 +1,4 @@
-import { PRODUCT_NAME, type AppSettings } from "@apprentice/schemas";
+import { isHttpUrl, PRODUCT_NAME, type AppSettings } from "@apprentice/schemas";
 import { APP_VERSION } from "../services/app-version.js";
 import type { Services } from "../services/composition.js";
 import type { IpcHandlers } from "./registry.js";
@@ -23,6 +23,8 @@ export function createIpcHandlers(services: Services): IpcHandlers {
       return { ok: true };
     },
     "app:openExternal": async ({ url }) => {
+      // The contract schema already restricts this; keep the check next to the OS call.
+      if (!isHttpUrl(url)) throw new Error("Only http(s) URLs can be opened");
       await shell.openExternal(url);
       return { ok: true };
     },

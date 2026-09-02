@@ -9,7 +9,7 @@ import type { Logger } from "../logger.js";
 import type { ScreenSource } from "../observation/screen-source.js";
 import type { SettingsStore } from "../settings-store.js";
 
-/** Executes an approved action; the helper needs a fresh approval token for every call. */
+/** Executes an approved action; the token is an HMAC over that exact action under the helper session secret. */
 export interface Actuator {
   perform(action: ExecutableAction, approvalToken: string): Promise<{ performed: boolean; durationMs: number }>;
 }
@@ -63,6 +63,8 @@ export interface RunEngineDeps {
   readonly sessionId: string;
   readonly screenSource: ScreenSource;
   readonly actuator: () => Actuator;
+  /** Current helper session secret used to mint approval tokens; null when no helper session can verify them. */
+  readonly approvalSecret: () => string | null;
   readonly context: RunContextSource;
   readonly ocr: OcrSource;
   readonly ax: AxSource;

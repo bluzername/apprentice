@@ -39,6 +39,7 @@ export abstract class HelperClientBase implements HelperClient {
   abstract get connected(): boolean;
   abstract get restarts(): number;
   abstract get available(): boolean;
+  abstract get approvalSecret(): string | null;
   abstract snapshot(): HelperStateSnapshot;
   abstract request(cmd: HelperCommand, params?: Record<string, unknown>, options?: HelperRequestOptions): Promise<unknown>;
 

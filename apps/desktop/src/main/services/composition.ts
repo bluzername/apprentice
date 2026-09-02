@@ -151,6 +151,7 @@ export function composeServices(adapters: CompositionAdapters): Services {
     sessionId: context.sessionId,
     screenSource: { captureFrontmost: () => screenSource.current.captureFrontmost() },
     actuator: () => actuator.current,
+    approvalSecret: () => helper.approvalSecret,
     context: { frontmost: () => runContext.current.frontmost() },
     ocr: { ocr: (png, w, h) => ocr.current.ocr(png, w, h) },
     ax: { elementAt: (x, y) => ax.current.elementAt(x, y) },

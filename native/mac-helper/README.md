@@ -72,10 +72,42 @@ Error codes: `invalid_request`, `unknown_command`, `permission_denied`,
 `performAction` is validated entirely in `HelperCore.ActionValidator` before
 any `CGEvent` is created: key names must be in `KEY_NAMES`, modifiers in
 `MODIFIER_NAMES`, coordinates finite and inside the union of active display
-bounds, `type_text` at most 2000 characters, `approvalToken` 8-128 characters.
-Violations return `action_rejected`. While the emergency-stop flag is set every
-action returns `emergency_stopped`; `type_text` chunks, multi-click sequences,
-hotkey chords, and `wait` all re-check the flag between steps.
+bounds, `type_text` at most 2000 characters, `approvalToken` 8-128 characters
+and, above all, a valid HMAC for the action (next section). Violations return
+`action_rejected`. While the emergency-stop flag is set every action returns
+`emergency_stopped`; `type_text` chunks, multi-click sequences, hotkey chords,
+and `wait` all re-check the flag between steps.
+
+### Approval token
+
+The token binds one approved action to one helper process:
+
+- When the app spawns the helper it generates a random 32-byte session secret
+  and passes it as `APPRENTICE_HELPER_SECRET` (64 lowercase hex characters) in
+  the child environment only. The helper reads it once at startup
+  (`HelperCore.ApprovalSecret`), removes it from its own environment, and
+  never logs it. A fresh secret is generated for every spawn, including
+  crash restarts, so tokens minted for a dead helper never verify against
+  its replacement.
+- `approvalToken` must equal `hex(HMAC-SHA256(secret, canonicalJSON(action)))`
+  where `canonicalJSON` is the `action` object exactly as received, with keys
+  sorted by UTF-8 byte order, no whitespace, integers without a decimal
+  point, other numbers in ECMAScript `Number.toString` form (shortest
+  round-trip), and strings escaped like `JSON.stringify` (only `"`, `\`, and
+  control characters below U+0020 are escaped). `HelperCore.CanonicalJSON`
+  and `apps/desktop/src/main/services/helper/approval-token.ts` implement the
+  same rules; `CanonicalJSONTests` and `approval-token.test.ts` pin shared
+  vectors. The app mints the token from the approved executable action only
+  after the user's (or policy's) approval, and any change to the action after
+  minting invalidates the token.
+- Verification uses CryptoKit's constant-time `HMAC.isValidAuthenticationCode`
+  and happens before permission or display state is consulted, so an
+  unauthenticated caller learns nothing and nothing is performed for it.
+- Without a secret in the environment (standalone runs, `--fixture`,
+  `--self-test`) the helper still serves every other command but refuses
+  `performAction` with `action_rejected` and the message
+  `helper started without an approval secret`. There is no fallback to the
+  length check.
 
 Scroll convention: positive `deltaY` scrolls content down (browser wheel
 semantics); the helper negates for CoreGraphics.
@@ -146,7 +178,8 @@ and completion. `stopObservation` cancels a replay.
 
 `--fixture <path>` starts the replay immediately after `helperReady` while
 still serving stdin. `--self-test` prints capabilities as a response line and
-exits 0.
+exits 0. Neither needs `APPRENTICE_HELPER_SECRET`; without it `performAction`
+is refused (see Approval token).
 
 Sample: `Fixtures/sample-observation.jsonl` (18 events, every event type).
 

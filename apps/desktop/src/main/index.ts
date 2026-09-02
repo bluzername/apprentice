@@ -5,8 +5,8 @@
  */
 import { app, session } from "electron";
 import { join } from "node:path";
-import { createFakeProtector } from "./security/keys.js";
-import { resolveDataPaths } from "./paths.js";
+import { assertIsolatedDataDir, createFakeProtector, ISOLATED_DATA_DIR_ERROR } from "./security/keys.js";
+import { defaultDataRoot, resolveDataPaths } from "./paths.js";
 import { createSafeStorageProtector } from "./electron/protector.js";
 import { bootApp, type BootedApp } from "./electron/boot.js";
 import { detectLaunchMode } from "./headless/mode.js";
@@ -30,8 +30,22 @@ function hardenWebContents(): void {
   });
 }
 
-async function runHeadlessSmoke(): Promise<never> {
-  const paths = resolveDataPaths();
+/**
+ * Smoke and e2e may use the test-only protector, so they must never touch the
+ * real data directory. Prints a JSON error and exits 2 before any storage is
+ * opened when APPRENTICE_DATA_DIR is unset or resolves into the default root.
+ */
+function requireIsolatedDataDir(): string | null {
+  try {
+    return assertIsolatedDataDir(process.env.APPRENTICE_DATA_DIR, defaultDataRoot());
+  } catch {
+    process.stdout.write(`${JSON.stringify({ ok: false, error: ISOLATED_DATA_DIR_ERROR })}\n`, () => app.exit(2));
+    return null;
+  }
+}
+
+async function runHeadlessSmoke(dataDir: string): Promise<never> {
+  const paths = resolveDataPaths(assertIsolatedDataDir(dataDir, defaultDataRoot()));
   const real = createSafeStorageProtector();
   const protector = real.isEncryptionAvailable() ? real : createFakeProtector();
   const result = await runSmokeTest({
@@ -63,9 +77,13 @@ if (mode !== "smoke" && !app.requestSingleInstanceLock()) {
   });
   void app.whenReady().then(async () => {
     hardenWebContents();
-    if (mode === "smoke") {
-      await runHeadlessSmoke();
-      return;
+    if (mode !== "normal") {
+      const isolatedDataDir = requireIsolatedDataDir();
+      if (isolatedDataDir === null) return;
+      if (mode === "smoke") {
+        await runHeadlessSmoke(isolatedDataDir);
+        return;
+      }
     }
     try {
       booted = await bootApp({ mainDir: MAIN_DIR, resourcesDir: RESOURCES_DIR, e2e: mode === "e2e" });

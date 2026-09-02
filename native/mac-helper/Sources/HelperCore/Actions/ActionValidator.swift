@@ -1,9 +1,14 @@
 import Foundation
 
 /// Strict validation of performAction params. Nothing here touches CGEvent;
-/// the executable only acts on a `ValidatedAction`.
+/// the executable only acts on a `ValidatedAction`, which exists only after
+/// the approval token verified against the per-spawn secret.
 public enum ActionValidator {
-    public static func validate(params: [String: JSONValue], displays: [PointRect]) -> Result<ValidatedAction, HelperError> {
+    /// Full performAction check: token shape, then the HMAC binding the token
+    /// to the action exactly as received, then the action contents. Without a
+    /// `secret` (fixture or self-test use) every action is refused.
+    public static func validate(params: [String: JSONValue], displays: [PointRect],
+                                secret: ApprovalSecret?) -> Result<ValidatedAction, HelperError> {
         guard let token = params["approvalToken"]?.stringValue else {
             return .failure(HelperError(.actionRejected, "approvalToken is required"))
         }
@@ -13,6 +18,9 @@ public enum ActionValidator {
         }
         guard let actionObject = params["action"]?.objectValue else {
             return .failure(HelperError(.actionRejected, "action must be an object"))
+        }
+        if case let .failure(error) = ApprovalTokenVerifier.verify(token: token, action: actionObject, secret: secret) {
+            return .failure(error)
         }
         return validate(action: actionObject, displays: displays).map {
             ValidatedAction(action: $0, approvalToken: token)

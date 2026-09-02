@@ -4,6 +4,7 @@ import {
   ExecutableActionSchema,
   FORBIDDEN_REMOTE_KEYS,
   IPC_CHANNELS,
+  ipcContract,
   ProposedActionSchema,
   RemoteFeedbackPayloadSchema,
   SkillSchema,
@@ -53,6 +54,14 @@ describe("schemas", () => {
       subtaskIndex: 0
     });
     expect(good.success).toBe(true);
+  });
+
+  it("only lets app:openExternal open http(s) URLs", () => {
+    const schema = ipcContract["app:openExternal"].request;
+    expect(schema.safeParse({ url: "https://example.com/docs?x=1" }).success).toBe(true);
+    expect(schema.safeParse({ url: "http://127.0.0.1:8080/" }).success).toBe(true);
+    const blocked = ["file:///etc/passwd", "javascript:alert(1)", "mailto:a@b.example", "ftp://host/file", "smb://host/share", "x-apple.systempreferences:com.apple.preference.security", "data:text/html,hi", "not a url", "HTTPS//example.com"];
+    for (const url of blocked) expect(schema.safeParse({ url }).success, url).toBe(false);
   });
 
   it("rejects unknown key names in executable actions", () => {
