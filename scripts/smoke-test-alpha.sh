@@ -34,7 +34,7 @@ ditto -x -k "$APPZIP" "$TMP/app"
 APP="$(find "$TMP/app" -maxdepth 2 -name '*.app' | head -1)"
 [ -n "$APP" ] || fail "no .app inside $APPZIP"
 codesign --verify --deep --strict "$APP" || fail "codesign verification failed"
-SIGNER="$(codesign -dv "$APP" 2>&1 | grep -E '^Authority=|^Signature=' | head -1 || true)"
+SIGNER="$(codesign -dvv "$APP" 2>&1 | grep -E "^Authority=|^Signature=" | head -1 || true)"
 pass "code signature valid ($SIGNER)"
 if spctl -a -vv "$APP" >/dev/null 2>&1; then
   pass "Gatekeeper assessment: accepted (notarized)"

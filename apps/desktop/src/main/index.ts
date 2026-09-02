@@ -7,7 +7,6 @@ import { app, session } from "electron";
 import { join } from "node:path";
 import { assertIsolatedDataDir, createFakeProtector, ISOLATED_DATA_DIR_ERROR } from "./security/keys.js";
 import { defaultDataRoot, resolveDataPaths } from "./paths.js";
-import { createSafeStorageProtector } from "./electron/protector.js";
 import { bootApp, type BootedApp } from "./electron/boot.js";
 import { detectLaunchMode } from "./headless/mode.js";
 import { runSmokeTest } from "./headless/smoke.js";
@@ -46,8 +45,10 @@ function requireIsolatedDataDir(): string | null {
 
 async function runHeadlessSmoke(dataDir: string): Promise<never> {
   const paths = resolveDataPaths(assertIsolatedDataDir(dataDir, defaultDataRoot()));
-  const real = createSafeStorageProtector();
-  const protector = real.isEncryptionAvailable() ? real : createFakeProtector();
+  // Headless modes never touch the OS credential store: the data directory is
+  // isolated (asserted above), and a Keychain access prompt would block a
+  // non-interactive run. Production boot (electron/boot.ts) uses safeStorage.
+  const protector = createFakeProtector();
   const result = await runSmokeTest({
     dataDir: paths.root,
     fixturesDir: resolveFixturesDir({ resourcesPath: app.isPackaged ? process.resourcesPath : undefined, startDir: MAIN_DIR }),

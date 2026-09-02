@@ -33,11 +33,12 @@ export interface BootedApp {
   shutdown(): Promise<void>;
 }
 
-function chooseProtector(allowFake: boolean): KeyProtector {
-  const real = createSafeStorageProtector();
-  if (real.isEncryptionAvailable()) return real;
-  if (allowFake) return createFakeProtector();
-  return real;
+function chooseProtector(e2e: boolean): KeyProtector {
+  // e2e runs against an isolated data directory and must never prompt for
+  // Keychain access, so it always uses the test protector. Normal boot uses
+  // safeStorage and refuses to run without it (see security/keys.ts).
+  if (e2e) return createFakeProtector();
+  return createSafeStorageProtector();
 }
 
 /** Wires Electron adapters into the service graph, then window, tray, shortcuts, and IPC. */

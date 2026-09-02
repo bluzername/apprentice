@@ -25,8 +25,8 @@ the build machine described in `docs/BUILD_ENVIRONMENT.md` and produced the stat
 | apps/desktop renderer | verified | 6 files, 52 tests pass; tsc web config clean; electron-vite build succeeds; UI exercised manually in a browser against the dev mock (light and dark) |
 | scripts (runtime, model, bundle) | verified | `pnpm test:scripts`: 7 files, 39 tests pass; real llama.cpp b10752 download, sha256, extraction, and `--version` verified on this machine |
 | e2e (Playwright, demo mode) | verified | `pnpm test:e2e`: 1 passed (about 13 s): onboarding 7 steps, demo load, candidate detail, edit and save skill (v1 then v2 with correction), guided run with 9 approvals and 4 subtask confirmations to Completed, run feedback, bundle export + offline aggregation, Delete today |
-| packaging (dmg, zip) | in progress | unpacked ad hoc build verified: `electron-builder --mac --arm64 --dir` produces Apprentice.app (283 MB) with only zod/yazl/yauzl in the asar, helper and fixtures under Contents/Resources, ad hoc signature with runtime flag (`Signature=adhoc`), and the packaged binary passes `--smoke-test` (3 candidates, 13-step completed run, bundle exported) |
-| dist/alpha bundle | pending | |
+| packaging (dmg, zip) | verified | unpacked ad hoc build verified: `electron-builder --mac --arm64 --dir` produces Apprentice.app (283 MB) with only zod/yazl/yauzl in the asar, helper and fixtures under Contents/Resources, ad hoc signature with runtime flag (`Signature=adhoc`), and the packaged binary passes `--smoke-test` (3 candidates, 13-step completed run, bundle exported) |
+| dist/alpha bundle | verified | `pnpm alpha:bundle` writes dist/alpha with Apprentice-0.1.0-alpha.1-arm64.dmg (120,101,153 bytes), Apprentice-0.1.0-alpha.1-arm64-mac.zip (119,569,394 bytes), apprentice-extension.zip (119,629 bytes), ALPHA_TEST_GUIDE.md, KNOWN_LIMITATIONS.md, PRIVACY_SUMMARY.md, RELEASE_NOTES.md, MODEL_SETUP.md, THIRD_PARTY_NOTICES.md, EXTENSION_INSTALL.md, SHA256SUMS.txt, manifest.json |
 
 ## Top-level commands
 
@@ -38,10 +38,10 @@ the build machine described in `docs/BUILD_ENVIRONMENT.md` and produced the stat
 | `pnpm test` | ok: schemas 9, extension 101, core 128, worker 35, adapters 115, fixtures 282, desktop 106+52 (158), scripts 39, Swift 62. Total 929 automated tests, 0 failures, 0 skipped |
 | `pnpm audit --audit-level=high` | No known vulnerabilities found |
 | `pnpm test:e2e` | ok: 1 passed (demo journey) |
-| `pnpm build` | pending |
-| `pnpm package:mac` | pending |
-| `pnpm alpha:bundle` | pending |
-| `pnpm alpha:smoke` | pending |
+| `pnpm build` | ok: schemas, core, adapters typecheck; fixtures rendered; extension dist + zip; worker dry-run bundle (833 KiB); electron-vite main/preload/renderer |
+| `pnpm package:mac` | ok: signed with the Developer ID Application identity found in the keychain (hardened runtime, entitlements), NOT notarized (no credentials); dmg and zip for arm64 |
+| `pnpm alpha:bundle` | ok: dist/alpha/ (see component table) |
+| `pnpm alpha:smoke` | ok: documents present, SHA-256 checksums verified, extension MV3 without incognito, `codesign --verify --deep --strict` valid, Gatekeeper assessment not accepted (unnotarized, expected), arm64 binary, helper `--self-test` ok, packaged app `--smoke-test` ok (3 candidates, 13-step completed run, bundle exported) |
 
 ## Items blocked by external constraints
 
@@ -51,6 +51,17 @@ the build machine described in `docs/BUILD_ENVIRONMENT.md` and produced the stat
 | Cloudflare deployment | No CLOUDFLARE_API_TOKEN / account | Follow services/feedback-worker/README.md; evidence: `GET https://<worker>/health` returns `{ ok: true }` and a test upload appears in the admin summary |
 | Screen Recording and Accessibility grants | Interactive TCC prompts cannot be answered in a non-interactive build session | Launch the packaged app, complete onboarding step 4, confirm both badges show "granted" and the Activity view shows a real screenshot thumbnail |
 | Real UI-Mate inference | No model weights downloaded (8.6 GB, requires explicit confirmation) | Run `node scripts/install-uimate-model.mjs --yes`, `node scripts/start-local-model.mjs`, then `RUN_LOCAL_MODEL_TEST=1 pnpm test:local-model`; evidence: the test prints a parsed UI-Mate action |
+
+## Signing state of this build
+
+Signed with "Developer ID Application" (team P763LRL2BT) because that identity exists in the
+build machine keychain; `scripts/package-mac.mjs` falls back to ad hoc signing (verified with
+`CSC_IDENTITY_AUTO_DISCOVERY=false`, `Signature=adhoc` with the runtime flag) when no identity is
+present. The build is NOT notarized and NOT stapled; `spctl -a -vv` rejects it, so testers must use
+the "Open Anyway" step in the alpha guide. Headless smoke and e2e modes never touch the Keychain
+(they use an isolated data directory and a test-only protector); a Developer ID-signed build that
+reused an existing "Apprentice Safe Storage" Keychain item created by a differently signed build
+blocked on a Keychain access prompt before this change, which is why the rule exists.
 
 ## Independent security and privacy review (2026-09-02)
 
