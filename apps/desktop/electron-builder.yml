@@ -8,6 +8,10 @@ files:
   - out/**
   - package.json
   - "!**/*.map"
+  - "!node_modules/@apprentice/**"
+  - "!node_modules/@resvg/**"
+  - "!node_modules/pngjs/**"
+afterPack: scripts/after-pack.cjs
 extraResources:
   - from: resources/helper
     to: helper
