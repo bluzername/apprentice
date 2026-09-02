@@ -1,0 +1,18 @@
+{"delayMs":0,"event":"helperReady","data":{"helperVersion":"0.1.0","protocolVersion":"1.0"}}
+{"delayMs":50,"event":"observationState","data":{"observing":true,"fixture":true}}
+{"delayMs":200,"event":"frontmostAppChanged","data":{"bundleId":"com.apple.Safari","name":"Safari","pid":4242}}
+{"delayMs":100,"event":"windowTitleChanged","data":{"bundleId":"com.apple.Safari","windowId":1701,"title":"Orders - Admin Console"}}
+{"delayMs":400,"event":"mouseDown","data":{"x":512.5,"y":288,"button":"left","bundleId":"com.apple.Safari"}}
+{"delayMs":300,"event":"shortcut","data":{"keys":["cmd","c"],"bundleId":"com.apple.Safari"}}
+{"delayMs":100,"event":"clipboardChanged","data":{"changeCount":118}}
+{"delayMs":500,"event":"frontmostAppChanged","data":{"bundleId":"com.apple.Numbers","name":"Numbers","pid":5150}}
+{"delayMs":150,"event":"windowTitleChanged","data":{"bundleId":"com.apple.Numbers","windowId":2302,"title":"Q3 Orders.numbers"}}
+{"delayMs":250,"event":"mouseDown","data":{"x":640,"y":410,"button":"left","bundleId":"com.apple.Numbers"}}
+{"delayMs":200,"event":"shortcut","data":{"keys":["cmd","v"],"bundleId":"com.apple.Numbers"}}
+{"delayMs":300,"event":"mouseDown","data":{"x":700,"y":120,"button":"right","bundleId":"com.apple.Numbers"}}
+{"delayMs":400,"event":"frontmostAppChanged","data":{"bundleId":"com.1password.1password","name":"1Password","pid":6006}}
+{"delayMs":100,"event":"secureFieldFocused","data":{"bundleId":"com.1password.1password","role":"AXSecureTextField"}}
+{"delayMs":600,"event":"shortcut","data":{"keys":["cmd","shift","p"],"bundleId":"com.1password.1password"}}
+{"delayMs":5000,"event":"idleChanged","data":{"idle":true,"idleSeconds":241}}
+{"delayMs":2000,"event":"idleChanged","data":{"idle":false,"idleSeconds":0}}
+{"delayMs":100,"event":"observationState","data":{"observing":false,"fixture":true}}

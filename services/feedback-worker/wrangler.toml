@@ -1,0 +1,31 @@
+# Apprentice feedback worker - Cloudflare Worker + D1.
+# The desktop app never depends on this deployment; remote feedback is opt-in.
+
+name = "apprentice-feedback"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Workers observability logs are free-tier friendly and contain no payload values
+# (the worker only logs status codes and issue paths, never request bodies).
+[observability]
+enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "apprentice-feedback"
+# Placeholder. Deploy requires replacing this with the id printed by
+# `wrangler d1 create apprentice-feedback` (see README.md, deployment checklist).
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[vars]
+# Maximum accepted request body in bytes (256 KiB). Larger bodies get 413.
+MAX_BODY_BYTES = "262144"
+
+# Secrets (never put values here; set with `wrangler secret put <NAME>`):
+#   ADMIN_TOKEN   required. Bearer token for GET /v1/admin/summary and the /admin page.
+#                 When unset, admin endpoints always answer 401.
+#   INGEST_TOKEN  optional. Shared bearer token for POST /v1/feedback and
+#                 POST /v1/telemetry-batch. When unset, ingestion is open but
+#                 rate-limited (60/installation/hour, 600/IP/hour).
