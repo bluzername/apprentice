@@ -55,6 +55,11 @@ export default tseslint.config(
     rules: { "no-unused-vars": ["error", { argsIgnorePattern: "^_" }] }
   },
   {
+    files: ["**/*.cjs"],
+    languageOptions: { globals: { ...globals.node }, sourceType: "commonjs" },
+    rules: { "@typescript-eslint/no-require-imports": "off" }
+  },
+  {
     files: ["scripts/**/*.mjs", "**/*.config.{js,mjs,ts}"],
     languageOptions: { globals: { ...globals.node } }
   }
