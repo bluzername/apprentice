@@ -16,7 +16,7 @@ function detectIdentity() {
   if (process.env.APPRENTICE_ADHOC_SIGN === "1") return null;
   try {
     const out = execFileSync("security", ["find-identity", "-v", "-p", "codesigning"], { encoding: "utf8" });
-    const match = out.match(/"(Developer ID Application: [^"]+)"/);
+    const match = out.match(/"Developer ID Application: ([^"]+)"/);
     return match ? match[1] : null;
   } catch {
     return null;
