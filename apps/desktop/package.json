@@ -1,0 +1,43 @@
+{
+  "name": "@apprentice/desktop",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "description": "Apprentice desktop app",
+  "main": "./out/main/index.js",
+  "author": "Apprentice alpha",
+  "license": "Apache-2.0",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "package:mac": "node scripts/package-mac.mjs"
+  },
+  "dependencies": {
+    "@apprentice/core": "workspace:*",
+    "@apprentice/model-adapters": "workspace:*",
+    "@apprentice/schemas": "workspace:*",
+    "@apprentice/test-fixtures": "workspace:*",
+    "yazl": "^3.3.1",
+    "yauzl": "^3.4.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/yazl": "^2.4.6",
+    "@types/yauzl": "^2.10.3",
+    "@vitejs/plugin-react": "^5.1.0",
+    "electron": "42.11.1",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.11"
+  }
+}

@@ -1,0 +1,48 @@
+appId: com.apprentice.alpha
+productName: Apprentice
+copyright: Copyright 2026 Apprentice alpha
+directories:
+  buildResources: resources
+  output: release
+files:
+  - out/**
+  - package.json
+  - "!**/*.map"
+extraResources:
+  - from: resources/helper
+    to: helper
+    filter: ["**/*"]
+  - from: ../../fixtures/screenshots
+    to: fixtures/screenshots
+    filter: ["**/*.png", "manifest.json"]
+  - from: ../../fixtures/demo
+    to: fixtures/demo
+    filter: ["**/*.json"]
+  - from: ../chromium-extension/dist/apprentice-extension.zip
+    to: extension/apprentice-extension.zip
+asar: true
+asarUnpack:
+  - "**/*.node"
+mac:
+  target:
+    - target: dmg
+      arch: [arm64]
+    - target: zip
+      arch: [arm64]
+  category: public.app-category.productivity
+  minimumSystemVersion: "14.0.0"
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: resources/entitlements.mac.plist
+  entitlementsInherit: resources/entitlements.mac.plist
+  icon: resources/icon.icns
+  extendInfo:
+    NSScreenCaptureUsageDescription: "Apprentice captures sparse screenshots of allowlisted windows to learn and assist with your routines. Screenshots stay on this Mac, encrypted."
+    NSAccessibilityUsageDescription: "Apprentice reads on-screen element roles and performs approved clicks and key presses through Accessibility."
+    NSAppleEventsUsageDescription: "Not used."
+    LSMinimumSystemVersion: "14.0.0"
+dmg:
+  sign: false
+  writeUpdateInfo: false
+publish: null
+npmRebuild: false

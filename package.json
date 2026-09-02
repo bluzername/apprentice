@@ -1,0 +1,51 @@
+{
+  "name": "apprentice-monorepo",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "description": "Apprentice: a local-first self-learning work agent for macOS (alpha)",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.12.0",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "lint": "eslint . --max-warnings=0 && node scripts/lint-typography.mjs",
+    "typecheck": "pnpm -r --workspace-concurrency=4 run typecheck",
+    "test": "pnpm -r --workspace-concurrency=1 run test && pnpm run test:swift",
+    "test:swift": "node scripts/run-swift-tests.mjs",
+    "test:e2e": "pnpm --filter @apprentice/desktop run test:e2e",
+    "test:local-model": "RUN_LOCAL_MODEL_TEST=1 pnpm --filter @apprentice/model-adapters run test:local-model",
+    "build": "pnpm -r --workspace-concurrency=1 run build",
+    "build:helper": "node scripts/build-helper.mjs",
+    "package:mac": "pnpm --filter @apprentice/desktop run package:mac",
+    "alpha:bundle": "node scripts/create-alpha-bundle.mjs",
+    "alpha:smoke": "bash scripts/smoke-test-alpha.sh",
+    "feedback:aggregate": "node scripts/aggregate-feedback.mjs",
+    "model:install-runtime": "node scripts/install-local-runtime.mjs",
+    "model:install": "node scripts/install-uimate-model.mjs",
+    "model:start": "node scripts/start-local-model.mjs",
+    "audit": "pnpm audit --audit-level=high",
+    "licenses": "node scripts/license-inventory.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@types/node": "^24.10.0",
+    "eslint": "^10.9.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^16.0.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.69.0",
+    "vitest": "^4.1.11"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "electron",
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
+  }
+}

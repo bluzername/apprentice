@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node", "electron-vite/node"],
+    "lib": ["ES2022"],
+    "paths": { "@main/*": ["./src/main/*"] },
+    "baseUrl": "."
+  },
+  "include": ["src/main/**/*.ts", "src/preload/**/*.ts", "test/**/*.ts", "e2e/**/*.ts", "electron.vite.config.ts", "playwright.config.ts", "vitest.config.ts"]
+}
