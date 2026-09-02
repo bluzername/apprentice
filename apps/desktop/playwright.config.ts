@@ -1,9 +1,13 @@
 import { defineConfig } from "@playwright/test";
 
+/**
+ * Electron demo-mode journey. One serial spec drives the real renderer with
+ * the `--e2e` launch flag (fixture screens, fake helper, temp data dir).
+ */
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 120_000,
-  expect: { timeout: 15_000 },
+  timeout: 15 * 60_000,
+  expect: { timeout: 30_000 },
   fullyParallel: false,
   workers: 1,
   retries: 0,

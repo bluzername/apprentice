@@ -77,6 +77,20 @@ export const AppSettingsSchema = z.object({
 });
 export type AppSettings = z.infer<typeof AppSettingsSchema>;
 
+type StripDefaults<S extends z.ZodRawShape> = { [K in keyof S]: S[K] extends z.ZodDefault<infer Inner extends z.ZodType> ? Inner : S[K] };
+
+function stripDefaults<S extends z.ZodRawShape>(shape: S): StripDefaults<S> {
+  return Object.fromEntries(Object.entries(shape).map(([key, schema]) => [key, schema instanceof z.ZodDefault ? schema.removeDefault() : schema])) as StripDefaults<S>;
+}
+
+/**
+ * Partial update sent by the renderer. Top-level defaults are stripped on purpose:
+ * `AppSettingsSchema.partial()` would re-apply them (for example `demoMode: false`)
+ * to every patch and silently reset fields the caller did not mention.
+ */
+export const SettingsPatchSchema = z.object(stripDefaults(AppSettingsSchema.shape)).partial().omit({ installationId: true, schemaVersion: true });
+export type SettingsPatch = z.infer<typeof SettingsPatchSchema>;
+
 export const HardwareInfoSchema = z.object({
   chip: z.string().max(64),
   chipFamily: z.enum(["m1", "m2", "m3", "m4", "m5", "apple_other", "unknown"]),

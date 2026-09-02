@@ -11,6 +11,7 @@ import {
   ExtensionEventSchema,
   PRODUCT_NAME
 } from "./index.js";
+import { SettingsPatchSchema } from "./settings.js";
 
 describe("schemas", () => {
   it("exposes the product name from one constant", () => {
@@ -110,5 +111,21 @@ describe("schemas", () => {
 
   it("has a non-empty IPC contract", () => {
     expect(IPC_CHANNELS.length).toBeGreaterThan(30);
+  });
+});
+
+describe("SettingsPatchSchema", () => {
+  it("does not re-apply top-level defaults to fields the patch omits", () => {
+    const parsed = SettingsPatchSchema.parse({ onboardingStep: 5 });
+    expect(parsed).toEqual({ onboardingStep: 5 });
+    expect("demoMode" in parsed).toBe(false);
+    expect("retention" in parsed).toBe(false);
+  });
+
+  it("still validates and keeps fields that are present", () => {
+    expect(SettingsPatchSchema.parse({ demoMode: true }).demoMode).toBe(true);
+    expect(SettingsPatchSchema.safeParse({ onboardingStep: 99 }).success).toBe(false);
+    expect(SettingsPatchSchema.safeParse({ installationId: "abcdef0123456789" }).success).toBe(true);
+    expect("installationId" in SettingsPatchSchema.parse({ installationId: "abcdef0123456789" })).toBe(false);
   });
 });

@@ -51,3 +51,36 @@ the build machine described in `docs/BUILD_ENVIRONMENT.md` and produced the stat
 | Cloudflare deployment | No CLOUDFLARE_API_TOKEN / account | Follow services/feedback-worker/README.md; evidence: `GET https://<worker>/health` returns `{ ok: true }` and a test upload appears in the admin summary |
 | Screen Recording and Accessibility grants | Interactive TCC prompts cannot be answered in a non-interactive build session | Launch the packaged app, complete onboarding step 4, confirm both badges show "granted" and the Activity view shows a real screenshot thumbnail |
 | Real UI-Mate inference | No model weights downloaded (8.6 GB, requires explicit confirmation) | Run `node scripts/install-uimate-model.mjs --yes`, `node scripts/start-local-model.mjs`, then `RUN_LOCAL_MODEL_TEST=1 pnpm test:local-model`; evidence: the test prints a parsed UI-Mate action |
+
+## Independent security and privacy review (2026-09-02)
+
+A read-only review by a separate agent audited the code against `docs/THREAT_MODEL.md` and the
+section 20 quality gates. Result: no critical findings; two medium findings, both fixed in the
+same day (see below); low findings addressed or documented.
+
+Verified controls (file references in the review): renderer hardening (`electron/window.ts`,
+`index.ts` permission/navigation/window-open denial), CSP without `unsafe-eval` and with
+`connect-src 'none'`, whitelisted preload surface, Zod validation of every IPC request and
+response with sender checks, no `shell: true` or string-built commands anywhere (both `spawn`
+call sites use argument arrays), model output gated by schema parse, deterministic validation,
+risk classification that never reads model-asserted risk, policy (typing always approve,
+external communication never auto, financial/credential unsupported, sensitive abort with
+emergency stop, `low_risk_auto` behind the experimental flag), helper emits only modifier
+chords and reserves stdout for protocol lines, loopback server bound to 127.0.0.1 with
+timing-safe code and token checks, origin binding, 64 KiB body cap and rate limits, extension
+without `host_permissions`, `incognito: not_allowed`, no `externally_connectable`, value-free
+capture with sensitive pauses, AES-256-GCM with random IVs and tag verification, safeStorage-
+protected master key with 0600/0700 files, blob id and symlink checks, realpath-based
+path-inside checks, zip-bomb budgets, delete-all scope, remote feedback allowlist enforced on
+client and server (server also scans values), free-text-free analytics, no persisted hidden
+reasoning, no hardcoded secrets in source or git history, `pnpm audit` clean.
+
+Findings and resolution:
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Medium | Headless smoke mode could fall back to a test-only XOR protector against the real data directory when APPRENTICE_DATA_DIR was unset | Smoke and e2e modes now require an isolated APPRENTICE_DATA_DIR and exit before touching storage otherwise |
+| Medium | Helper `approvalToken` was format-checked only | Token is now an HMAC-SHA256 over the canonical approved action with a per-spawn secret; the helper refuses actions without a secret or with a mismatching token |
+| Low | `app:openExternal` accepted any URL scheme | Restricted to http(s) |
+| Low | `disable-library-validation` entitlement widens same-user dylib injection | Documented as residual risk in the threat model |
+| Info | LGPL-3.0 (`@img/sharp-libvips-darwin-arm64`) and CC-BY-4.0 (`caniuse-lite`) packages | Build-time transitive dependencies of electron-builder and browserslist; not shipped in the app bundle |

@@ -20,6 +20,7 @@ import {
 } from "./feedback.js";
 import {
   AppSettingsSchema,
+  SettingsPatchSchema,
   HardwareInfoSchema,
   LearningStateSchema,
   MenuBarStatusSchema,
@@ -139,7 +140,7 @@ export const ipcContract = {
   "app:revealPath": { request: z.object({ path: z.string() }), response: z.object({ ok: z.boolean() }) },
 
   "settings:get": { request: Void, response: AppSettingsSchema },
-  "settings:update": { request: AppSettingsSchema.partial().omit({ installationId: true, schemaVersion: true }), response: AppSettingsSchema },
+  "settings:update": { request: SettingsPatchSchema, response: AppSettingsSchema },
   "settings:completeOnboarding": { request: Void, response: AppSettingsSchema },
 
   "permissions:status": { request: Void, response: PermissionsStatusSchema },

@@ -14,7 +14,7 @@ export default defineConfig({
     resolve: { alias: { "@main": resolve(__dirname, "src/main") } }
   },
   preload: {
-    plugins: [externalizeDepsPlugin({ exclude: ["@apprentice/schemas"] })],
+    plugins: [externalizeDepsPlugin({ exclude: ["@apprentice/schemas", "zod"] })],
     build: {
       rollupOptions: { input: { index: resolve(__dirname, "src/preload/index.ts") }, output: { format: "cjs" } },
       sourcemap: true
