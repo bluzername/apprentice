@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { skillFromDraft, type CoreSkillDraft } from "@apprentice/core";
 import { MockVisionAgentProvider, uimate, type VisionAgentProvider } from "@apprentice/model-adapters";
-import { APP_BUNDLE_ID, type ApprovalRequest, type OcrBlock, type RunDetail, type Skill } from "@apprentice/schemas";
+import { APP_BUNDLE_ID, type ApprovalRequest, type OcrBlock, type ProposedActionResult, type RunDetail, type RunStatus, type Skill } from "@apprentice/schemas";
 import { demoSkillTemplates, type ScenarioName } from "@apprentice/test-fixtures";
 import { systemClock } from "../src/main/services/clock.js";
 import { buildDemoScript } from "../src/main/services/demo/script-builder.js";
@@ -12,7 +12,7 @@ import { nodePngResizer } from "../src/main/services/images/png-resize.js";
 import { silentLogger } from "../src/main/services/logger.js";
 import type { ScreenSource } from "../src/main/services/observation/screen-source.js";
 import { RunEngine } from "../src/main/services/runs/run-engine.js";
-import type { AppActivator, OcrSource, RunContextSource } from "../src/main/services/runs/types.js";
+import type { AppActivator, AxSource, OcrSource, RunContextSource } from "../src/main/services/runs/types.js";
 import { fixtureTargets, fixtures, makeContext } from "./helpers.js";
 
 const ORIGINAL = { width: 1440, height: 900 };
@@ -32,11 +32,14 @@ interface HarnessOptions {
   readonly ocr?: OcrSource;
   readonly context?: RunContextSource;
   readonly screen?: (simulator: DemoScreenSimulator) => ScreenSource;
+  readonly ax?: AxSource;
   readonly onApproval?: (request: ApprovalRequest) => Verdict;
   /** Frontmost app and activation come from this fake helper instead of the simulator. */
   readonly helper?: FakeHelperClient;
   /** Called before a "Switch to ... and answer Continue" question is answered. */
   readonly onSwitchQuestion?: () => void;
+  /** Called before an "Open a window in ... and answer Continue" question is answered. */
+  readonly onWindowQuestion?: () => void;
 }
 
 function harness(options: HarnessOptions = {}) {
@@ -52,6 +55,8 @@ function harness(options: HarnessOptions = {}) {
   const actuator = new DemoActuator(simulator);
   const approvals: ApprovalRequest[] = [];
   const questions: string[] = [];
+  /** Run status observed when each question was asked. */
+  const questionStatuses: RunStatus[] = [];
   const raised: string[] = [];
   const helper = options.helper;
   const helperContext: RunContextSource | undefined = helper
@@ -63,6 +68,14 @@ function harness(options: HarnessOptions = {}) {
       }
     : undefined;
   const appActivator: AppActivator = helper ? { activate: (bundleId) => helper.activateApp(bundleId) } : { activate: async () => ({ activated: true }) };
+  const helperAx: AxSource | undefined = helper
+    ? {
+        elementAt: async (x, y) => {
+          const hit = await helper.accessibilityContextAtPoint(x, y);
+          return { element: hit.element, bundleId: hit.bundleId.length > 0 ? hit.bundleId : undefined };
+        }
+      }
+    : undefined;
   const emit: Emit = (name, payload) => {
     if (name === "event:approvalRequest") {
       const request = payload as ApprovalRequest;
@@ -82,11 +95,14 @@ function harness(options: HarnessOptions = {}) {
       if (detail.pendingQuestion) {
         const question = detail.pendingQuestion;
         questions.push(question.question);
+        questionStatuses.push(detail.run.status);
         const switching = question.question.startsWith("Switch to ");
+        const opening = question.question.startsWith("Open a window in ");
         queueMicrotask(() => {
           try {
             if (switching) options.onSwitchQuestion?.();
-            engine.answer(detail.run.id, question.stepId, switching ? "Continue" : "yes", !switching);
+            if (opening) options.onWindowQuestion?.();
+            engine.answer(detail.run.id, question.stepId, switching || opening ? "Continue" : "yes", !(switching || opening));
           } catch {
             // answered
           }
@@ -107,7 +123,7 @@ function harness(options: HarnessOptions = {}) {
     activationWaitMs: 30,
     activationPollMs: 5,
     ocr: options.ocr ?? { ocr: async (_png, width, height) => simulator.ocrBlocks(width, height) },
-    ax: { elementAt: async () => null },
+    ax: options.ax ?? helperAx ?? { elementAt: async () => ({ element: null }) },
     dom: { query: async (marker) => ({ marker, present: simulator.state().domMarkers.includes(marker) }) },
     model: { propose: (input) => provider.proposeNextAction(input), verify: (input) => provider.verifyStep(input), resetSession: (id) => provider.resetSession(id), providerType: () => "mock", modelName: () => "mock" },
     resizer: nodePngResizer,
@@ -125,17 +141,18 @@ function harness(options: HarnessOptions = {}) {
     const finished = await engine.waitForCompletion(started.id);
     return { run: finished, steps: storage.current.runs.steps(started.id) };
   };
-  return { engine, simulator, approvals, questions, raised, storage, skill, context, targets, run };
+  return { engine, simulator, approvals, questions, questionStatuses, raised, storage, skill, context, targets, run };
 }
 
 const UNRELATED_APP = "com.example.Unrelated";
 const CHROME = "com.google.Chrome";
 
 /** Fake helper whose frontmost app is a mutable value; `activateApp` switches it only when `activationWorks`. */
-function focusHelper(initial: string, activationWorks: boolean) {
+function focusHelper(initial: string, activationWorks: boolean, options: { readonly hitBundleId?: string } = {}) {
   const state = { frontmost: initial };
   const helper = new FakeHelperClient({
     frontmost: () => ({ app: { bundleId: state.frontmost, name: state.frontmost.split(".").pop() ?? state.frontmost, pid: 7 }, isSecureInput: false, isFullscreen: false, displayScale: 1 }),
+    accessibilityAtPoint: () => ({ element: { role: "AXButton", title: "OK", isSecure: false, enabled: true }, ancestors: [], bundleId: options.hitBundleId ?? state.frontmost }),
     activate: (bundleId) => {
       if (activationWorks) state.frontmost = bundleId;
       return { activated: activationWorks, pid: activationWorks ? 8 : undefined };
@@ -143,6 +160,53 @@ function focusHelper(initial: string, activationWorks: boolean) {
   });
   void helper.start();
   return { helper, state };
+}
+
+/** Counts proposals so tests can prove a screenshot never reached the model. */
+function countingProvider(inner: VisionAgentProvider): { readonly provider: VisionAgentProvider; readonly proposals: () => number } {
+  let proposals = 0;
+  const provider: VisionAgentProvider = {
+    ...inner,
+    health: () => inner.health(),
+    analyzeEpisode: (input) => inner.analyzeEpisode(input),
+    draftSkill: (input) => inner.draftSkill(input),
+    verifyStep: (input) => inner.verifyStep(input),
+    resetSession: (id) => inner.resetSession(id),
+    proposeNextAction: (input) => {
+      proposals += 1;
+      return inner.proposeNextAction(input);
+    }
+  };
+  return { provider, proposals: () => proposals };
+}
+
+/** Always proposes a left click at the centre of the screenshot it was given. */
+function centreClickProvider(): VisionAgentProvider {
+  return {
+    health: async () => ({ ok: true, provider: "mock", capabilities: { vision: true, actionPolicy: true, structuredOutput: true }, checkedAt: Date.now() }),
+    analyzeEpisode: () => Promise.reject(new Error("unused")),
+    draftSkill: () => Promise.reject(new Error("unused")),
+    proposeNextAction: async (input): Promise<ProposedActionResult> => ({
+      action: { type: "click", x: Math.trunc(input.screenshot.width / 2), y: Math.trunc(input.screenshot.height / 2), button: "left", purpose: "Click OK", expectedResult: "Dialog closes", confidence: 0.9, sourceScreenshot: { width: input.screenshot.width, height: input.screenshot.height }, subtaskIndex: input.currentSubtaskIndex },
+      actionSummary: "Click OK",
+      rationale: "",
+      parseErrors: [],
+      latencyMs: 1,
+      provider: "mock"
+    }),
+    verifyStep: async () => ({ passed: false, subtaskComplete: false, method: "none", evidence: "", confidence: 0 }),
+    resetSession: async () => undefined
+  };
+}
+
+/** Wraps the simulator so every capture is reported as a display fallback while `state.noWindow` holds. */
+function fallbackScreen(state: { noWindow: boolean }): (simulator: DemoScreenSimulator) => ScreenSource {
+  return (simulator) => ({
+    captureFrontmost: async () => {
+      const capture = await simulator.captureFrontmost();
+      return state.noWindow ? { ...capture, windowId: undefined, isDisplayFallback: true } : capture;
+    }
+  });
 }
 
 function labelOcr(targetTemplate: string, text: string, targets: ReturnType<typeof fixtureTargets>): OcrSource {
@@ -350,4 +414,92 @@ describe("run engine target app focus", () => {
     expect(h.raised.length).toBeGreaterThanOrEqual(h.approvals.length);
     expect(h.raised.every((id) => id === run.id)).toBe(true);
   }, 30_000);
+});
+
+describe("run engine target window", () => {
+  it("asks the user to open a window when the target app has none and aborts by policy when it still has none", async () => {
+    const state = { noWindow: true };
+    const counting = countingProvider(centreClickProvider());
+    const h = harness({ provider: counting.provider, screen: fallbackScreen(state) });
+    const { run, steps } = await h.run();
+    expect(h.questions).toEqual(["Open a window in Google Chrome and answer Continue"]);
+    expect(h.questionStatuses).toEqual(["awaiting_user"]);
+    expect(run.status).toBe("aborted_policy");
+    expect(run.failureCategory).toBe("policy_blocked");
+    expect(run.summary).toBe("No window in Google Chrome to act on: the frontmost app has no window to capture");
+    expect(steps).toHaveLength(1);
+    expect(steps[0]?.failureCategory).toBe("policy_blocked");
+    expect(steps[0]?.screenshotRef ?? null).toBeNull();
+    expect(counting.proposals()).toBe(0);
+    expect(h.approvals).toHaveLength(0);
+    expect(h.simulator.performed).toHaveLength(0);
+    expect(h.storage.current.screenshots.count()).toBe(0);
+  });
+
+  it("resumes after the user opened a window and never sent the display fallback to the model", async () => {
+    const state = { noWindow: true };
+    const counting = countingProvider(new MockVisionAgentProvider({ script: buildDemoScript(templateSkill("postMeetingFollowup"), { original: ORIGINAL, resized: RESIZED, targets: fixtureTargets() }, "postMeetingFollowup").script }));
+    const h = harness({
+      provider: counting.provider,
+      screen: fallbackScreen(state),
+      onWindowQuestion: () => {
+        state.noWindow = false;
+      }
+    });
+    const { run, steps } = await h.run();
+    expect(h.questions).toEqual(["Open a window in Google Chrome and answer Continue"]);
+    expect(run.status).toBe("completed");
+    expect(counting.proposals()).toBeGreaterThan(0);
+    expect(counting.proposals()).toBe(steps.filter((step) => step.proposed !== null || step.controlToken !== undefined).length);
+    expect(steps.every((step) => step.screenshotRef !== null)).toBe(true);
+    expect(h.raised).toContain(run.id);
+  }, 30_000);
+
+  it("refuses a capture of Apprentice's own window instead of proposing on it", async () => {
+    const counting = countingProvider(centreClickProvider());
+    const h = harness({
+      provider: counting.provider,
+      screen: (simulator) => ({ captureFrontmost: async () => ({ ...(await simulator.captureFrontmost()), bundleId: APP_BUNDLE_ID }) })
+    });
+    const { run } = await h.run();
+    expect(h.questions).toEqual(["Open a window in Google Chrome and answer Continue"]);
+    expect(run.status).toBe("aborted_policy");
+    expect(run.summary).toContain("the captured window belongs to Apprentice");
+    expect(counting.proposals()).toBe(0);
+    expect(h.approvals).toHaveLength(0);
+  });
+
+  it("rejects a click whose accessibility element belongs to Apprentice's own window as invalid_action", async () => {
+    const { helper } = focusHelper(CHROME, true, { hitBundleId: APP_BUNDLE_ID });
+    const h = harness({ helper, provider: centreClickProvider() });
+    const { run, steps } = await h.run();
+    expect(run.status).toBe("failed");
+    expect(run.failureCategory).toBe("invalid_action");
+    expect(run.summary).toContain(`target belongs to ${APP_BUNDLE_ID}`);
+    expect(steps).toHaveLength(2);
+    expect(steps.every((step) => step.failureCategory === "invalid_action")).toBe(true);
+    expect(steps[0]?.validation?.errors).toEqual([`target belongs to ${APP_BUNDLE_ID}`]);
+    expect(steps[0]?.validation?.resolvedTarget?.source).toBe("coordinates_only");
+    expect(h.approvals).toHaveLength(0);
+    expect(h.simulator.performed).toHaveLength(0);
+  });
+
+  it("rejects a click whose accessibility element belongs to another app than the target", async () => {
+    const { helper } = focusHelper(CHROME, true, { hitBundleId: "com.apple.finder" });
+    const h = harness({ helper, provider: centreClickProvider() });
+    const { run, steps } = await h.run();
+    expect(run.failureCategory).toBe("invalid_action");
+    expect(steps[0]?.validation?.errors).toEqual(["target belongs to com.apple.finder"]);
+    expect(h.approvals).toHaveLength(0);
+  });
+
+  it("accepts a click whose accessibility element belongs to the target app", async () => {
+    const { helper } = focusHelper(CHROME, true);
+    const h = harness({ helper, onApproval: () => "stop" });
+    const { run, steps } = await h.run();
+    expect(run.status).toBe("interrupted");
+    expect(steps[0]?.validation?.ok).toBe(true);
+    expect(steps[0]?.validation?.resolvedTarget?.source).not.toBe("coordinates_only");
+    expect(h.approvals).toHaveLength(1);
+  });
 });

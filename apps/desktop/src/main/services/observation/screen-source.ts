@@ -1,4 +1,4 @@
-import type { Rect } from "@apprentice/schemas";
+import type { FrontmostContextResult, Rect } from "@apprentice/schemas";
 import type { HelperClient } from "../helper/types.js";
 import { hashPng, pngDimensions } from "../images/png-resize.js";
 
@@ -8,14 +8,33 @@ export interface ScreenCapture {
   readonly height: number;
   readonly displayScale: number;
   readonly bounds: Rect;
+  /** Bundle id of the app owning the captured window (the frontmost app when known). */
+  readonly bundleId?: string;
   readonly windowId?: number;
   readonly displayId?: string;
+  /**
+   * True when no frontmost window could be captured and the image is the whole
+   * display instead. Fine for passive observation; a run must never propose,
+   * store, or send such an image to a model.
+   */
+  readonly isDisplayFallback: boolean;
   readonly capturedAt: number;
 }
 
 /** Produces a PNG of the frontmost window plus the geometry needed to map coordinates back. */
 export interface ScreenSource {
   captureFrontmost(): Promise<ScreenCapture>;
+}
+
+/** A frontmost context names a capturable window only when it has non-empty bounds. */
+export function hasCapturableWindow(context: FrontmostContextResult | null | undefined): boolean {
+  const bounds = context?.window?.bounds;
+  return bounds !== undefined && bounds.width > 0 && bounds.height > 0;
+}
+
+function bundleIdOf(context: FrontmostContextResult | null | undefined): string | undefined {
+  const bundleId = context?.app.bundleId ?? "";
+  return bundleId.length > 0 ? bundleId : undefined;
 }
 
 /** Secondary capture path through the helper (ScreenCaptureKit / CGWindowList). */
@@ -26,6 +45,7 @@ export class HelperScreenSource implements ScreenSource {
   ) {}
 
   async captureFrontmost(): Promise<ScreenCapture> {
+    const context = await this.helper.frontmostContext().catch(() => null);
     const result = await this.helper.captureFrontmostWindow();
     return {
       png: Buffer.from(result.pngBase64, "base64"),
@@ -33,8 +53,10 @@ export class HelperScreenSource implements ScreenSource {
       height: result.height,
       displayScale: result.displayScale,
       bounds: result.bounds,
-      windowId: result.windowId,
+      bundleId: bundleIdOf(context),
+      windowId: result.windowId ?? context?.window?.id,
       displayId: result.displayId,
+      isDisplayFallback: result.windowId === undefined && !hasCapturableWindow(context),
       capturedAt: this.now()
     };
   }
@@ -45,6 +67,10 @@ export interface FixtureScreenSourceOptions {
   readonly initial: string;
   readonly displayScale?: number;
   readonly now?: () => number;
+  /** Scripted owner of the captured window (tests and demo). */
+  readonly bundleId?: () => string | undefined;
+  /** Scripted "no window to capture": the fixture is then reported as a display fallback. */
+  readonly displayFallback?: () => boolean;
 }
 
 /** Deterministic source returning fixture PNGs by template name (demo, e2e, smoke, tests). */
@@ -81,14 +107,17 @@ export class FixtureScreenSource implements ScreenSource {
   async captureFrontmost(): Promise<ScreenCapture> {
     const entry = this.load(this.current);
     const scale = this.options.displayScale ?? 1;
+    const fallback = this.options.displayFallback?.() ?? false;
     return {
       png: entry.png,
       width: entry.width,
       height: entry.height,
       displayScale: scale,
       bounds: { x: 0, y: 0, width: entry.width / scale, height: entry.height / scale },
-      windowId: 1,
+      bundleId: this.options.bundleId?.(),
+      windowId: fallback ? undefined : 1,
       displayId: "fixture-display",
+      isDisplayFallback: fallback,
       capturedAt: (this.options.now ?? Date.now)()
     };
   }

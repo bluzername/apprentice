@@ -1,9 +1,29 @@
-import { KEY_NAMES, type ActionValidation, type ProposedAction } from "@apprentice/schemas";
+import { APP_BUNDLE_ID, KEY_NAMES, type ActionValidation, type ProposedAction } from "@apprentice/schemas";
 
 export interface ValidationContext {
   readonly screenshotWidth: number;
   readonly screenshotHeight: number;
   readonly subtaskCount: number;
+  /** Bundle id of the app the run acts on; a point action must hit an element of this app. */
+  readonly targetBundleId?: string;
+  /** Bundle id of the app owning the accessibility element under the proposed point (empty or undefined when unknown). */
+  readonly hitBundleId?: string;
+}
+
+function sameBundle(left: string, right: string): boolean {
+  return left.toLowerCase() === right.toLowerCase();
+}
+
+/**
+ * The app owning the element under the point, when it is not the run's target.
+ * Apprentice's own window is never a valid target, whatever the run targets.
+ */
+export function foreignHitBundleId(input: { readonly targetBundleId?: string; readonly hitBundleId?: string }): string | undefined {
+  const hit = input.hitBundleId?.trim() ?? "";
+  if (hit.length === 0) return undefined;
+  if (sameBundle(hit, APP_BUNDLE_ID)) return hit;
+  if (input.targetBundleId !== undefined && input.targetBundleId.length > 0 && !sameBundle(hit, input.targetBundleId)) return hit;
+  return undefined;
 }
 
 const MAX_TEXT_LENGTH = 2000;
@@ -55,6 +75,8 @@ export function validateProposedAction(action: ProposedAction, ctx: ValidationCo
     if (!Number.isFinite(action.x) || !Number.isFinite(action.y)) errors.push("coordinates must be finite");
     if (action.x < 0 || action.x >= ctx.screenshotWidth) errors.push(`x=${action.x} outside screenshot width ${ctx.screenshotWidth}`);
     if (action.y < 0 || action.y >= ctx.screenshotHeight) errors.push(`y=${action.y} outside screenshot height ${ctx.screenshotHeight}`);
+    const foreign = foreignHitBundleId(ctx);
+    if (foreign !== undefined) errors.push(`target belongs to ${foreign}`);
   }
   if (action.type === "scroll" && action.deltaX === 0 && action.deltaY === 0) errors.push("scroll needs a non-zero delta");
   if (action.type === "type_text") {

@@ -1,5 +1,6 @@
 import {
   HELPER_PROTOCOL_VERSION,
+  type AccessibilityContextAtPointResult,
   type ActivateAppResult,
   type CaptureResult,
   type ExecutableAction,
@@ -28,6 +29,8 @@ export interface FakeHelperClientOptions {
   readonly ocr?: (pngBase64: string) => OcrImageResult;
   /** Scripted `activateApp`; the default reports every app as activated. Calls are recorded in `activations`. */
   readonly activate?: (bundleId: string) => ActivateAppResult;
+  /** Scripted `accessibilityContextAtPoint`; the default reports no element owned by the default frontmost app. */
+  readonly accessibilityAtPoint?: (x: number, y: number) => AccessibilityContextAtPointResult;
   readonly now?: () => number;
   /** Omit to generate a session secret; pass null to simulate a helper started without one. */
   readonly approvalSecret?: string | null;
@@ -182,8 +185,10 @@ export class FakeHelperClient extends HelperClientBase {
       }
       case "focusedElement":
         return { element: null, bundleId: DEFAULT_FRONTMOST.app.bundleId };
-      case "accessibilityContextAtPoint":
+      case "accessibilityContextAtPoint": {
+        if (this.options.accessibilityAtPoint) return this.options.accessibilityAtPoint(Number(params?.["x"] ?? 0), Number(params?.["y"] ?? 0));
         return { element: null, ancestors: [], bundleId: DEFAULT_FRONTMOST.app.bundleId };
+      }
       case "performAction": {
         if (this.stopped) throw new HelperError("emergency_stopped", "emergency stop is set");
         const action = params?.["action"];

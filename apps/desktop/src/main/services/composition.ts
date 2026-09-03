@@ -109,7 +109,12 @@ export function composeServices(adapters: CompositionAdapters): Services {
   const actuator = new Switchable<Actuator>({ perform: (action, token) => helper.performAction(action, token) });
   const appActivator = new Switchable<AppActivator>({ activate: (bundleId) => helper.activateApp(bundleId) });
   const ocr = new Switchable<OcrSource>({ ocr: async (png) => (await helper.ocrImage(png.toString("base64"))).blocks });
-  const ax = new Switchable<AxSource>({ elementAt: async (x, y) => (await helper.accessibilityContextAtPoint(x, y)).element });
+  const ax = new Switchable<AxSource>({
+    elementAt: async (x, y) => {
+      const hit = await helper.accessibilityContextAtPoint(x, y);
+      return { element: hit.element, bundleId: hit.bundleId.length > 0 ? hit.bundleId : undefined };
+    }
+  });
 
   let securePauses = 0;
   helper.onEvent((event) => {

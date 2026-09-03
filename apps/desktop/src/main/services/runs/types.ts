@@ -38,8 +38,14 @@ export interface OcrSource {
   ocr(png: Buffer, width: number, height: number): Promise<readonly OcrBlock[]>;
 }
 
+/** Accessibility element under a display point plus the bundle id of the app that owns it (unknown when undefined). */
+export interface AxHit {
+  readonly element: AxElement | null;
+  readonly bundleId?: string;
+}
+
 export interface AxSource {
-  elementAt(displayX: number, displayY: number): Promise<AxElement | null>;
+  elementAt(displayX: number, displayY: number): Promise<AxHit>;
 }
 
 export interface DomStateSource {

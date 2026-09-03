@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { ImageTransform, ProposedAction } from "@apprentice/schemas";
+import { APP_BUNDLE_ID, type ImageTransform, type ProposedAction } from "@apprentice/schemas";
 import { toExecutableAction } from "./executable.js";
 import { evaluateCompletionPredicates, stateHash, urlPatternToRegExp } from "./predicates.js";
 import { resolveTarget } from "./target.js";
-import { hasControlCharacters, validateProposedAction } from "./validate.js";
+import { foreignHitBundleId, hasControlCharacters, validateProposedAction } from "./validate.js";
 import { ocrDiff, verifyStepDeterministic } from "./verify.js";
 
 const base = { purpose: "p", expectedResult: "Dialog opens", confidence: 0.9, sourceScreenshot: { width: 1280, height: 800 }, subtaskIndex: 0 };
@@ -44,6 +44,30 @@ describe("validateProposedAction", () => {
   });
 });
 
+describe("validateProposedAction bundle ownership", () => {
+  const click = { ...base, type: "click" as const, x: 100, y: 200, button: "left" as const };
+
+  it("rejects a point whose accessibility element belongs to another app", () => {
+    const result = validateProposedAction(click, { ...ctx, targetBundleId: "com.apple.TextEdit", hitBundleId: "com.apple.finder" });
+    expect(result.ok).toBe(false);
+    expect(result.errors).toEqual(["target belongs to com.apple.finder"]);
+  });
+
+  it("always rejects a hit inside Apprentice's own window", () => {
+    expect(validateProposedAction(click, { ...ctx, hitBundleId: APP_BUNDLE_ID }).errors).toEqual([`target belongs to ${APP_BUNDLE_ID}`]);
+    expect(validateProposedAction(click, { ...ctx, targetBundleId: APP_BUNDLE_ID, hitBundleId: APP_BUNDLE_ID }).ok).toBe(false);
+    expect(foreignHitBundleId({ targetBundleId: APP_BUNDLE_ID, hitBundleId: APP_BUNDLE_ID.toUpperCase() })).toBe(APP_BUNDLE_ID.toUpperCase());
+  });
+
+  it("accepts a hit in the target app, ignores unknown hits, and ignores ownership for non-point actions", () => {
+    expect(validateProposedAction(click, { ...ctx, targetBundleId: "com.apple.TextEdit", hitBundleId: "com.apple.textedit" }).ok).toBe(true);
+    expect(validateProposedAction(click, { ...ctx, targetBundleId: "com.apple.TextEdit", hitBundleId: "" }).ok).toBe(true);
+    expect(validateProposedAction(click, { ...ctx, targetBundleId: "com.apple.TextEdit" }).ok).toBe(true);
+    expect(validateProposedAction(click, { ...ctx, hitBundleId: "com.apple.finder" }).ok).toBe(true);
+    expect(validateProposedAction({ ...base, type: "type_text", text: "hi" }, { ...ctx, targetBundleId: "com.apple.TextEdit", hitBundleId: "com.apple.finder" }).ok).toBe(true);
+  });
+});
+
 describe("resolveTarget", () => {
   const blocks = [
     { text: "Save", x: 100, y: 100, width: 40, height: 20, confidence: 0.9 },
@@ -76,6 +100,16 @@ describe("resolveTarget", () => {
     expect(far.source).toBe("coordinates_only");
     expect(resolveTarget({ point: { x: 1, y: 1 }, axElement: null }).source).toBe("coordinates_only");
     expect(resolveTarget({ point: { x: 1, y: 1 }, axElement: { role: "AXGroup", isSecure: false, enabled: true } }).label).toBeUndefined();
+  });
+
+  it("never labels the target from an element owned by another app or by Apprentice", () => {
+    const ax = { role: "AXButton", title: "OK", isSecure: false, enabled: true, bounds: { x: 40, y: 70, width: 80, height: 20 } };
+    const foreign = resolveTarget({ point: { x: 100, y: 100 }, axElement: ax, transform, targetBundleId: "com.apple.TextEdit", hitBundleId: APP_BUNDLE_ID });
+    expect(foreign).toEqual({ source: "coordinates_only", ambiguous: false, candidates: [], foreignBundleId: APP_BUNDLE_ID });
+    expect(resolveTarget({ point: { x: 100, y: 100 }, axElement: ax, transform, targetBundleId: "com.apple.TextEdit", hitBundleId: "com.apple.finder" }).foreignBundleId).toBe("com.apple.finder");
+    const own = resolveTarget({ point: { x: 100, y: 100 }, axElement: ax, transform, targetBundleId: "com.apple.TextEdit", hitBundleId: "com.apple.TextEdit" });
+    expect(own).toMatchObject({ source: "accessibility", label: "OK" });
+    expect(own.foreignBundleId).toBeUndefined();
   });
 });
 

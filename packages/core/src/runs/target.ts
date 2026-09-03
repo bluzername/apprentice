@@ -1,5 +1,6 @@
 import type { AxElement, ImageTransform, OcrBlock, Point } from "@apprentice/schemas";
 import { distanceToRect, mapImageToDisplay } from "../geometry/index.js";
+import { foreignHitBundleId } from "./validate.js";
 
 export interface ResolveTargetInput {
   readonly point: Point;
@@ -9,6 +10,10 @@ export interface ResolveTargetInput {
   readonly transform?: ImageTransform;
   readonly maxDistancePx?: number;
   readonly ambiguityMarginPx?: number;
+  /** Bundle id of the app the run acts on. */
+  readonly targetBundleId?: string;
+  /** Bundle id of the app owning `axElement`; an element of another app (or of Apprentice) never labels the target. */
+  readonly hitBundleId?: string;
 }
 
 export interface ResolvedTarget {
@@ -18,6 +23,8 @@ export interface ResolvedTarget {
   readonly distancePx?: number;
   readonly ambiguous: boolean;
   readonly candidates: readonly string[];
+  /** Set when the accessibility hit belongs to an app other than the target (or to Apprentice itself). */
+  readonly foreignBundleId?: string;
 }
 
 export const DEFAULT_TARGET_MAX_DISTANCE_PX = 40;
@@ -41,6 +48,8 @@ export function resolveTarget(input: ResolveTargetInput): ResolvedTarget {
       .map((entry) => entry.block.text.trim().slice(0, 160));
     return { source: "ocr", label, distancePx: Math.round(nearest.distance * 100) / 100, ambiguous: rivals.length > 0, candidates: [label, ...rivals] };
   }
+  const foreignBundleId = foreignHitBundleId(input);
+  if (foreignBundleId !== undefined) return { source: "coordinates_only", ambiguous: false, candidates: [], foreignBundleId };
   const ax = input.axElement;
   if (ax !== undefined && ax !== null) {
     const label = (ax.title ?? ax.description ?? ax.identifier ?? "").trim().slice(0, 160);

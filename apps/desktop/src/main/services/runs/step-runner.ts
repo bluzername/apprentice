@@ -5,9 +5,10 @@ import { InferenceCancelledError } from "../model/inference-queue.js";
 import { appAllowed } from "./app-focus.js";
 import { ensureTargetFrontmost, syncTargetWithSubtask } from "./focus-guard.js";
 import { addModelLatency, bumpMetrics, failStep, stepWithTiming } from "./run-state.js";
-import { takeSnapshot, type ScreenSnapshot } from "./snapshot.js";
+import { isUsableCapture, takeSnapshot, type ScreenSnapshot } from "./snapshot.js";
 import { subtaskSatisfied, userConfirmedVerification, verifyDeterministic } from "./verification.js";
-import type { RunEngineDeps, StopReason } from "./types.js";
+import type { AxHit, RunEngineDeps, StopReason } from "./types.js";
+import { recoverTargetWindow, windowMismatch } from "./window-guard.js";
 
 export interface PriorAction {
   readonly stepIndex: number;
@@ -161,23 +162,29 @@ async function prepare(host: RunnerHost, active: ActiveRun, step: RunStep, actio
   const fresh = await takeSnapshot(deps, { previous: snapshot, now });
   const stale = isStaleScreen({ capturedAt: snapshot.capture.capturedAt, now, beforeHash: snapshot.hash, afterHash: fresh.hash });
   const geometry = geometryMatches({ bounds: snapshot.capture.bounds, displayScale: snapshot.capture.displayScale, displayId: snapshot.capture.displayId }, { bounds: fresh.capture.bounds, displayScale: fresh.capture.displayScale, displayId: fresh.capture.displayId });
-  if (stale.stale || !geometry) {
+  // The target window may have vanished between proposal and execution; a display fallback is never acted on.
+  const mismatch = windowMismatch(active, fresh.capture);
+  if (stale.stale || !geometry || mismatch !== null) {
     active.consecutive.stale += 1;
-    const reasons = [...stale.reasons, ...(geometry ? [] : ["window geometry changed"])];
+    const reasons = [...stale.reasons, ...(geometry ? [] : ["window geometry changed"]), ...(mismatch === null ? [] : [mismatch])];
     const outcome = active.consecutive.stale >= MAX_CONSECUTIVE_STALE ? finish("failed", "stale_screen", `Screen changed before the action could run: ${reasons.join(", ")}`.slice(0, 1000)) : { kind: "continue" as const };
     return { ok: false, outcome, category: "stale_screen" };
   }
   active.consecutive.stale = 0;
-  let validation = validateProposedAction(action, { screenshotWidth: snapshot.resized.width, screenshotHeight: snapshot.resized.height, subtaskCount: active.skill.subtasks.length });
+  const validationContext = { screenshotWidth: snapshot.resized.width, screenshotHeight: snapshot.resized.height, subtaskCount: active.skill.subtasks.length, targetBundleId: active.targetBundleId };
+  let validation = validateProposedAction(action, validationContext);
   let targetLabel: string | undefined;
   let axRole: string | undefined;
   let ocrNearTarget: string | undefined;
   if (hasPoint(action)) {
     const display = toExecutableAction(action, fresh.transform);
-    const axElement = display.type === "click" || display.type === "double_click" || display.type === "move" || display.type === "scroll" ? await deps.ax.elementAt(display.x, display.y).catch(() => null) : null;
-    const resolved = resolveTarget({ point: { x: action.x, y: action.y }, ocrBlocks: fresh.ocrBlocks, axElement, transform: fresh.transform });
+    const noHit: AxHit = { element: null };
+    const hit = display.type === "click" || display.type === "double_click" || display.type === "move" || display.type === "scroll" ? await deps.ax.elementAt(display.x, display.y).catch(() => noHit) : noHit;
+    // The element under the point must belong to the target app: hit-testing can land in another window (Apprentice's own, for one).
+    validation = validateProposedAction(action, { ...validationContext, hitBundleId: hit.bundleId });
+    const resolved = resolveTarget({ point: { x: action.x, y: action.y }, ocrBlocks: fresh.ocrBlocks, axElement: hit.element, transform: fresh.transform, targetBundleId: active.targetBundleId, hitBundleId: hit.bundleId });
     targetLabel = resolved.label;
-    axRole = resolved.role ?? axElement?.role;
+    axRole = resolved.role ?? (resolved.foreignBundleId === undefined ? hit.element?.role : undefined);
     ocrNearTarget = nearTargetText(fresh, { x: action.x, y: action.y });
     validation = { ...validation, resolvedTarget: { source: resolved.source, label: resolved.label, role: resolved.role }, targetDriftPx: resolved.distancePx };
     if (resolved.ambiguous) validation = { ...validation, ok: false, errors: [...validation.errors, `ambiguous target: ${resolved.candidates.join(" | ")}`.slice(0, 256)] };
@@ -235,6 +242,18 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
   }
   active.lastSnapshot = snapshot;
   let current = stepWithTiming({ ...step, screenshotRef: snapshot.screenshotId }, { captureMs: performance.now() - captureStart });
+  const mismatch = windowMismatch(active, snapshot.capture);
+  if (mismatch !== null) {
+    deps.logger.warn("capture is not a target window; asking the user to open one", { runId: active.run.id, target: active.targetBundleId, reason: mismatch });
+    const recovery = await recoverTargetWindow(host, active, current);
+    if ("outcome" in recovery) {
+      host.persistStep(active, failStep(current, recovery.outcome.failureCategory ?? "unknown"));
+      return recovery.outcome;
+    }
+    snapshot = recovery.snapshot;
+    active.lastSnapshot = snapshot;
+    current = { ...current, screenshotRef: snapshot.screenshotId };
+  }
   if (!appAllowed(active.skill, snapshot.context.bundleId)) return finish("aborted_policy", "policy_blocked", `Frontmost app ${snapshot.context.bundleId ?? "unknown"} is outside the skill's allowed apps`);
   if (!domainAllowed(active.skill, snapshot.context.domain)) return finish("aborted_policy", "policy_blocked", `Domain ${snapshot.context.domain ?? "unknown"} is outside the skill's allowed domains`);
   const contextSensitive = detectSensitiveContext({ windowTitle: snapshot.context.windowTitle, bundleId: snapshot.context.bundleId, domain: snapshot.context.domain, secureFieldFocused: snapshot.context.isSecureInput });
@@ -257,7 +276,6 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
   current = stepWithTiming({ ...current, proposed: result.action, actionSummary: result.actionSummary.slice(0, 300), rationale: result.rationale.slice(0, 500), controlToken: result.controlToken }, { proposeMs });
   const action = result.action;
   if (action === null || action.type === "done" || action.type === "fail" || action.type === "ask_user" || result.controlToken !== undefined) return handleControl(host, active, current, result, snapshot);
-  active.consecutive.invalid = 0;
   const prepareResult = await prepare(host, active, current, action, snapshot);
   if (!prepareResult.ok) {
     host.persistStep(active, failStep(current, prepareResult.category));
@@ -272,6 +290,8 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
     if (active.consecutive.invalid >= MAX_CONSECUTIVE_INVALID) return finish("failed", ambiguous ? "target_ambiguous" : "invalid_action", `Action rejected: ${prepared.validation?.errors.join("; ")}`.slice(0, 1000));
     return { kind: "continue" };
   }
+  // Only a parseable action that passed validation breaks a streak of rejected model output.
+  active.consecutive.invalid = 0;
   if (prepared.risk.decision === "abort") {
     host.persistStep(active, failStep(current, "sensitive_context"));
     await deps.emergencyStop?.();
@@ -350,7 +370,8 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
   const subtask = active.skill.subtasks[active.run.currentSubtaskIndex]!;
   const verified = await verifyDeterministic({ before: prepared.fresh, after, expectedResult: action.expectedResult, predicates: subtask.completionPredicates, dom: deps.dom, domTimeoutMs: deps.domQueryTimeoutMs ?? DEFAULT_DOM_TIMEOUT_MS });
   let verification = verified.verification;
-  if (!verification.passed) {
+  // Supporting model evidence only from real target windows; a display fallback after the action stays with the deterministic result.
+  if (!verification.passed && isUsableCapture(after.capture)) {
     try {
       const supporting = await deps.model.verify({ runId: active.run.id, expectedResult: action.expectedResult, completionCriteria: subtask.completionCriteria, before: { pngBase64: prepared.fresh.resized.png.toString("base64"), width: prepared.fresh.resized.width, height: prepared.fresh.resized.height }, after: { pngBase64: after.resized.png.toString("base64"), width: after.resized.width, height: after.resized.height } });
       active.run = addModelLatency(active.run, 0, 2);

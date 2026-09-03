@@ -3,6 +3,7 @@ import type { ImageTransform, OcrBlock, OcrResult, ScreenshotRecord } from "@app
 import { hashPng, resizeForModel, type PngResizer } from "../images/png-resize.js";
 import type { ScreenCapture, ScreenSource } from "../observation/screen-source.js";
 import type { StorageRef } from "../app-context.js";
+import { isApprenticeApp } from "./app-focus.js";
 import type { OcrSource, RunContextSnapshot, RunContextSource } from "./types.js";
 
 /** One observation of the screen: capture, model-sized image, transform, OCR, semantic context. */
@@ -48,6 +49,11 @@ export function transformFor(capture: ScreenCapture, resized: { width: number; h
   };
 }
 
+/** A display fallback or Apprentice's own window is never OCR'd, stored, or shown to a model. */
+export function isUsableCapture(capture: ScreenCapture): boolean {
+  return !capture.isDisplayFallback && !isApprenticeApp(capture.bundleId);
+}
+
 export function ocrTextOf(blocks: readonly OcrBlock[]): string {
   return blocks.map((block) => block.text.trim()).filter((text) => text.length > 0).join("\n");
 }
@@ -58,11 +64,12 @@ export async function takeSnapshot(deps: SnapshotDeps, options: SnapshotOptions)
   const resized = await resizeForModel(deps.resizer, capture.png, capture.width, capture.height);
   const transform = transformFor(capture, resized);
   const context = await deps.context.frontmost();
+  const usable = isUsableCapture(capture);
   const reusable = options.previous !== undefined && options.previous.hash === hash && options.previous.resized.width === resized.width;
-  const ocrBlocks = reusable ? options.previous!.ocrBlocks : await deps.ocr.ocr(resized.png, resized.width, resized.height);
+  const ocrBlocks = !usable ? [] : reusable ? options.previous!.ocrBlocks : await deps.ocr.ocr(resized.png, resized.width, resized.height);
   const ocrText = ocrTextOf(ocrBlocks);
   let screenshotId: string | undefined;
-  if (options.store) {
+  if (options.store && usable) {
     const storage = deps.storage.current;
     screenshotId = newId("shot");
     const written = storage.blobs.write(screenshotId, capture.png);

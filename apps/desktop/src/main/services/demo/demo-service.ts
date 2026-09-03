@@ -180,7 +180,7 @@ export class DemoService {
     this.deps.appActivator.use({ activate: async () => ({ activated: true }) });
     this.deps.context.use({ frontmost: async () => simulator.context() });
     this.deps.ocr.use({ ocr: async (_png, width, height) => simulator.ocrBlocks(width, height) });
-    this.deps.ax.use({ elementAt: async () => null });
+    this.deps.ax.use({ elementAt: async () => ({ element: null }) });
     this.deps.dom.use({ query: async (marker) => ({ marker, present: simulator.state().domMarkers.includes(marker), domain: simulator.state().domain, path: simulator.state().path }) });
   }
 

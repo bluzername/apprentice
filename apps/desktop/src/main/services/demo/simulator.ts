@@ -90,8 +90,9 @@ export class DemoScreenSimulator implements ScreenSource {
     this.setTemplate(this.timeline[at]!.templateName);
   }
 
-  captureFrontmost(): Promise<ScreenCapture> {
-    return this.source.captureFrontmost();
+  async captureFrontmost(): Promise<ScreenCapture> {
+    const capture = await this.source.captureFrontmost();
+    return { ...capture, bundleId: this.state().bundleId };
   }
 
   target(): TemplateTarget {
