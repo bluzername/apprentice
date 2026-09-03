@@ -67,6 +67,30 @@ describe("storage", () => {
     expect(revealed[1]?.payload?.title).toBe("Quarterly plan - Jordan Rivera");
   });
 
+  it("setScreenshotRef rewrites the indexable json and leaves the encrypted payload untouched", () => {
+    const titled = makeEvent(1, { type: "window_title_changed", payload: { title: "Quarterly plan - Jordan Rivera", windowId: 4 } });
+    storage.events.insertMany([titled]);
+    const before = storage.db.get<{ sensitive_enc: Uint8Array | null }>("SELECT sensitive_enc FROM events WHERE id = ?", "evt_1")!;
+    const updated = storage.events.setScreenshotRef("evt_1", "shot_9");
+    expect(updated?.screenshotRef).toBe("shot_9");
+    expect(updated?.payload?.title).toBeUndefined();
+    const after = storage.db.get<{ json: string; sensitive_enc: Uint8Array | null }>("SELECT json, sensitive_enc FROM events WHERE id = ?", "evt_1")!;
+    expect(after.json).toContain("shot_9");
+    expect(after.json).not.toContain("Jordan Rivera");
+    expect(Buffer.from(after.sensitive_enc!).equals(Buffer.from(before.sensitive_enc!))).toBe(true);
+    expect(storage.events.query({ limit: 10 }, { revealSensitive: true })[0]?.payload?.title).toBe("Quarterly plan - Jordan Rivera");
+    expect(storage.events.setScreenshotRef("evt_missing", "shot_9")).toBeNull();
+    expect(() => storage.events.setScreenshotRef("evt_1", "")).toThrow();
+  });
+
+  it("setEventId keeps the screenshot index column and json in step", () => {
+    storage.screenshots.insert({ id: "shot_1", ts: 1, sessionId: "s1", width: 10, height: 10, displayScale: 2, perceptualHash: "abcd", byteLength: 10, reason: "interval", analyzed: false });
+    expect(storage.screenshots.setEventId("shot_1", "evt_1")?.eventId).toBe("evt_1");
+    expect(storage.screenshots.get("shot_1")?.eventId).toBe("evt_1");
+    expect(storage.db.get<{ event_id: string | null }>("SELECT event_id FROM screenshots WHERE id = ?", "shot_1")?.event_id).toBe("evt_1");
+    expect(storage.screenshots.setEventId("shot_missing", "evt_1")).toBeNull();
+  });
+
   it("filters, counts, and deletes events", () => {
     storage.events.insertMany([0, 1, 2, 3].map((i) => makeEvent(i, i % 2 ? { domain: "crm.example", type: "click", source: "extension" } : {})));
     expect(storage.events.count()).toBe(4);

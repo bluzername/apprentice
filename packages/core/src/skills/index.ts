@@ -9,3 +9,4 @@ export {
   type RetentionPreview
 } from "./draft.js";
 export { draftRiskClass, reviseSkill, skillFromDraft, type SkillFromDraftOptions } from "./revise.js";
+export { anchorEntry, isClosingToken, isOutcomeToken, outcomeEntry } from "./outcome.js";

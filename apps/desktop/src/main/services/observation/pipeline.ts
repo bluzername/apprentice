@@ -1,5 +1,5 @@
 import { classifyContext, isDomainAllowed, newId, type MetricsRecorder } from "@apprentice/core";
-import type { ActivityEvent, AppRef, ExtensionEvent, HelperEvent, PrivacyClassification, ScreenshotReason, SemanticElement } from "@apprentice/schemas";
+import type { ActivityEvent, AppRef, ExtensionEvent, HelperEvent, PrivacyClassification, ScreenshotReason, ScreenshotRecord, SemanticElement } from "@apprentice/schemas";
 import type { StorageRef } from "../app-context.js";
 import type { Clock } from "../clock.js";
 import type { Emit } from "../events.js";
@@ -55,6 +55,8 @@ const DEFAULT_INTERVAL_MS = 5000;
 /** A second mouse_down this close in time and space in the same app is a multi-click, not a new click. */
 const MULTI_CLICK_WINDOW_MS = 350;
 const MULTI_CLICK_RADIUS_PX = 6;
+/** An interval screenshot joins the newest allowed event of the same app that happened this recently. */
+const INTERVAL_ATTACH_WINDOW_MS = 5000;
 
 /** The most recent buffered click, kept so a double click collapses into it. */
 interface RecentClick {
@@ -81,6 +83,7 @@ export class ObservationPipeline {
   private intervalTimer: NodeJS.Timeout | null = null;
   private clickTimer: NodeJS.Timeout | null = null;
   private unsubscribeHelper: (() => void) | null = null;
+  private unsubscribeCapture: (() => void) | null = null;
   private storedListeners: ReadonlyArray<(events: readonly ActivityEvent[]) => void> = [];
   private lastNavigation: { domain: string; path: string; ts: number } | null = null;
   private recentClick: RecentClick | null = null;
@@ -88,6 +91,7 @@ export class ObservationPipeline {
 
   constructor(private readonly deps: ObservationPipelineDeps) {
     this.seq = deps.storage.current.events.latestSeq(deps.sessionId) + 1;
+    this.unsubscribeCapture = deps.capture.onCaptured((record) => this.attachScreenshot(record));
   }
 
   get isObserving(): boolean {
@@ -148,6 +152,8 @@ export class ObservationPipeline {
     await this.stop();
     this.unsubscribeHelper?.();
     this.unsubscribeHelper = null;
+    this.unsubscribeCapture?.();
+    this.unsubscribeCapture = null;
     await this.settleEnrichments();
     this.flush();
     await this.deps.capture.idle();
@@ -414,6 +420,53 @@ export class ObservationPipeline {
       return;
     }
     this.deps.capture.request(reason, this.captureContext(eventId));
+  }
+
+  /**
+   * Links a stored screenshot to its event. Triggered captures name their event;
+   * interval captures adopt the newest allowed event of the same app within the
+   * attach window when that event has no screenshot yet.
+   */
+  private attachScreenshot(record: ScreenshotRecord): void {
+    if (record.eventId !== undefined) {
+      this.linkScreenshot(record.eventId, record.id);
+      return;
+    }
+    if (record.reason !== "interval") return;
+    const eventId = this.findRecentEventFor(record);
+    if (eventId === null) return;
+    this.deps.storage.current.screenshots.setEventId(record.id, eventId);
+    this.linkScreenshot(eventId, record.id, record);
+  }
+
+  /** Sets `screenshotRef` on the buffered copy, or on the stored row when the event was already written. */
+  private linkScreenshot(eventId: string, screenshotId: string, record?: ScreenshotRecord): void {
+    const index = this.buffer.findIndex((entry) => entry.event.id === eventId);
+    if (index !== -1) {
+      const entry = this.buffer[index]!;
+      const updated: BufferEntry = { ...entry, event: { ...entry.event, screenshotRef: screenshotId } };
+      this.buffer = [...this.buffer.slice(0, index), updated, ...this.buffer.slice(index + 1)];
+      return;
+    }
+    const stored = this.deps.storage.current.events.setScreenshotRef(eventId, screenshotId);
+    if (stored === null) {
+      this.deps.logger.debug("screenshot event no longer stored", { eventId, screenshotId });
+      return;
+    }
+    const attached = record ?? this.deps.storage.current.screenshots.get(screenshotId);
+    this.deps.emit("event:activity", { events: [stored], screenshots: attached ? [attached] : [] });
+  }
+
+  private findRecentEventFor(record: ScreenshotRecord): string | null {
+    const bundleId = record.app?.bundleId;
+    if (bundleId === undefined) return null;
+    const fromTs = record.ts - INTERVAL_ATTACH_WINDOW_MS;
+    const attachable = (event: ActivityEvent): boolean =>
+      event.privacy === "allowed" && event.app?.bundleId === bundleId && event.ts >= fromTs && event.ts <= record.ts && event.screenshotRef === undefined;
+    const buffered = [...this.buffer].reverse().find((entry) => attachable(entry.event));
+    if (buffered !== undefined) return buffered.event.id;
+    const stored = this.deps.storage.current.events.query({ fromTs, toTs: record.ts, app: bundleId, sessionId: this.deps.sessionId, limit: 200 });
+    return [...stored].reverse().find(attachable)?.id ?? null;
   }
 
   private intervalTick(): void {

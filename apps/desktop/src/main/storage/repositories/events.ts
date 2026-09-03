@@ -132,6 +132,20 @@ export class EventsRepository {
     return out;
   }
 
+  /**
+   * Links a stored event to its screenshot. Only the indexable JSON is rewritten;
+   * the encrypted sensitive payload stays as it is. Returns the updated event
+   * (titles hidden) or null when the event no longer exists.
+   */
+  setScreenshotRef(eventId: string, screenshotId: string): ActivityEvent | null {
+    const row = this.db.get<{ json: string }>("SELECT json FROM events WHERE id = ?", eventId);
+    if (!row) return null;
+    const current = ActivityEventSchema.parse(JSON.parse(row.json));
+    const updated = ActivityEventSchema.parse({ ...current, screenshotRef: screenshotId });
+    this.db.run("UPDATE events SET json = ? WHERE id = ?", JSON.stringify(updated), eventId);
+    return updated;
+  }
+
   count(): number {
     return this.db.get<{ c: number }>("SELECT COUNT(*) AS c FROM events")?.c ?? 0;
   }

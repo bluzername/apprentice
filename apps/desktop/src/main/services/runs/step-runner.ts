@@ -1,7 +1,9 @@
-import { applyPolicy, classifyRisk, detectSensitiveContext, geometryMatches, isDomainAllowed, isStaleScreen, normalizeAppName, resolveTarget, toExecutableAction, validateProposedAction } from "@apprentice/core";
+import { applyPolicy, classifyRisk, detectSensitiveContext, geometryMatches, isDomainAllowed, isStaleScreen, resolveTarget, toExecutableAction, validateProposedAction } from "@apprentice/core";
 import type { ApprovalRequest, ApprovalResult, ExecutableAction, FailureCategory, ProposedAction, ProposedActionResult, RiskResult, Run, RunStatus, RunStep, Skill } from "@apprentice/schemas";
 import { mintApprovalToken } from "../helper/approval-token.js";
 import { InferenceCancelledError } from "../model/inference-queue.js";
+import { appAllowed } from "./app-focus.js";
+import { ensureTargetFrontmost, syncTargetWithSubtask } from "./focus-guard.js";
 import { addModelLatency, bumpMetrics, failStep, stepWithTiming } from "./run-state.js";
 import { takeSnapshot, type ScreenSnapshot } from "./snapshot.js";
 import { subtaskSatisfied, userConfirmedVerification, verifyDeterministic } from "./verification.js";
@@ -23,6 +25,8 @@ export interface ActiveRun {
   subtaskVerified: boolean;
   lastSnapshot?: ScreenSnapshot;
   stopRequested: StopReason | null;
+  /** Bundle id of the app the run acts on; re-activated before every capture and execution. */
+  targetBundleId: string | undefined;
 }
 
 export type StepOutcome = { readonly kind: "continue" } | { readonly kind: "finish"; readonly status: RunStatus; readonly failureCategory?: FailureCategory; readonly interruptedBy?: Run["interruptedBy"]; readonly summary?: string };
@@ -46,13 +50,6 @@ const DEFAULT_DOM_TIMEOUT_MS = 3000;
 
 function finish(status: RunStatus, failureCategory?: FailureCategory, summary?: string, interruptedBy?: Run["interruptedBy"]): StepOutcome {
   return { kind: "finish", status, failureCategory, summary, interruptedBy };
-}
-
-function appAllowed(skill: Skill, bundleId: string | undefined): boolean {
-  if (skill.allowedApps.length === 0 || bundleId === undefined) return true;
-  const lowered = bundleId.toLowerCase();
-  const slug = normalizeAppName(bundleId);
-  return skill.allowedApps.some((entry) => entry.toLowerCase() === lowered || entry.toLowerCase() === slug);
 }
 
 function domainAllowed(skill: Skill, domain: string | undefined): boolean {
@@ -153,11 +150,13 @@ interface Prepared {
   readonly targetLabel?: string;
 }
 
-type PrepareResult = { readonly ok: true; readonly prepared: Prepared } | { readonly ok: false; readonly outcome: StepOutcome };
+type PrepareResult = { readonly ok: true; readonly prepared: Prepared } | { readonly ok: false; readonly outcome: StepOutcome; readonly category: FailureCategory };
 
 /** Fresh capture, stale/geometry check, target resolution, risk classification, policy. */
-async function prepare(host: RunnerHost, active: ActiveRun, action: ProposedAction, snapshot: ScreenSnapshot): Promise<PrepareResult> {
+async function prepare(host: RunnerHost, active: ActiveRun, step: RunStep, action: ProposedAction, snapshot: ScreenSnapshot): Promise<PrepareResult> {
   const deps = host.deps;
+  const focus = await ensureTargetFrontmost(host, active, step);
+  if (focus) return { ok: false, outcome: focus, category: focus.failureCategory ?? "unknown" };
   const now = deps.clock.now();
   const fresh = await takeSnapshot(deps, { previous: snapshot, now });
   const stale = isStaleScreen({ capturedAt: snapshot.capture.capturedAt, now, beforeHash: snapshot.hash, afterHash: fresh.hash });
@@ -166,7 +165,7 @@ async function prepare(host: RunnerHost, active: ActiveRun, action: ProposedActi
     active.consecutive.stale += 1;
     const reasons = [...stale.reasons, ...(geometry ? [] : ["window geometry changed"])];
     const outcome = active.consecutive.stale >= MAX_CONSECUTIVE_STALE ? finish("failed", "stale_screen", `Screen changed before the action could run: ${reasons.join(", ")}`.slice(0, 1000)) : { kind: "continue" as const };
-    return { ok: false, outcome };
+    return { ok: false, outcome, category: "stale_screen" };
   }
   active.consecutive.stale = 0;
   let validation = validateProposedAction(action, { screenshotWidth: snapshot.resized.width, screenshotHeight: snapshot.resized.height, subtaskCount: active.skill.subtasks.length });
@@ -220,6 +219,12 @@ async function execute(host: RunnerHost, active: ActiveRun, action: ProposedActi
 /** The ten-step loop body for one step. */
 export async function executeStep(host: RunnerHost, active: ActiveRun, step: RunStep): Promise<StepOutcome> {
   const deps = host.deps;
+  syncTargetWithSubtask(active);
+  const focus = await ensureTargetFrontmost(host, active, step);
+  if (focus) {
+    host.persistStep(active, failStep(step, focus.failureCategory ?? "unknown"));
+    return focus;
+  }
   const captureStart = performance.now();
   let snapshot: ScreenSnapshot;
   try {
@@ -253,9 +258,9 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
   const action = result.action;
   if (action === null || action.type === "done" || action.type === "fail" || action.type === "ask_user" || result.controlToken !== undefined) return handleControl(host, active, current, result, snapshot);
   active.consecutive.invalid = 0;
-  const prepareResult = await prepare(host, active, action, snapshot);
+  const prepareResult = await prepare(host, active, current, action, snapshot);
   if (!prepareResult.ok) {
-    host.persistStep(active, failStep(current, "stale_screen"));
+    host.persistStep(active, failStep(current, prepareResult.category));
     return prepareResult.outcome;
   }
   const { prepared } = prepareResult;
@@ -324,6 +329,12 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
     host.persistStep(active, current);
     active.priorActions = [...active.priorActions, { stepIndex: current.index, summary: `Suggested (not executed): ${current.actionSummary}`.slice(0, 300) }];
     return { kind: "continue" };
+  }
+  // The approval was clicked in the Apprentice window; put the target app back in front before acting.
+  const refocus = await ensureTargetFrontmost(host, active, current);
+  if (refocus) {
+    host.persistStep(active, failStep(current, refocus.failureCategory ?? "unknown"));
+    return refocus;
   }
   const executionOutcome = await execute(host, active, action, prepared.fresh, approval);
   if (isOutcome(executionOutcome)) {

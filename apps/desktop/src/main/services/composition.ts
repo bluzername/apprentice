@@ -26,7 +26,7 @@ import { buildOverview } from "./overview.js";
 import { PermissionsService, type PermissionSystem } from "./permissions.js";
 import { PrivacyService } from "./privacy/privacy-service.js";
 import { RunEngine } from "./runs/run-engine.js";
-import type { Actuator, AxSource, DomStateSource, OcrSource, RunContextSource } from "./runs/types.js";
+import type { Actuator, AppActivator, AxSource, DomStateSource, OcrSource, RunContextSource } from "./runs/types.js";
 import type { KeyProtector } from "../security/keys.js";
 import { SkillService } from "./skills/skill-service.js";
 import { Switchable } from "./switchable.js";
@@ -85,6 +85,8 @@ export interface Services {
   readonly securePauses: () => number;
   overview(): Promise<Overview>;
   onRunActiveChange(listener: (active: boolean) => void): () => void;
+  /** Fired when a run needs the user (approval or question); the Electron layer raises the window on that run. */
+  onRunAttention(listener: (runId: string) => void): () => void;
   start(): Promise<void>;
   shutdown(): Promise<void>;
 }
@@ -101,9 +103,11 @@ export function composeServices(adapters: CompositionAdapters): Services {
   const hardware = new HardwareService(context.paths.root, adapters.hardwareProbe);
   const shell = adapters.shell ?? noopShell;
   const runActiveListeners: Array<(active: boolean) => void> = [];
+  const runAttentionListeners: Array<(runId: string) => void> = [];
 
   const screenSource = new Switchable<ScreenSource>(adapters.screenSource);
   const actuator = new Switchable<Actuator>({ perform: (action, token) => helper.performAction(action, token) });
+  const appActivator = new Switchable<AppActivator>({ activate: (bundleId) => helper.activateApp(bundleId) });
   const ocr = new Switchable<OcrSource>({ ocr: async (png) => (await helper.ocrImage(png.toString("base64"))).blocks });
   const ax = new Switchable<AxSource>({ elementAt: async (x, y) => (await helper.accessibilityContextAtPoint(x, y)).element });
 
@@ -131,7 +135,7 @@ export function composeServices(adapters: CompositionAdapters): Services {
   const runtime = new RuntimeManager({ paths: context.paths, manifest: MODEL_MANIFEST, clock, logger: logger.child("runtime"), fetchImpl: adapters.fetchImpl });
   const model: ModelManager = new ModelManager({ settings, secrets: context.secrets, runtime, manifest: MODEL_MANIFEST, hardware, metrics, analytics, clock, logger: logger.child("model"), emit, power: adapters.power, resizer: toImageResizer(adapters.resizer), fetchImpl: adapters.fetchImpl });
 
-  const teach = new TeachService({ storage, analytics, clock, logger: logger.child("teach"), refiner: model.refiner() });
+  const teach = new TeachService({ storage, settings, analytics, clock, logger: logger.child("teach"), refiner: model.refiner() });
   const skills = new SkillService({ storage, analytics, clock });
 
   const loopback: LoopbackServer = new LoopbackServer({ storage, settings, ingest: (events) => pipeline.ingestExtensionBatch(events), learningState: () => learning.state(), runActive: () => runEngine.isActive(), emit, clock, logger: logger.child("loopback"), portRange: adapters.loopbackPortRange });
@@ -153,6 +157,8 @@ export function composeServices(adapters: CompositionAdapters): Services {
     actuator: () => actuator.current,
     approvalSecret: () => helper.approvalSecret,
     context: { frontmost: () => runContext.current.frontmost() },
+    appActivator: { activate: (bundleId) => appActivator.current.activate(bundleId) },
+    raiseWindow: (runId) => runAttentionListeners.forEach((listener) => listener(runId)),
     ocr: { ocr: (png, w, h) => ocr.current.ocr(png, w, h) },
     ax: { elementAt: (x, y) => ax.current.elementAt(x, y) },
     dom: { query: (marker, timeoutMs) => dom.current.query(marker, timeoutMs) },
@@ -185,12 +191,13 @@ export function composeServices(adapters: CompositionAdapters): Services {
     logger: logger.child("demo"),
     screenSource,
     actuator,
+    appActivator,
     context: runContext,
     ocr,
     ax,
     dom,
     setProviderOverride: (provider) => model.setOverride(provider),
-    realSources: { screen: adapters.screenSource, actuator: actuator.current, context: runContext.current, ocr: ocr.current, ax: ax.current, dom: dom.current }
+    realSources: { screen: adapters.screenSource, actuator: actuator.current, appActivator: appActivator.current, context: runContext.current, ocr: ocr.current, ax: ax.current, dom: dom.current }
   });
   const privacy = new PrivacyService({
     context,
@@ -250,6 +257,13 @@ export function composeServices(adapters: CompositionAdapters): Services {
       return () => {
         const index = runActiveListeners.indexOf(listener);
         if (index >= 0) runActiveListeners.splice(index, 1);
+      };
+    },
+    onRunAttention: (listener) => {
+      runAttentionListeners.push(listener);
+      return () => {
+        const index = runAttentionListeners.indexOf(listener);
+        if (index >= 0) runAttentionListeners.splice(index, 1);
       };
     },
     start: async () => {

@@ -1,5 +1,6 @@
 import {
   HELPER_PROTOCOL_VERSION,
+  type ActivateAppResult,
   type CaptureResult,
   type ExecutableAction,
   type FrontmostContextResult,
@@ -25,6 +26,8 @@ export interface FakeHelperClientOptions {
   readonly frontmost?: () => FrontmostContextResult;
   readonly capture?: () => CaptureResult;
   readonly ocr?: (pngBase64: string) => OcrImageResult;
+  /** Scripted `activateApp`; the default reports every app as activated. Calls are recorded in `activations`. */
+  readonly activate?: (bundleId: string) => ActivateAppResult;
   readonly now?: () => number;
   /** Omit to generate a session secret; pass null to simulate a helper started without one. */
   readonly approvalSecret?: string | null;
@@ -48,6 +51,8 @@ const DEFAULT_FRONTMOST: FrontmostContextResult = {
 export class FakeHelperClient extends HelperClientBase {
   readonly requests: Array<{ cmd: HelperCommand; params?: Record<string, unknown> }> = [];
   readonly actions: RecordedAction[] = [];
+  /** Bundle ids passed to `activateApp`, in call order. */
+  readonly activations: string[] = [];
   private readonly secret: string | null;
   private running = false;
   private stopped = false;
@@ -189,6 +194,12 @@ export class FakeHelperClient extends HelperClientBase {
         if (!verifyApprovalToken(this.secret, action, approvalToken)) throw new HelperError("action_rejected", "approval token does not match the action");
         this.actions.push({ action: action as ExecutableAction, approvalToken });
         return { performed: true, durationMs: 1 };
+      }
+      case "activateApp": {
+        const bundleId = typeof params?.["bundleId"] === "string" ? params["bundleId"].trim() : "";
+        if (bundleId.length === 0) throw new HelperError("invalid_request", "bundleId is required");
+        this.activations.push(bundleId);
+        return this.options.activate ? this.options.activate(bundleId) : { activated: true, pid: 4242 };
       }
       case "emergencyStop":
         this.stopped = params?.["clear"] === true ? false : true;

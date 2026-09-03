@@ -10,5 +10,5 @@ export {
   type ExplanationInput,
   type ScoreInput
 } from "./scoring.js";
-export { deterministicTitle } from "./title.js";
+export { deterministicTitle, outcomePhrase, triggerPhrase } from "./title.js";
 export { DISCOVER_DEFAULTS, discoverCandidates, type DiscoverOptions } from "./discover.js";

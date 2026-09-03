@@ -19,7 +19,7 @@ import { createSafeStorageProtector } from "./protector.js";
 import { createShortcutController } from "./shortcuts.js";
 import { createElectronPermissionSystem, createElectronShell } from "./system.js";
 import { createTray } from "./tray.js";
-import { createMainWindow, rendererHtmlPath, showWindow } from "./window.js";
+import { createMainWindow, raiseWindow, rendererHtmlPath, showWindow } from "./window.js";
 
 export interface BootOptions {
   readonly mainDir: string;
@@ -96,6 +96,13 @@ export async function bootApp(options: BootOptions): Promise<BootedApp> {
     show();
     services.hub.emit("event:navigate", { route });
   };
+  // An approval or a question must be visible over the target app; Escape (a
+  // global shortcut while a run is active) keeps stopping the run either way.
+  services.onRunAttention((runId) => {
+    if (!mainWindow || mainWindow.isDestroyed()) createWindow();
+    raiseWindow(mainWindow);
+    services.hub.emit("event:navigate", { route: `runs/${runId}` });
+  });
 
   const shortcuts = createShortcutController({
     onTeach: () => {

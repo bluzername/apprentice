@@ -167,4 +167,18 @@ describe("FakeHelperClient", () => {
     await fake.start();
     expect((await fake.permissionStatus()).accessibility).toBe("denied");
   });
+
+  it("records activateApp calls and honours a scripted activation result", async () => {
+    const fake = new FakeHelperClient();
+    await fake.start();
+    await expect(fake.activateApp("com.apple.finder")).resolves.toEqual({ activated: true, pid: 4242 });
+    await expect(fake.activateApp("  ")).rejects.toMatchObject({ code: "invalid_request" });
+    expect(fake.activations).toEqual(["com.apple.finder"]);
+    const scripted = new FakeHelperClient({ activate: (bundleId) => ({ activated: bundleId === "com.apple.Preview" }) });
+    await scripted.start();
+    await expect(scripted.activateApp("com.apple.Preview")).resolves.toEqual({ activated: true });
+    await expect(scripted.activateApp("com.missing.App")).resolves.toEqual({ activated: false });
+    expect(scripted.activations).toEqual(["com.apple.Preview", "com.missing.App"]);
+    expect(scripted.requests.filter((request) => request.cmd === "activateApp")).toHaveLength(2);
+  });
 });

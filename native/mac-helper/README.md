@@ -66,6 +66,7 @@ Error codes: `invalid_request`, `unknown_command`, `permission_denied`,
 | `focusedElement` | | `{element, bundleId}` |
 | `accessibilityContextAtPoint` | `{x, y}` display points | `{element, ancestors[<=12], bundleId}` |
 | `performAction` | `{action, approvalToken}` | `{performed, durationMs}` |
+| `activateApp` | `{bundleId}` | `{activated, pid?}` |
 | `emergencyStop` | `{clear?: bool}` | `{stopped}` |
 | `shutdown` | | `{shuttingDown:true}` then exit 0 |
 
@@ -111,6 +112,15 @@ The token binds one approved action to one helper process:
 
 Scroll convention: positive `deltaY` scrolls content down (browser wheel
 semantics); the helper negates for CoreGraphics.
+
+`activateApp` brings the app with `bundleId` to the front so an assisted run
+acts on the target app instead of on the Apprentice window that collected the
+approval. A running app is activated with `NSRunningApplication.activate`;
+an installed but not running app is launched via
+`NSWorkspace.openApplication(at:)` (waiting up to 5 s for the launch to
+settle); an unknown bundle id answers `activated:false`. It needs no approval
+token because it performs no input and touches no content, and it never
+activates anything the app did not name explicitly.
 
 `emergencyStop` is handled on the stdin reader thread, ahead of the serial
 command queue, so it responds immediately even while an action is running. It

@@ -1,17 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { skillFromDraft, type CoreSkillDraft } from "@apprentice/core";
 import { MockVisionAgentProvider, uimate, type VisionAgentProvider } from "@apprentice/model-adapters";
-import type { ApprovalRequest, OcrBlock, RunDetail, Skill } from "@apprentice/schemas";
+import { APP_BUNDLE_ID, type ApprovalRequest, type OcrBlock, type RunDetail, type Skill } from "@apprentice/schemas";
 import { demoSkillTemplates, type ScenarioName } from "@apprentice/test-fixtures";
 import { systemClock } from "../src/main/services/clock.js";
 import { buildDemoScript } from "../src/main/services/demo/script-builder.js";
 import { DemoActuator, DemoScreenSimulator } from "../src/main/services/demo/simulator.js";
 import type { Emit } from "../src/main/services/events.js";
+import { FakeHelperClient } from "../src/main/services/helper/fake-helper-client.js";
 import { nodePngResizer } from "../src/main/services/images/png-resize.js";
 import { silentLogger } from "../src/main/services/logger.js";
 import type { ScreenSource } from "../src/main/services/observation/screen-source.js";
 import { RunEngine } from "../src/main/services/runs/run-engine.js";
-import type { OcrSource, RunContextSource } from "../src/main/services/runs/types.js";
+import type { AppActivator, OcrSource, RunContextSource } from "../src/main/services/runs/types.js";
 import { fixtureTargets, fixtures, makeContext } from "./helpers.js";
 
 const ORIGINAL = { width: 1440, height: 900 };
@@ -32,6 +33,10 @@ interface HarnessOptions {
   readonly context?: RunContextSource;
   readonly screen?: (simulator: DemoScreenSimulator) => ScreenSource;
   readonly onApproval?: (request: ApprovalRequest) => Verdict;
+  /** Frontmost app and activation come from this fake helper instead of the simulator. */
+  readonly helper?: FakeHelperClient;
+  /** Called before a "Switch to ... and answer Continue" question is answered. */
+  readonly onSwitchQuestion?: () => void;
 }
 
 function harness(options: HarnessOptions = {}) {
@@ -46,6 +51,18 @@ function harness(options: HarnessOptions = {}) {
   const provider = options.provider ?? new MockVisionAgentProvider({ script: script.script });
   const actuator = new DemoActuator(simulator);
   const approvals: ApprovalRequest[] = [];
+  const questions: string[] = [];
+  const raised: string[] = [];
+  const helper = options.helper;
+  const helperContext: RunContextSource | undefined = helper
+    ? {
+        frontmost: async () => {
+          const ctx = await helper.frontmostContext();
+          return { ...simulator.context(), bundleId: ctx.app.bundleId, appName: ctx.app.name };
+        }
+      }
+    : undefined;
+  const appActivator: AppActivator = helper ? { activate: (bundleId) => helper.activateApp(bundleId) } : { activate: async () => ({ activated: true }) };
   const emit: Emit = (name, payload) => {
     if (name === "event:approvalRequest") {
       const request = payload as ApprovalRequest;
@@ -64,9 +81,12 @@ function harness(options: HarnessOptions = {}) {
       const detail = (payload as { detail: RunDetail }).detail;
       if (detail.pendingQuestion) {
         const question = detail.pendingQuestion;
+        questions.push(question.question);
+        const switching = question.question.startsWith("Switch to ");
         queueMicrotask(() => {
           try {
-            engine.answer(detail.run.id, question.stepId, "yes", true);
+            if (switching) options.onSwitchQuestion?.();
+            engine.answer(detail.run.id, question.stepId, switching ? "Continue" : "yes", !switching);
           } catch {
             // answered
           }
@@ -81,7 +101,11 @@ function harness(options: HarnessOptions = {}) {
     screenSource: options.screen ? options.screen(simulator) : simulator,
     actuator: () => actuator,
     approvalSecret: () => "ab".repeat(32),
-    context: options.context ?? { frontmost: async () => simulator.context() },
+    context: options.context ?? helperContext ?? { frontmost: async () => simulator.context() },
+    appActivator,
+    raiseWindow: (runId) => raised.push(runId),
+    activationWaitMs: 30,
+    activationPollMs: 5,
     ocr: options.ocr ?? { ocr: async (_png, width, height) => simulator.ocrBlocks(width, height) },
     ax: { elementAt: async () => null },
     dom: { query: async (marker) => ({ marker, present: simulator.state().domMarkers.includes(marker) }) },
@@ -101,7 +125,24 @@ function harness(options: HarnessOptions = {}) {
     const finished = await engine.waitForCompletion(started.id);
     return { run: finished, steps: storage.current.runs.steps(started.id) };
   };
-  return { engine, simulator, approvals, storage, skill, context, targets, run };
+  return { engine, simulator, approvals, questions, raised, storage, skill, context, targets, run };
+}
+
+const UNRELATED_APP = "com.example.Unrelated";
+const CHROME = "com.google.Chrome";
+
+/** Fake helper whose frontmost app is a mutable value; `activateApp` switches it only when `activationWorks`. */
+function focusHelper(initial: string, activationWorks: boolean) {
+  const state = { frontmost: initial };
+  const helper = new FakeHelperClient({
+    frontmost: () => ({ app: { bundleId: state.frontmost, name: state.frontmost.split(".").pop() ?? state.frontmost, pid: 7 }, isSecureInput: false, isFullscreen: false, displayScale: 1 }),
+    activate: (bundleId) => {
+      if (activationWorks) state.frontmost = bundleId;
+      return { activated: activationWorks, pid: activationWorks ? 8 : undefined };
+    }
+  });
+  void helper.start();
+  return { helper, state };
 }
 
 function labelOcr(targetTemplate: string, text: string, targets: ReturnType<typeof fixtureTargets>): OcrSource {
@@ -238,5 +279,75 @@ describe("run engine", () => {
     expect(h.simulator.performed).toHaveLength(0);
     expect(steps.every((step) => step.executed === null)).toBe(true);
     expect(["completed", "failed"]).toContain(run.status);
+  }, 30_000);
+});
+
+describe("run engine target app focus", () => {
+  it("activates the target app when Apprentice is frontmost at start and again after every approval click", async () => {
+    const { helper, state } = focusHelper(APP_BUNDLE_ID, true);
+    const h = harness({
+      helper,
+      onApproval: () => {
+        state.frontmost = APP_BUNDLE_ID;
+        return "approve";
+      }
+    });
+    const { run, steps } = await h.run();
+    expect(run.status).toBe("completed");
+    expect(helper.activations[0]).toBe(CHROME);
+    expect(helper.activations.every((bundleId) => bundleId === CHROME)).toBe(true);
+    expect(helper.activations.length).toBeGreaterThanOrEqual(h.approvals.length + 1);
+    expect(h.questions).toHaveLength(0);
+    expect(steps.some((step) => step.failureCategory === "policy_blocked")).toBe(false);
+    expect(h.simulator.performed.length).toBe(steps.filter((step) => step.executed !== null).length);
+  }, 30_000);
+
+  it("asks the user to switch when an unrelated app is frontmost and resumes once they did", async () => {
+    const { helper, state } = focusHelper(UNRELATED_APP, false);
+    const h = harness({
+      helper,
+      onSwitchQuestion: () => {
+        state.frontmost = CHROME;
+      }
+    });
+    const { run } = await h.run();
+    expect(h.questions[0]).toBe("Switch to Google Chrome and answer Continue");
+    expect(helper.activations).toHaveLength(0);
+    expect(run.status).toBe("completed");
+    expect(h.raised).toContain(run.id);
+    expect(h.context.storage.current.productEvents.countByName("run_completed")).toBe(1);
+  }, 30_000);
+
+  it("aborts by policy only when the app is still not allowed after the user answered", async () => {
+    const { helper } = focusHelper(UNRELATED_APP, false);
+    const h = harness({ helper });
+    const { run, steps } = await h.run();
+    expect(h.questions).toEqual(["Switch to Google Chrome and answer Continue"]);
+    expect(helper.activations).toEqual([CHROME]);
+    expect(run.status).toBe("aborted_policy");
+    expect(run.failureCategory).toBe("policy_blocked");
+    expect(run.summary).toContain(UNRELATED_APP);
+    expect(steps[0]?.failureCategory).toBe("policy_blocked");
+    expect(h.approvals).toHaveLength(0);
+    expect(h.simulator.performed).toHaveLength(0);
+  });
+
+  it("switches the target when a subtask names another allowed app", async () => {
+    const { helper } = focusHelper(APP_BUNDLE_ID, true);
+    const h = harness({ helper, scenario: "invoiceProcessing" });
+    const { run } = await h.run();
+    expect(run.status).toBe("completed");
+    const order = [...new Set(helper.activations)];
+    expect(order).toEqual([CHROME, "com.apple.Preview", "com.apple.finder"]);
+    expect(h.questions).toHaveLength(0);
+  }, 30_000);
+
+  it("raises the Apprentice window for every approval request", async () => {
+    const h = harness();
+    const { run } = await h.run();
+    expect(run.status).toBe("completed");
+    expect(h.approvals.length).toBeGreaterThan(0);
+    expect(h.raised.length).toBeGreaterThanOrEqual(h.approvals.length);
+    expect(h.raised.every((id) => id === run.id)).toBe(true);
   }, 30_000);
 });

@@ -9,7 +9,7 @@ import type { Clock } from "../clock.js";
 import type { DiscoveryScheduler } from "../discovery/scheduler.js";
 import type { Logger } from "../logger.js";
 import type { ScreenSource } from "../observation/screen-source.js";
-import type { Actuator, AxSource, DomStateSource, OcrSource, RunContextSource } from "../runs/types.js";
+import type { Actuator, AppActivator, AxSource, DomStateSource, OcrSource, RunContextSource } from "../runs/types.js";
 import type { SettingsStore } from "../settings-store.js";
 import type { Switchable } from "../switchable.js";
 import type { FixtureSource } from "./fixture-source.js";
@@ -46,12 +46,13 @@ export interface DemoServiceDeps {
   readonly logger: Logger;
   readonly screenSource: Switchable<ScreenSource>;
   readonly actuator: Switchable<Actuator>;
+  readonly appActivator: Switchable<AppActivator>;
   readonly context: Switchable<RunContextSource>;
   readonly ocr: Switchable<OcrSource>;
   readonly ax: Switchable<AxSource>;
   readonly dom: Switchable<DomStateSource>;
   readonly setProviderOverride: (provider: VisionAgentProvider | null) => void;
-  readonly realSources: { screen: ScreenSource; actuator: Actuator; context: RunContextSource; ocr: OcrSource; ax: AxSource; dom: DomStateSource };
+  readonly realSources: { screen: ScreenSource; actuator: Actuator; appActivator: AppActivator; context: RunContextSource; ocr: OcrSource; ax: AxSource; dom: DomStateSource };
 }
 
 /** Demo mode: synthetic days in the database, fixture screens for runs, scripted mock model. */
@@ -175,6 +176,8 @@ export class DemoService {
     this.simulator = simulator;
     this.deps.screenSource.use(simulator);
     this.deps.actuator.use(new DemoActuator(simulator));
+    // Demo screens are fixtures; the simulated frontmost app follows the timeline, so nothing real is activated.
+    this.deps.appActivator.use({ activate: async () => ({ activated: true }) });
     this.deps.context.use({ frontmost: async () => simulator.context() });
     this.deps.ocr.use({ ocr: async (_png, width, height) => simulator.ocrBlocks(width, height) });
     this.deps.ax.use({ elementAt: async () => null });
@@ -227,6 +230,7 @@ export class DemoService {
     this.deps.setProviderOverride(null);
     this.deps.screenSource.use(this.deps.realSources.screen);
     this.deps.actuator.use(this.deps.realSources.actuator);
+    this.deps.appActivator.use(this.deps.realSources.appActivator);
     this.deps.context.use(this.deps.realSources.context);
     this.deps.ocr.use(this.deps.realSources.ocr);
     this.deps.ax.use(this.deps.realSources.ax);

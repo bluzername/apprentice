@@ -7,6 +7,7 @@ import { riskClassRank } from "../risk/dictionaries.js";
 import { tokenRiskClass } from "../risk/token-risk.js";
 import { detectVariables } from "../candidates/variables.js";
 import { groupByContext, type TokenEntry, type TokenGroup } from "./group.js";
+import { anchorEntry, outcomeEntry } from "./outcome.js";
 
 export interface DraftSubtask {
   title: string;
@@ -48,12 +49,12 @@ function predicatesFor(group: TokenGroup, titles: readonly string[]): Completion
 
 function subtaskFromGroup(group: TokenGroup, index: number, titles: readonly string[]): DraftSubtask {
   const steps = group.entries.map((entry) => humanizeToken(entry.token));
-  const last = steps[steps.length - 1]!;
+  const anchor = humanizeToken(anchorEntry(group.entries).token);
   const context = group.context;
   return {
-    title: `${index + 1}. ${last} on ${context}`.slice(0, 120),
-    goal: `Work in ${context} until you have completed: ${last.toLowerCase()}`.slice(0, 500),
-    completionCriteria: `${last} has visibly succeeded on ${context}`.slice(0, 500),
+    title: `${index + 1}. ${anchor} on ${context}`.slice(0, 120),
+    goal: `Work in ${context} until you have completed: ${anchor.toLowerCase()}`.slice(0, 500),
+    completionCriteria: `${anchor} has visibly succeeded on ${context}`.slice(0, 500),
     keySteps: steps.slice(0, MAX_KEY_STEPS).map((step) => step.slice(0, 300)),
     appOrDomain: context,
     completionPredicates: predicatesFor(group, titles)
@@ -81,6 +82,19 @@ export interface DraftFromEventsOptions {
   readonly trigger?: string;
 }
 
+/**
+ * Name and goal come from the last strong outcome (submit, download, save, send).
+ * Closing actions and plain shortcuts never describe the goal; without an outcome
+ * the draft falls back to "Work in <contexts>".
+ */
+function nameAndGoal(entries: readonly TokenEntry[], contexts: readonly string[]): { name: string; goal: string } {
+  const outcome = outcomeEntry(entries);
+  const workIn = `Work in ${contexts.join(", ")}`;
+  if (outcome === undefined) return { name: workIn, goal: `${workIn} until the recorded steps are complete` };
+  const action = humanizeToken(outcome.token);
+  return { name: `${outcome.context}: ${action}`, goal: `${action} has visibly succeeded on ${outcome.context}` };
+}
+
 /** Deterministic skill draft from a taught event range. */
 export function draftSkillFromEvents(events: readonly ActivityEvent[], options: DraftFromEventsOptions = {}): CoreSkillDraft {
   const sorted = [...events].sort((a, b) => a.ts - b.ts || a.seq - b.seq);
@@ -96,14 +110,14 @@ export function draftSkillFromEvents(events: readonly ActivityEvent[], options: 
   });
   const tokens = entries.map((entry) => entry.token);
   const first = entries[0]!;
-  const lastGroup = groups[groups.length - 1]!;
   const contexts = [...new Set(entries.map((entry) => entry.context))];
+  const { name, goal } = nameAndGoal(entries, contexts);
   const apps = [...new Set(sorted.map((event) => event.app?.bundleId).filter((id): id is string => id !== undefined))];
   const domains = [...new Set(sorted.map((event) => event.domain?.toLowerCase()).filter((d): d is string => d !== undefined))];
   return {
-    name: (options.name ?? `${lastGroup.context}: ${humanizeToken(lastGroup.entries[lastGroup.entries.length - 1]!.token)}`).slice(0, 120),
+    name: (options.name ?? name).slice(0, 120),
     description: `Taught workflow across ${contexts.join(", ")} with ${entries.length} recorded actions.`.slice(0, 1000),
-    goal: subtasks[subtasks.length - 1]!.completionCriteria,
+    goal: goal.slice(0, 500),
     trigger: (options.trigger ?? `When you ${humanizeToken(first.token).toLowerCase()} on ${first.context}`).slice(0, 500),
     subtasks,
     variables: detectVariables(tokens, [tokens]),

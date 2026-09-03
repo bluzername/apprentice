@@ -4,7 +4,8 @@ import HelperCore
 
 /// Serializes AX elements into AxElementSchema and answers the two AX
 /// commands. Secure-field values are never read; text fields only report a
-/// length; only static text contributes its value to a display name.
+/// length. Static text contributes its value to a display name, and a plain
+/// text field does so only as a read-only list-row label (see AXNameResolver).
 enum AXInspector {
     private static let maxTextLength = 256
 
@@ -46,12 +47,17 @@ enum AXInspector {
         let resolver = AXNameResolver<AXUIElement>(
             facts: { node in
                 let role = AXAttributes.string(node, kAXRoleAttribute) ?? ""
+                let subrole = AXAttributes.string(node, kAXSubroleAttribute)
+                let plainTextField = role == "AXTextField" && !AXRoleMapping.isSecure(axRole: role, subrole: subrole)
                 return AXNodeFacts(
                     role: role,
-                    subrole: AXAttributes.string(node, kAXSubroleAttribute),
+                    subrole: subrole,
                     title: AXAttributes.string(node, kAXTitleAttribute),
                     description: AXAttributes.string(node, kAXDescriptionAttribute),
                     staticTextValue: AXAttributes.staticTextValue(node, role: role),
+                    textFieldValue: plainTextField ? AXAttributes.plainTextFieldValue(node) : nil,
+                    isFocused: plainTextField ? (AXAttributes.bool(node, kAXFocusedAttribute) ?? false) : false,
+                    isEditable: plainTextField ? AXAttributes.isBeingEdited(node) : false,
                     containsPoint: AXAttributes.frame(node)?.contains(point) ?? false
                 )
             },

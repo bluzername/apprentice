@@ -2,7 +2,7 @@ import { redactText } from "@apprentice/core";
 import type { AccessibilityContextAtPointResult, SemanticElement } from "@apprentice/schemas";
 
 /** Upper bound for the AX lookup that enriches a native click; the event is stored plain when it expires. */
-export const DEFAULT_CLICK_AX_TIMEOUT_MS = 250;
+export const DEFAULT_CLICK_AX_TIMEOUT_MS = 600;
 export const MAX_ELEMENT_NAME_LENGTH = 80;
 const MAX_IDENTIFIER_LENGTH = 160;
 

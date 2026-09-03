@@ -33,6 +33,15 @@ export class ScreenshotsRepository {
     return this.db.get<{ phash: string }>("SELECT phash FROM screenshots ORDER BY ts DESC LIMIT 1")?.phash ?? null;
   }
 
+  /** Attaches a stored screenshot to an event (index column and JSON stay in step). */
+  setEventId(id: string, eventId: string): ScreenshotRecord | null {
+    const row = this.get(id);
+    if (!row) return null;
+    const updated = ScreenshotRecordSchema.parse({ ...row, eventId });
+    this.db.run("UPDATE screenshots SET event_id = ?, json = ? WHERE id = ?", eventId, JSON.stringify(updated), id);
+    return updated;
+  }
+
   markAnalyzed(id: string): void {
     const row = this.get(id);
     if (!row) return;

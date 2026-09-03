@@ -4,6 +4,7 @@ import { discoverCandidates } from "../candidates/discover.js";
 import { makeClick, makeEpisode, makeEvent } from "../testing/fixtures.js";
 import { draftSkillFromCandidate, draftSkillFromEvents, skillRetentionPreview } from "./draft.js";
 import { groupByContext } from "./group.js";
+import { anchorEntry, isClosingToken, isOutcomeToken, outcomeEntry } from "./outcome.js";
 import { reviseSkill, skillFromDraft } from "./revise.js";
 
 function taughtEvents() {
@@ -35,6 +36,34 @@ describe("groupByContext", () => {
     expect(single).toHaveLength(3);
     expect(groupByContext([entry("a", 0)])).toHaveLength(1);
     expect(groupByContext([])).toEqual([]);
+  });
+});
+
+describe("outcome tokens", () => {
+  const entry = (token: string) => ({ token, ts: 0, context: "textedit" });
+
+  it("classifies outcome and closing tokens", () => {
+    expect(isOutcomeToken("app:textedit|action:shortcut|keys:cmd+s")).toBe(true);
+    expect(isOutcomeToken("app:chrome|domain:crm.example|action:form-submit|purpose:update")).toBe(true);
+    expect(isOutcomeToken("app:chrome|action:download|ext:pdf")).toBe(true);
+    expect(isOutcomeToken("app:mail|action:click|role:button|name:send-message")).toBe(true);
+    expect(isOutcomeToken("app:mail|action:click|role:button|name:compose")).toBe(false);
+    expect(isOutcomeToken("app:textedit|action:shortcut|keys:cmd+w")).toBe(false);
+    expect(isClosingToken("app:textedit|action:shortcut|keys:cmd+w")).toBe(true);
+    expect(isClosingToken("app:textedit|action:shortcut|keys:escape")).toBe(true);
+    expect(isClosingToken("app:textedit|action:shortcut|keys:cmd+s")).toBe(false);
+  });
+
+  it("anchors on the last outcome, then the last non-closing step, then the last step", () => {
+    const save = entry("app:textedit|action:shortcut|keys:cmd+s");
+    const close = entry("app:textedit|action:shortcut|keys:cmd+w");
+    const open = entry("app:textedit|action:click|name:open");
+    expect(anchorEntry([open, save, close])).toBe(save);
+    expect(anchorEntry([save, open, close])).toBe(save);
+    expect(anchorEntry([open, close])).toBe(open);
+    expect(anchorEntry([close])).toBe(close);
+    expect(outcomeEntry([open, close])).toBeUndefined();
+    expect(() => anchorEntry([])).toThrow(/no entries/);
   });
 });
 
@@ -72,7 +101,38 @@ describe("draftSkillFromEvents", () => {
     const draft = draftSkillFromEvents(events);
     const last = draft.subtasks[draft.subtasks.length - 1]!;
     expect(last.completionPredicates).toEqual([{ kind: "url_pattern", pattern: "mail.example/inbox" }]);
-    expect(draft.name).toBe("mail.example: Open /inbox");
+    expect(draft.name).toBe("mail.example: Click the 'Send' button");
+    expect(draft.goal).toBe("Click the 'Send' button has visibly succeeded on mail.example");
+  });
+
+  it("names and describes the goal from the last strong outcome, not a closing shortcut", () => {
+    const app = { bundleId: "com.apple.TextEdit", name: "TextEdit" };
+    const events = [
+      makeEvent({ ts: 0, type: "mouse_down", app, element: { role: "AXMenuItem", name: "New Document" } }),
+      makeEvent({ ts: 1000, type: "shortcut", app, payload: { keys: ["cmd", "s"] } }),
+      makeEvent({ ts: 2000, type: "shortcut", app, payload: { keys: ["cmd", "w"] } }),
+      makeEvent({ ts: 3000, type: "shortcut", app, payload: { keys: ["cmd", "q"] } })
+    ];
+    const draft = draftSkillFromEvents(events);
+    expect(SkillDraftSchema.safeParse(draft).success).toBe(true);
+    expect(draft.name).toBe("textedit: Press Cmd+S");
+    expect(draft.goal).toBe("Press Cmd+S has visibly succeeded on textedit");
+    expect(draft.successCriteria).toEqual(["Press Cmd+S completed on textedit"]);
+    expect(draft.subtasks.flatMap((subtask) => subtask.keySteps)).toEqual(["Click the 'New document' menuitem", "Press Cmd+S", "Press Cmd+W", "Press Cmd+Q"]);
+  });
+
+  it("falls back to a Work in name and goal when nothing in the range is an outcome", () => {
+    const app = { bundleId: "com.apple.finder" };
+    const events = [
+      makeEvent({ ts: 0, type: "mouse_down", app, element: { role: "AXButton", name: "Documents" } }),
+      makeEvent({ ts: 1000, type: "shortcut", app, payload: { keys: ["cmd", "n"] } }),
+      makeEvent({ ts: 2000, type: "shortcut", app, payload: { keys: ["cmd", "w"] } })
+    ];
+    const draft = draftSkillFromEvents(events);
+    expect(SkillDraftSchema.safeParse(draft).success).toBe(true);
+    expect(draft.name).toBe("Work in finder");
+    expect(draft.goal).toBe("Work in finder until the recorded steps are complete");
+    expect(draft.successCriteria).toEqual([]);
   });
 
   it("drafts from candidates", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { makeClick, makeEvent } from "../testing/fixtures.js";
+import { makeClick, makeEvent, resetEventSequence } from "../testing/fixtures.js";
 import { consumptionScore, isConsumptionDomain } from "./consumption.js";
 import { describeBoundaries, segmentEpisodes } from "./segment.js";
 
@@ -297,5 +297,22 @@ describe("consumption", () => {
     expect(isConsumptionDomain("crm.example")).toBe(false);
     expect(consumptionScore(["youtube.com", "crm.example", undefined, "reddit.com"])).toBe(0.5);
     expect(consumptionScore([])).toBe(0);
+  });
+});
+
+describe("app switches after an outcome that begin new work", () => {
+  it("an app switch followed by meaningful work within 15 s starts the next episode instead of being absorbed", () => {
+    resetEventSequence();
+    const events = [
+      makeEvent({ ts: 0, type: "app_activated", app: { bundleId: "com.google.Chrome" } }),
+      makeEvent({ ts: 5_000, type: "download", app: { bundleId: "com.google.Chrome" }, domain: "mail.example" }),
+      makeEvent({ ts: 8_000, type: "app_activated", app: { bundleId: "com.apple.finder" } }),
+      makeClick({ ts: 12_000, bundleId: "com.apple.finder", name: "invoice.pdf", role: "row" }),
+      makeClick({ ts: 20_000, bundleId: "com.apple.finder", name: "Move to", role: "menuitem" })
+    ];
+    const episodes = segmentEpisodes(events, { sessionId: "s" });
+    expect(episodes).toHaveLength(2);
+    expect(episodes[1]!.actionTokens[0]).toBe("app:finder|action:activate");
+    expect(episodes[0]!.boundaryReasons).not.toContain("absorbed_tail");
   });
 });

@@ -113,3 +113,39 @@ muted text >= 6.8:1, reduced motion honoured, labelled fields with described err
 dialog with focus trap and restore, keyboard range slider with value text, decorative icons with
 named icon-only buttons, real empty/loading/error states on every page, evidence-first candidate
 language, exact action and typed text in the approval panel, typed-phrase delete-all.
+
+## Live alpha test on the build machine (2026-09-03)
+
+Real, non-simulated verification with the packaged app installed in /Applications and launched
+from the build session (which inherits the session's Screen Recording and Accessibility grants).
+
+Verified:
+- Onboarding completed against real hardware data; both permissions reported Granted; helper
+  connected; loopback listening on 47815; Learning on.
+- Real observation: 144 events (app activations, encrypted window titles, clicks enriched with
+  accessibility role and name, cmd chords), 51 encrypted screenshots with Vision OCR, privacy gaps
+  for non-allowlisted apps (Apprentice itself, Notes, the Claude desktop app).
+- Passive discovery on a real routine (Finder open PDF -> Preview -> cmd+W -> TextEdit ledger ->
+  cmd+S -> cmd+W), performed at a human pace: one candidate "Observed 2 times", confidence 0.70,
+  sequence similarity 0.86, median duration 3 min, one detected variable, risk internal change,
+  evidence linked to two episodes. Two faster occurrences (44 s and 74 s) were correctly NOT
+  proposed because the spec requires a median active duration above 90 s.
+- Candidate -> "Edit and save" -> skill v1 (3 subtasks, guide mode).
+- "Learn what I just did" via the global shortcut from Finder: range editor with 36 events and
+  16 screenshots, retention preview, deterministic draft with 8 subtasks, saved as a taught skill.
+- Menu bar: Pause for 15 minutes and Enter Private mode both produced zero events and zero
+  screenshots during real Finder clicks; Resume restored Learning; status line reflects state.
+- Feedback: general feedback stored locally; export bundle written (4 files, 136 product events,
+  no titles, URLs, OCR, or screenshots) and aggregated offline by scripts/aggregate-feedback.mjs.
+- Privacy page: 18 MB stored, counts consistent with the database.
+
+Bugs found by the live test and fixed the same day: fractional helper timestamps dropping event
+batches; startup exception hanging in a modal; Chrome profile and performance suffixes in
+titles; Finder rows resolving to the window title; double clicks stored twice; closing actions
+splitting episodes after a save; teach shortcut recorded as the last taught step; screenshots
+not linked to their events in Activity; guided runs aborting because the dashboard is frontmost
+when a run starts (see the run-engine target-app activation change).
+
+Not verified live: the browser extension (needs a manual unpacked install), real UI-Mate
+inference (weights not downloaded), and the guided run executing a real click (blocked by the
+frontmost-app gap until the activation change is deployed; re-tested below when available).

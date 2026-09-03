@@ -59,6 +59,7 @@ export function createIpcHandlers(services: Services): IpcHandlers {
     "activity:list": (query) => activity.list(query),
     "activity:deleteEvents": ({ eventIds }) => ({ deleted: activity.deleteEvents(eventIds) }),
     "activity:deleteRange": ({ fromTs, toTs }) => ({ deleted: activity.deleteRange(fromTs, toTs) }),
+    "activity:deleteScreenshots": ({ screenshotIds }) => ({ deleted: activity.deleteScreenshots(screenshotIds) }),
     "screenshot:get": ({ id }) => activity.screenshot(id),
 
     "episodes:list": ({ limit }) => storage.current.episodes.list(limit),

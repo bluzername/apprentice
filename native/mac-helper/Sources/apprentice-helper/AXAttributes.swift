@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 import Foundation
+import HelperCore
 
 /// Thin, failure-tolerant wrappers over AXUIElement attribute access.
 enum AXAttributes {
@@ -72,6 +73,32 @@ enum AXAttributes {
     static func staticTextValue(_ element: AXUIElement, role: String) -> String? {
         guard role == "AXStaticText" else { return nil }
         return string(element, kAXValueAttribute)
+    }
+
+    /// The string value of a plain text field, bounded so a long document body is never copied.
+    /// Callers must have checked the role is AXTextField and not secure; the resolver
+    /// additionally requires the field to be an idle list-row label before using it.
+    static func plainTextFieldValue(_ element: AXUIElement) -> String? {
+        guard let value = string(element, kAXValueAttribute),
+              value.count <= AXNameResolver<AXUIElement>.maxTextFieldLabelLength else { return nil }
+        return value
+    }
+
+    /// True while a text field is being edited: AXEditable reports true, or the
+    /// field editor holds a non-empty selection. An idle NSTextField exposes
+    /// AXInsertionPointLineNumber (value 0) and an empty selection, so those alone
+    /// do not count; AXFocused is checked separately by the resolver.
+    static func isBeingEdited(_ element: AXUIElement) -> Bool {
+        if bool(element, "AXEditable") == true { return true }
+        return (selectedTextLength(element) ?? 0) > 0
+    }
+
+    private static func selectedTextLength(_ element: AXUIElement) -> Int? {
+        guard let value = copy(element, kAXSelectedTextRangeAttribute), CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
+        var range = CFRange(location: 0, length: 0)
+        let axValue = unsafeBitCast(value, to: AXValue.self)
+        guard AXValueGetType(axValue) == .cfRange, AXValueGetValue(axValue, .cfRange, &range) else { return nil }
+        return range.length
     }
 
     static func pid(_ element: AXUIElement) -> pid_t? {

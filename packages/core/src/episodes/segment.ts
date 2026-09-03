@@ -89,8 +89,26 @@ function markOutcome(state: State, event: ActivityEvent): State {
 }
 
 /** Closing actions within the tail window after an outcome stay in the finished episode. */
-function shouldAbsorb(event: ActivityEvent, pending: PendingOutcome): boolean {
-  return event.ts - pending.ts <= OUTCOME_TAIL_WINDOW_MS && isClosingAction(event);
+/** An app or window switch right after an outcome may be the start of the next routine. */
+const NEXT_WORK_LOOKAHEAD_MS = 15_000;
+
+function startsNewWork(sorted: readonly ActivityEvent[], index: number): boolean {
+  const event = sorted[index]!;
+  if (event.type !== "app_activated") return false;
+  const activated = event.app?.bundleId;
+  for (let next = index + 1; next < sorted.length; next += 1) {
+    const candidate = sorted[next]!;
+    if (candidate.ts - event.ts > NEXT_WORK_LOOKAHEAD_MS) return false;
+    if (isClosingAction(candidate) || teachPhase(candidate) !== null) continue;
+    return activated !== undefined && candidate.app?.bundleId === activated;
+  }
+  return false;
+}
+
+function shouldAbsorb(sorted: readonly ActivityEvent[], index: number, pending: PendingOutcome): boolean {
+  const event = sorted[index]!;
+  if (event.ts - pending.ts > OUTCOME_TAIL_WINDOW_MS || !isClosingAction(event)) return false;
+  return !startsNewWork(sorted, index);
 }
 
 /**
@@ -113,7 +131,7 @@ export function segmentEpisodes(events: readonly ActivityEvent[], options: Segme
     const pending = state.open.pending;
 
     if (pending !== undefined) {
-      if (shouldAbsorb(event, pending)) {
+      if (shouldAbsorb(sorted, index, pending)) {
         state = absorb(state, event, pending);
         if (isIdleStart(event)) state = resolvePending(state, "idle_gap");
         continue;

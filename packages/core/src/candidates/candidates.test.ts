@@ -4,7 +4,7 @@ import { makeEpisode } from "../testing/fixtures.js";
 import { consensusSteps } from "./consensus.js";
 import { discoverCandidates } from "./discover.js";
 import { confidenceFromComponents, explainConfidence } from "./scoring.js";
-import { deterministicTitle } from "./title.js";
+import { deterministicTitle, outcomePhrase, triggerPhrase } from "./title.js";
 import { alignedLabelVariables, routeVariables } from "./variables.js";
 
 const NOTES = "app:notion|action:click|name:meeting-notes";
@@ -51,7 +51,8 @@ describe("discoverCandidates", () => {
     expect(candidate!.riskClass).toBe("internal_mutation");
     expect(candidate!.suppression.state).toBe("active");
     expect(candidate!.source).toBe("passive");
-    expect(candidate!.deterministicTitle).toBe("Crm.example: update form submit after notion");
+    expect(candidate!.deterministicTitle).toBe("Submit the update form in crm.example after clicking 'Meeting notes' in Notion");
+    expect(candidate!.expectedOutcome).toBe("Submit the update form");
     expect(candidate!.confidenceExplanation).toMatch(/^I observed a similar sequence 3 times\./);
     expect(candidate!.confidenceExplanation).not.toMatch(/I know you/i);
     expect(candidate!.scoreComponents.triggerConsistency).toBe(1);
@@ -110,6 +111,39 @@ describe("discoverCandidates", () => {
     expect(target.kind).toBe("text");
   });
 
+  it("names the invoice-filing routine by its save, not the closing Cmd+W", () => {
+    const filing = [
+      "app:finder|action:activate",
+      "app:finder|action:click|role:textbox|name:download-1-pdf",
+      "app:preview|action:activate",
+      "app:preview|action:shortcut|keys:cmd+w",
+      "app:textedit|action:activate",
+      "app:textedit|action:click|name:ledger-txt",
+      "app:textedit|action:shortcut|keys:cmd+s",
+      "app:textedit|action:shortcut|keys:cmd+w"
+    ];
+    const episodes = [0, 1].map((day) => ({ ...workflowEpisode(`f${day}`, day, filing), apps: ["finder", "preview", "textedit"], domains: [], meaningfulActionCount: 5 }));
+    const [candidate] = discoverCandidates(episodes, { now: 3 * DAY });
+    expect(candidate).toBeDefined();
+    expect(candidate!.deterministicTitle).toBe("Save in TextEdit after opening 'download-1.pdf' in Finder");
+    expect(candidate!.deterministicTitle).toMatch(/Save/);
+    expect(candidate!.deterministicTitle).toMatch(/TextEdit/);
+    expect(candidate!.deterministicTitle).toMatch(/Finder/);
+    expect(candidate!.deterministicTitle).not.toMatch(/cmd\+w/i);
+    expect(candidate!.expectedOutcome).toBe("Save");
+    expect(candidate!.expectedOutcome).not.toMatch(/cmd\+w/i);
+    expect(candidate!.trigger).toBe("Open 'download-1.pdf'");
+    expect(candidate!.confidenceExplanation).toMatch(/ended with "Save"/);
+  });
+
+  it("falls back to the last non-closing step when no strong outcome exists", () => {
+    const browse = ["app:finder|action:click|name:reports", "app:preview|action:click|name:next-page", "app:preview|action:shortcut|keys:cmd+w"];
+    const episodes = [0, 1].map((day) => ({ ...workflowEpisode(`b${day}`, day, browse), apps: ["finder", "preview"], domains: [], meaningfulActionCount: 3 }));
+    const [candidate] = discoverCandidates(episodes, { now: 3 * DAY });
+    expect(candidate!.deterministicTitle).toBe("Click 'Next page' in Preview after clicking 'Reports' in Finder");
+    expect(candidate!.expectedOutcome).toBe("Click 'Next page'");
+  });
+
   it("marks external communication outcomes with the right risk class", () => {
     const send = [NOTES, COPY, "app:chrome|domain:mail.example|route:/compose|action:navigate", "app:chrome|domain:mail.example|route:/compose|action:paste", "app:chrome|domain:mail.example|route:/compose|action:form-submit|purpose:message"];
     const [candidate] = discoverCandidates([workflowEpisode("s1", 0, send), workflowEpisode("s2", 1, send)], { now: 3 * DAY });
@@ -128,14 +162,38 @@ describe("consensus and helpers", () => {
   });
 
   it("builds titles and variables", () => {
-    expect(deterministicTitle(NOTES, SAVE)).toBe("Crm.example: update form submit after notion");
-    expect(deterministicTitle(LOG, LOG)).toBe("Crm.example: log activity");
+    expect(deterministicTitle(NOTES, SAVE)).toBe("Submit the update form in crm.example after clicking 'Meeting notes' in Notion");
+    expect(deterministicTitle(LOG, LOG)).toBe("Click the 'Log activity' button in crm.example");
+    expect(deterministicTitle(OPEN, SAVE)).toBe("Submit the update form after opening /contact/:id in crm.example");
+    expect(deterministicTitle(undefined, SAVE)).toBe("Submit the update form in crm.example");
+    expect(deterministicTitle(NOTES, undefined)).toBe("Click 'Meeting notes' in Notion");
     expect(deterministicTitle(undefined, undefined)).toBe("Repeated workflow");
+    expect(deterministicTitle("app:some-tool|action:copy", "app:chrome|domain:mail.example|action:click|role:button|name:send")).toBe("Send in mail.example after copying to the clipboard in Some Tool");
     expect(routeVariables(["app:x|domain:crm.example|route:/deals/:id/items/:id|action:navigate"]).map((variable) => variable.name)).toEqual(["deals_id", "items_id"]);
     expect(routeVariables(["app:x|route:/deals/:id|action:navigate"])[0]!.kind).toBe("identifier");
     expect(alignedLabelVariables([["app:x|action:click|name:a"]])).toEqual([]);
     const amount = alignedLabelVariables([["app:x|action:click|name:total-usd"], ["app:x|action:click|name:total-eur"]]);
     expect(amount[0]!.kind).toBe("amount");
+  });
+
+  it("phrases outcomes and triggers", () => {
+    expect(outcomePhrase("app:textedit|action:shortcut|keys:cmd+s")).toBe("Save");
+    expect(outcomePhrase("app:slack|action:shortcut|keys:cmd+enter")).toBe("Submit");
+    expect(outcomePhrase("app:textedit|action:shortcut|keys:cmd+w")).toBe("Press Cmd+W");
+    expect(outcomePhrase("app:chrome|action:click|role:button|name:create-issue")).toBe("Create issue");
+    expect(outcomePhrase("app:chrome|action:download|ext:pdf")).toBe("Download a .pdf file");
+    expect(outcomePhrase("app:finder|action:click|role:row|name:report-pdf")).toBe("Open 'report.pdf'");
+    expect(triggerPhrase("app:finder|action:click|role:textbox|name:download-1-pdf")).toBe("opening 'download-1.pdf'");
+    expect(triggerPhrase("app:finder|action:click|role:button|name:save-pdf")).toBe("clicking the 'Save pdf' button");
+    expect(triggerPhrase(LOG)).toBe("clicking the 'Log activity' button");
+    expect(triggerPhrase(OPEN)).toBe("opening /contact/:id");
+    expect(triggerPhrase(SAVE)).toBe("submitting the update form");
+    expect(triggerPhrase("app:chrome|site:gmail|view:inbox|action:view")).toBe("opening Gmail inbox");
+    expect(triggerPhrase("app:chrome|site:gmail|view:compose|action:view")).toBe("starting a new message in Gmail");
+    expect(triggerPhrase("app:chrome|site:web|view:login|action:view")).toBe("signing in to web");
+    expect(triggerPhrase("app:notion|action:shortcut|keys:cmd+shift+p")).toBe("pressing Cmd+Shift+P");
+    expect(triggerPhrase("app:textedit|action:activate")).toBe("switching to TextEdit");
+    expect(triggerPhrase("app:x|action:field-input|field:subject")).toBe("filling in 'Subject'");
   });
 
   it("computes confidence as the weighted mean", () => {

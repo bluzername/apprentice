@@ -1,10 +1,11 @@
 import { draftSkillFromEvents, eventToToken, skillFromDraft, skillRetentionPreview, type CoreSkillDraft } from "@apprentice/core";
-import type { ActionPolicyMode, ActivityEvent, CompletionPredicate, DraftSkillInput, ScreenshotRecord, Skill, SkillDraft } from "@apprentice/schemas";
+import type { ActionPolicyMode, ActivityEvent, AppSettings, CompletionPredicate, DraftSkillInput, ScreenshotRecord, Skill, SkillDraft } from "@apprentice/schemas";
 import type { Analytics } from "../analytics.js";
 import type { StorageRef } from "../app-context.js";
 import type { Clock } from "../clock.js";
 import { ServiceError } from "../errors.js";
 import type { Logger } from "../logger.js";
+import { isTaughtEvent, parseTeachShortcut, trimAtTeachMarker } from "./teach-filter.js";
 
 export const PROTECTED_SCREENSHOTS_META_KEY = "retention.protectedScreenshotIds";
 
@@ -33,6 +34,7 @@ export interface DraftRefiner {
 
 export interface TeachServiceDeps {
   readonly storage: StorageRef;
+  readonly settings: { get(): AppSettings };
   readonly analytics: Analytics;
   readonly clock: Clock;
   readonly logger: Logger;
@@ -70,9 +72,9 @@ export class TeachService {
   private load(range: TeachRange): { events: ActivityEvent[]; screenshots: ScreenshotRecord[] } {
     const storage = this.deps.storage.current;
     const excluded = new Set(range.excludedEventIds);
-    const events = storage.events
-      .query({ fromTs: range.startTs, toTs: range.endTs, limit: 5000 }, { revealSensitive: true })
-      .filter((event) => event.privacy === "allowed" && !excluded.has(event.id));
+    const teachShortcut = parseTeachShortcut(this.deps.settings.get().shortcuts.teach);
+    const stored = storage.events.query({ fromTs: range.startTs, toTs: range.endTs, limit: 5000 }, { revealSensitive: true });
+    const events = trimAtTeachMarker(stored).filter((event) => isTaughtEvent(event, teachShortcut) && !excluded.has(event.id));
     const screenshots = storage.screenshots.inRange(range.startTs, range.endTs);
     return { events, screenshots };
   }

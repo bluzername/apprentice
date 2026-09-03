@@ -1,4 +1,4 @@
-import { BrowserWindow } from "electron";
+import { app, BrowserWindow } from "electron";
 import { join } from "node:path";
 
 export interface MainWindowOptions {
@@ -53,4 +53,16 @@ export function showWindow(win: BrowserWindow | null): void {
   if (!win.isVisible()) win.show();
   if (win.isMinimized()) win.restore();
   win.focus();
+}
+
+/**
+ * Brings the window in front of the app the run is acting on: a run that
+ * needs an approval or an answer must be seen even though another app is
+ * active. The run engine re-activates the target app afterwards.
+ */
+export function raiseWindow(win: BrowserWindow | null): void {
+  showWindow(win);
+  if (!win || win.isDestroyed()) return;
+  app.focus({ steal: true });
+  win.moveTop();
 }

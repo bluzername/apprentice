@@ -37,6 +37,8 @@ export interface CaptureServiceDeps {
 
 export const OCR_MAX_LONG_EDGE = 1280;
 
+export type CapturedListener = (record: ScreenshotRecord) => void;
+
 /**
  * Sparse screenshot capture: throttle, perceptual dedup, backpressure (concurrency 1),
  * encrypted blob, screenshot record, then encrypted OCR. Every stage is timed.
@@ -48,6 +50,7 @@ export class CaptureService {
   private lastHash: string | null = null;
   private captured = 0;
   private deduplicated = 0;
+  private listeners: ReadonlyArray<CapturedListener> = [];
 
   constructor(private readonly deps: CaptureServiceDeps) {
     this.throttle = new CaptureThrottle({ now: () => deps.clock.now(), minIntervalMs: deps.minIntervalMs });
@@ -63,6 +66,14 @@ export class CaptureService {
     this.deps.metrics.increment("capture.enqueued");
     this.kick();
     return decision;
+  }
+
+  /** Called with every stored screenshot record, before OCR runs. Listener errors never fail the capture. */
+  onCaptured(listener: CapturedListener): () => void {
+    this.listeners = [...this.listeners, listener];
+    return () => {
+      this.listeners = this.listeners.filter((entry) => entry !== listener);
+    };
   }
 
   resetThrottle(): void {
@@ -132,7 +143,19 @@ export class CaptureService {
     this.lastHash = hash;
     this.captured += 1;
     this.deps.metrics.increment("capture.stored");
+    this.notifyCaptured(record);
     await this.runOcr(record, capture.png);
+  }
+
+  private notifyCaptured(record: ScreenshotRecord): void {
+    for (const listener of this.listeners) {
+      try {
+        listener(record);
+      } catch (error) {
+        this.deps.metrics.increment("capture.listenerFailed");
+        this.deps.logger.warn("screenshot listener failed", { id: record.id, error: error instanceof Error ? error.message : String(error) });
+      }
+    }
   }
 
   private async runOcr(record: ScreenshotRecord, png: Buffer): Promise<void> {

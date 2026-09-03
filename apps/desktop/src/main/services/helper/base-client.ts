@@ -1,5 +1,6 @@
 import {
   AccessibilityContextAtPointResultSchema,
+  ActivateAppResultSchema,
   CapabilitiesResultSchema,
   CaptureResultSchema,
   FrontmostContextResultSchema,
@@ -7,6 +8,7 @@ import {
   PerformActionResultSchema,
   PermissionStatusResultSchema,
   type AccessibilityContextAtPointResult,
+  type ActivateAppResult,
   type CapabilitiesResult,
   type CaptureResult,
   type ExecutableAction,
@@ -121,6 +123,10 @@ export abstract class HelperClientBase implements HelperClient {
 
   performAction(action: ExecutableAction, approvalToken: string): Promise<{ performed: boolean; durationMs: number }> {
     return this.typed(PerformActionResultSchema, "performAction", { action, approvalToken }, { timeoutMs: 30_000 });
+  }
+
+  activateApp(bundleId: string): Promise<ActivateAppResult> {
+    return this.typed(ActivateAppResultSchema, "activateApp", { bundleId }, { timeoutMs: 10_000 });
   }
 
   emergencyStop(clear = false): Promise<{ stopped: boolean }> {

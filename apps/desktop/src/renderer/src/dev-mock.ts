@@ -114,6 +114,7 @@ export function installDevMock(): void {
     "activity:list": () => ({ events: sampleEvents, screenshots: sampleScreenshots }),
     "activity:deleteEvents": (p) => ({ deleted: (p as { eventIds: string[] }).eventIds.length }),
     "activity:deleteRange": () => ({ deleted: 3 }),
+    "activity:deleteScreenshots": (p) => ({ deleted: (p as { screenshotIds: string[] }).screenshotIds.length }),
     "screenshot:get": () => ({ pngBase64: TINY_PNG, width: 1440, height: 900 }),
     "episodes:list": () => sampleEpisodes,
     "episodes:resegment": () => ({ episodes: 2, candidates: 1 }),

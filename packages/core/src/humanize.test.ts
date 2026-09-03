@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { humanizeDuration, humanizeToken, humanizeTokenWithContext } from "./humanize.js";
+import { humanizeAppName, humanizeContext, humanizeDuration, humanizeToken, humanizeTokenWithContext } from "./humanize.js";
 
 describe("humanize", () => {
   it("turns tokens into short imperative sentences", () => {
@@ -17,6 +17,23 @@ describe("humanize", () => {
     expect(humanizeToken("app:chrome|site:web|view:login|action:view")).toBe("Sign in to web");
     expect(humanizeToken("app:chrome|site:acme-store|view:checkout|action:view")).toBe("Open Acme store checkout");
     expect(humanizeTokenWithContext("app:chrome|domain:crm.example|action:click|name:save")).toBe("Click 'Save' on crm.example");
+  });
+
+  it("names apps and file entries for people", () => {
+    expect(humanizeAppName("textedit")).toBe("TextEdit");
+    expect(humanizeAppName("finder")).toBe("Finder");
+    expect(humanizeAppName("preview")).toBe("Preview");
+    expect(humanizeAppName("chrome")).toBe("Google Chrome");
+    expect(humanizeAppName("some-new-tool")).toBe("Some New Tool");
+    expect(humanizeContext("app:chrome|domain:crm.example|action:copy")).toBe("crm.example");
+    expect(humanizeContext("app:textedit|action:copy")).toBe("TextEdit");
+    expect(humanizeContext("action:copy")).toBeUndefined();
+    expect(humanizeToken("app:finder|action:click|role:textbox|name:download-1-pdf")).toBe("Open 'download-1.pdf'");
+    expect(humanizeToken("app:textedit|action:click|name:ledger-txt")).toBe("Open 'ledger.txt'");
+    expect(humanizeToken("app:finder|action:click|role:row|name:q3-report-xlsx")).toBe("Open 'q3-report.xlsx'");
+    expect(humanizeToken("app:chrome|action:click|role:button|name:export-pdf")).toBe("Click the 'Export pdf' button");
+    expect(humanizeToken("app:notion|action:click|name:meeting-notes")).toBe("Click 'Meeting notes'");
+    expect(humanizeTokenWithContext("app:finder|action:click|role:textbox|name:download-1-pdf")).toBe("Open 'download-1.pdf' on finder");
   });
 
   it("formats durations", () => {

@@ -1,5 +1,6 @@
 import type {
   AccessibilityContextAtPointResult,
+  ActivateAppResult,
   CapabilitiesResult,
   CaptureResult,
   ExecutableAction,
@@ -70,5 +71,7 @@ export interface HelperClient {
   focusedElement(): Promise<z.infer<typeof FocusedElementSchemaLoose>>;
   accessibilityContextAtPoint(x: number, y: number): Promise<AccessibilityContextAtPointResult>;
   performAction(action: ExecutableAction, approvalToken: string): Promise<{ performed: boolean; durationMs: number }>;
+  /** Brings `bundleId` to the front (launching it when installed but not running). Never performs input. */
+  activateApp(bundleId: string): Promise<ActivateAppResult>;
   emergencyStop(clear?: boolean): Promise<{ stopped: boolean }>;
 }

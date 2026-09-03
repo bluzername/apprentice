@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { makeClick, makeEvent } from "../testing/fixtures.js";
 import { normalizeAppName } from "./app-name.js";
 import { normalizeLabel } from "./label.js";
+import { clickedFilename, filenameFromLabel } from "./filename.js";
 import { normalizeRoute } from "./route.js";
 import { eventToToken, isMeaningfulToken, normalizeKeys, parseToken } from "./token.js";
 
@@ -113,5 +114,23 @@ describe("eventToToken", () => {
     expect(isMeaningfulToken("app:chrome|action:move")).toBe(false);
     expect(isMeaningfulToken("app:chrome|action:activate")).toBe(false);
     expect(isMeaningfulToken("garbage")).toBe(false);
+  });
+});
+
+describe("filenameFromLabel", () => {
+  it("restores the dot before a known extension only", () => {
+    expect(filenameFromLabel("download-1-pdf")).toBe("download-1.pdf");
+    expect(filenameFromLabel("ledger-txt")).toBe("ledger.txt");
+    expect(filenameFromLabel("meeting-notes")).toBeUndefined();
+    expect(filenameFromLabel("log-activity")).toBeUndefined();
+    expect(filenameFromLabel("pdf")).toBeUndefined();
+  });
+
+  it("only treats file-entry roles as opened files", () => {
+    expect(clickedFilename({ action: "click", role: "textbox", name: "download-1-pdf" })).toBe("download-1.pdf");
+    expect(clickedFilename({ action: "click", role: "row", name: "invoice-pdf" })).toBe("invoice.pdf");
+    expect(clickedFilename({ action: "click", name: "invoice-pdf" })).toBe("invoice.pdf");
+    expect(clickedFilename({ action: "click", role: "button", name: "export-pdf" })).toBeUndefined();
+    expect(clickedFilename({ action: "navigate", name: "invoice-pdf" })).toBeUndefined();
   });
 });

@@ -1,4 +1,4 @@
-import type { AxElement, DomStateResult, ExecutableAction, OcrBlock, ProposedActionResult, ProviderType, Skill, StepVerification, VerifyStepInput, NextActionInput } from "@apprentice/schemas";
+import type { ActivateAppResult, AxElement, DomStateResult, ExecutableAction, OcrBlock, ProposedActionResult, ProviderType, Skill, StepVerification, VerifyStepInput, NextActionInput } from "@apprentice/schemas";
 import type { MetricsRecorder } from "@apprentice/core";
 import type { StorageRef } from "../app-context.js";
 import type { Clock } from "../clock.js";
@@ -26,6 +26,11 @@ export interface RunContextSnapshot {
 
 export interface RunContextSource {
   frontmost(): Promise<RunContextSnapshot>;
+}
+
+/** Brings an app to the front so the run acts on it, not on the Apprentice window. Performs no input. */
+export interface AppActivator {
+  activate(bundleId: string): Promise<ActivateAppResult>;
 }
 
 /** OCR of an image; blocks are in that image's pixel space. */
@@ -66,6 +71,9 @@ export interface RunEngineDeps {
   /** Current helper session secret used to mint approval tokens; null when no helper session can verify them. */
   readonly approvalSecret: () => string | null;
   readonly context: RunContextSource;
+  readonly appActivator: AppActivator;
+  /** Raises the Apprentice window on the run's detail view when an approval or a question needs the user. */
+  readonly raiseWindow?: (runId: string) => void;
   readonly ocr: OcrSource;
   readonly ax: AxSource;
   readonly dom: DomStateSource;
@@ -81,6 +89,9 @@ export interface RunEngineDeps {
   /** Delay after an action before the "after" capture (600 ms in production). */
   readonly settleMs?: number;
   readonly domQueryTimeoutMs?: number;
+  /** How long to wait for the target app to come to the front after activateApp (1500 ms in production). */
+  readonly activationWaitMs?: number;
+  readonly activationPollMs?: number;
 }
 
 export type StopReason =

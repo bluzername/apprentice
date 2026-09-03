@@ -168,6 +168,7 @@ export const ipcContract = {
   "activity:list": { request: ActivityQuerySchema, response: z.object({ events: z.array(ActivityEventSchema), screenshots: z.array(ScreenshotRecordSchema) }) },
   "activity:deleteEvents": { request: z.object({ eventIds: z.array(IdSchema).min(1).max(5000) }), response: z.object({ deleted: z.number().int() }) },
   "activity:deleteRange": { request: z.object({ fromTs: TimestampMsSchema, toTs: TimestampMsSchema }), response: z.object({ deleted: z.number().int() }) },
+  "activity:deleteScreenshots": { request: z.object({ screenshotIds: z.array(IdSchema).min(1).max(5000) }), response: z.object({ deleted: z.number().int() }) },
   "screenshot:get": { request: z.object({ id: IdSchema }), response: z.object({ pngBase64: z.string(), width: z.number().int(), height: z.number().int() }) },
 
   "episodes:list": { request: z.object({ limit: z.number().int().min(1).max(500).default(100) }), response: z.array(EpisodeSchema) },
@@ -240,7 +241,8 @@ export type IpcResponse<C extends IpcChannel> = z.output<IpcContract[C]["respons
 /** Events pushed from main to renderer. */
 export const ipcEvents = {
   "event:learning": z.object({ state: LearningStateSchema, menuBarStatus: MenuBarStatusSchema, pausedUntil: z.number().int().optional() }),
-  "event:activity": z.object({ events: z.array(ActivityEventSchema) }),
+  /** `screenshots` carries records that were attached to already-stored events after the fact. */
+  "event:activity": z.object({ events: z.array(ActivityEventSchema), screenshots: z.array(ScreenshotRecordSchema).optional() }),
   "event:candidate": z.object({ candidate: WorkflowCandidateSchema }),
   "event:run": z.object({ detail: RunDetailSchema }),
   "event:approvalRequest": ApprovalRequestSchema,

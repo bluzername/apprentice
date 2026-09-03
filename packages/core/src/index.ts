@@ -1,5 +1,5 @@
 export { canonicalJson, newId, sha256Hex, stableHash } from "./ids.js";
-export { humanizeDuration, humanizeKeys, humanizeToken, humanizeTokenWithContext, humanizeView } from "./humanize.js";
+export { humanizeAppName, humanizeContext, humanizeDuration, humanizeKeys, humanizeToken, humanizeTokenWithContext, humanizeView } from "./humanize.js";
 export * from "./normalize/index.js";
 export * from "./redaction/index.js";
 export * from "./allowlist/index.js";

@@ -23,6 +23,7 @@ export const HelperCommandSchema = z.enum([
   "focusedElement",
   "accessibilityContextAtPoint",
   "performAction",
+  "activateApp",
   "emergencyStop",
   "shutdown"
 ]);
@@ -222,6 +223,16 @@ export const PerformActionResultSchema = z.object({
   performed: z.boolean(),
   durationMs: z.number().nonnegative()
 });
+
+/** Brings an app to the front so a run acts on it instead of on the Apprentice window. */
+export const ActivateAppParamsSchema = z.object({ bundleId: z.string().min(1).max(256) });
+export type ActivateAppParams = z.infer<typeof ActivateAppParamsSchema>;
+
+export const ActivateAppResultSchema = z.object({
+  activated: z.boolean(),
+  pid: z.number().int().nonnegative().optional()
+});
+export type ActivateAppResult = z.infer<typeof ActivateAppResultSchema>;
 
 export const StartObservationParamsSchema = z.object({
   /** When set, the helper replays this JSONL fixture instead of observing. */

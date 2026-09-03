@@ -7,7 +7,8 @@ import { episodeSimilarity, similarityMatrix } from "../similarity/episode.js";
 import { clusterBySimilarity, median } from "./cluster.js";
 import { consensusSteps } from "./consensus.js";
 import { confidenceFromComponents, explainConfidence, scoreComponents } from "./scoring.js";
-import { deterministicTitle } from "./title.js";
+import { anchorEntry } from "../skills/outcome.js";
+import { deterministicTitle, outcomePhrase } from "./title.js";
 import { detectVariables } from "./variables.js";
 
 export interface DiscoverOptions {
@@ -83,13 +84,14 @@ function buildCandidate(members: readonly Episode[], options: DiscoverOptions, a
   const estimatedWeeklyMinutes = Math.round(estimatedWeeklyFrequency * (medianDurationMs / 60_000) * 10) / 10;
   const meaningful = consensusTokens.filter((token) => isMeaningfulToken(token));
   const triggerToken = meaningful[0];
-  const outcomeToken = meaningful[meaningful.length - 1];
+  // The last strong outcome (submit, download, save shortcut, save/send click), else the last step that is not a closing action.
+  const outcomeToken = meaningful.length > 0 ? anchorEntry(meaningful.map((token) => ({ token }))).token : undefined;
   const riskClass = candidateRiskClass(consensusTokens);
   const components = scoreComponents({ episodes: members, meanSimilarity: allMetrics.meanPairwise, consensusTokens, estimatedWeeklyMinutes });
   const meanConsumption = members.reduce((sum, episode) => sum + episode.consumptionScore, 0) / members.length;
   const suppressed = source === "passive" && meanConsumption > DISCOVER_DEFAULTS.consumptionSuppressionThreshold;
   const trigger = triggerToken !== undefined ? humanizeToken(triggerToken) : (members[0]?.triggerHypothesis ?? "Unknown trigger");
-  const outcome = outcomeToken !== undefined ? humanizeToken(outcomeToken) : (members[0]?.outcomeHypothesis ?? "Unknown outcome");
+  const outcome = outcomeToken !== undefined ? outcomePhrase(outcomeToken) : (members[0]?.outcomeHypothesis ?? "Unknown outcome");
   return {
     id: `cand_${patternKey.slice(0, 24)}`,
     source,

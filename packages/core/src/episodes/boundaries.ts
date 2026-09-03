@@ -5,8 +5,8 @@ import { normalizeLabel } from "../normalize/label.js";
 import { normalizeKeys } from "../normalize/token.js";
 
 export const OUTCOME_CLICK_TERMS: readonly string[] = ["send", "submit", "save", "create", "publish", "complete", "done", "post"];
-const OUTCOME_SHORTCUTS: ReadonlySet<string> = new Set(["cmd+s", "cmd+enter", "cmd+return"]);
-const CLOSING_SHORTCUTS: ReadonlySet<string> = new Set(["cmd+w", "cmd+q", "escape", "esc"]);
+export const OUTCOME_SHORTCUTS: ReadonlySet<string> = new Set(["cmd+s", "cmd+enter", "cmd+return"]);
+export const CLOSING_SHORTCUTS: ReadonlySet<string> = new Set(["cmd+w", "cmd+q", "escape", "esc"]);
 const CLOSING_EVENT_TYPES: ReadonlySet<ActivityEvent["type"]> = new Set([
   "app_activated",
   "idle_changed",

@@ -1,3 +1,4 @@
+import { clickedFilename } from "./normalize/filename.js";
 import { parseToken } from "./normalize/token.js";
 
 function words(label: string): string {
@@ -23,6 +24,49 @@ const SITE_LABELS: Readonly<Record<string, string>> = {
   youtube: "YouTube",
   web: "web"
 };
+
+/** Display names for app slugs from normalizeAppName; anything else is capitalized word by word. */
+const APP_LABELS: Readonly<Record<string, string>> = {
+  finder: "Finder",
+  textedit: "TextEdit",
+  preview: "Preview",
+  chrome: "Google Chrome",
+  safari: "Safari",
+  arc: "Arc",
+  brave: "Brave",
+  edge: "Microsoft Edge",
+  firefox: "Firefox",
+  mail: "Mail",
+  notes: "Notes",
+  calendar: "Calendar",
+  notion: "Notion",
+  slack: "Slack",
+  excel: "Excel",
+  word: "Word",
+  outlook: "Outlook",
+  linear: "Linear",
+  figma: "Figma",
+  xcode: "Xcode",
+  vscode: "VS Code",
+  terminal: "Terminal"
+};
+
+/** "textedit" -> "TextEdit", "some-tool" -> "Some Tool". */
+export function humanizeAppName(app: string): string {
+  const known = APP_LABELS[app];
+  if (known !== undefined) return known;
+  return words(app)
+    .split(" ")
+    .map((word) => capitalize(word))
+    .join(" ");
+}
+
+/** A token's app or domain as shown to people: domains stay as they are, apps get their display name. */
+export function humanizeContext(token: string): string | undefined {
+  const parts = parseToken(token);
+  if (parts["domain"] !== undefined) return parts["domain"];
+  return parts["app"] !== undefined ? humanizeAppName(parts["app"]) : undefined;
+}
 
 /** Mail-like sites show messages rather than pages. */
 const PAGE_NOUNS: Readonly<Record<string, string>> = { gmail: "message", outlook: "message", "yahoo-mail": "message" };
@@ -75,8 +119,10 @@ export function humanizeToken(token: string): string {
   const action = parts["action"];
   const name = parts["name"] !== undefined ? capitalize(words(parts["name"])) : undefined;
   const role = parts["role"] !== undefined ? words(parts["role"]) : undefined;
+  const filename = clickedFilename(parts);
   switch (action) {
     case "click":
+      if (filename !== undefined) return `Open '${filename}'`;
       if (name !== undefined && role !== undefined) return `Click the '${name}' ${role}`;
       if (name !== undefined) return `Click '${name}'`;
       if (role !== undefined) return `Click a ${role}`;
@@ -98,7 +144,7 @@ export function humanizeToken(token: string): string {
     case "field-input":
       return parts["field"] !== undefined ? `Fill in '${capitalize(words(parts["field"]))}'` : "Fill in a field";
     case "activate":
-      return parts["app"] !== undefined ? `Switch to ${capitalize(parts["app"])}` : "Switch app";
+      return parts["app"] !== undefined ? `Switch to ${humanizeAppName(parts["app"])}` : "Switch app";
     case "view":
       return humanizeView(parts["site"], parts["view"]);
     default:

@@ -309,6 +309,79 @@ describe("browser view titles", () => {
   });
 });
 
+describe("screenshot attachment", () => {
+  it("links a click capture to its event on both sides", async () => {
+    const { helper, pipeline, capture, context, screen } = await setup();
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    await capture.idle();
+    screen.setTemplate("mailCompose");
+    capture.resetThrottle();
+    helper.emit("mouseDown", { x: 10, y: 10, button: "left", bundleId: CHROME });
+    await pipeline.settleEnrichments();
+    await sleep(30);
+    await capture.idle();
+    pipeline.flush();
+    const storage = context.storage.current;
+    const click = storage.events.query({ types: ["mouse_down"] })[0]!;
+    const shot = storage.screenshots.inRange(0, Date.now() + 1000).find((record) => record.reason === "click")!;
+    expect(shot).toBeDefined();
+    expect(shot.eventId).toBe(click.id);
+    expect(click.screenshotRef).toBe(shot.id);
+    await pipeline.shutdown();
+  });
+
+  it("updates an event that was already written when its capture finishes later", async () => {
+    const { helper, pipeline, capture, context, recorder } = await setup();
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    const written = pipeline.flush();
+    const activated = written.find((event) => event.type === "app_activated")!;
+    expect(activated.screenshotRef).toBeUndefined();
+    await capture.idle();
+    const storage = context.storage.current;
+    const shot = storage.screenshots.inRange(0, Date.now() + 1000)[0]!;
+    expect(shot.eventId).toBe(activated.id);
+    const stored = storage.events.byIds([activated.id])[0]!;
+    expect(stored.screenshotRef).toBe(shot.id);
+    const update = recorder.of("event:activity").find((payload) => payload.events.some((event) => event.id === activated.id && event.screenshotRef === shot.id));
+    expect(update?.screenshots?.map((record) => record.id)).toEqual([shot.id]);
+    await pipeline.shutdown();
+  });
+
+  it("attaches an interval capture to the most recent allowed event of the same app", async () => {
+    const { helper, pipeline, capture, context, screen } = await setup();
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    await capture.idle();
+    helper.emit("shortcut", { keys: ["cmd", "s"], bundleId: CHROME });
+    pipeline.flush();
+    screen.setTemplate("mailCompose");
+    capture.resetThrottle();
+    capture.request("interval", { app: { bundleId: CHROME, name: "Google Chrome" } });
+    await capture.idle();
+    const storage = context.storage.current;
+    const shortcut = storage.events.query({ types: ["shortcut"] })[0]!;
+    const interval = storage.screenshots.inRange(0, Date.now() + 1000).find((record) => record.reason === "interval")!;
+    expect(interval.eventId).toBe(shortcut.id);
+    expect(storage.events.byIds([shortcut.id])[0]!.screenshotRef).toBe(interval.id);
+    await pipeline.shutdown();
+  });
+
+  it("leaves an interval capture standalone when the recent event already has a screenshot or is too old", async () => {
+    const { helper, pipeline, capture, context, screen } = await setup();
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    await capture.idle();
+    pipeline.flush();
+    screen.setTemplate("mailCompose");
+    capture.resetThrottle();
+    capture.request("interval", { app: { bundleId: CHROME, name: "Google Chrome" } });
+    await capture.idle();
+    const storage = context.storage.current;
+    const records = storage.screenshots.inRange(0, Date.now() + 1000);
+    expect(records.map((record) => record.reason)).toEqual(["app_change", "interval"]);
+    expect(records[1]!.eventId).toBeUndefined();
+    await pipeline.shutdown();
+  });
+});
+
 describe("helper timestamps", () => {
   it("rounds fractional helper timestamps so the whole batch is stored", async () => {
     const helper = new FakeHelperClient({ now: () => 1_700_000_000_000.75 });

@@ -9,6 +9,9 @@ import {
   RemoteFeedbackPayloadSchema,
   SkillSchema,
   HelperMessageSchema,
+  HelperCommandSchema,
+  ActivateAppParamsSchema,
+  ActivateAppResultSchema,
   ExtensionEventSchema,
   PRODUCT_NAME
 } from "./index.js";
@@ -110,6 +113,15 @@ describe("schemas", () => {
     const res = HelperMessageSchema.safeParse({ type: "response", id: "1", v: "1.0", ok: true, result: {} });
     expect(res.success).toBe(true);
     expect(HelperMessageSchema.safeParse({ type: "log", msg: "x" }).success).toBe(false);
+  });
+
+  it("activateApp is a helper command with a bundle id and an activation result", () => {
+    expect(HelperCommandSchema.safeParse("activateApp").success).toBe(true);
+    expect(ActivateAppParamsSchema.safeParse({ bundleId: "com.apple.finder" }).success).toBe(true);
+    expect(ActivateAppParamsSchema.safeParse({ bundleId: "" }).success).toBe(false);
+    expect(ActivateAppResultSchema.parse({ activated: true, pid: 12 })).toEqual({ activated: true, pid: 12 });
+    expect(ActivateAppResultSchema.safeParse({ activated: false }).success).toBe(true);
+    expect(ActivateAppResultSchema.safeParse({ activated: "yes" }).success).toBe(false);
   });
 
   it("extension events are strict and never carry values", () => {

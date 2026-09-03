@@ -53,6 +53,8 @@ final class CommandRouter {
             return AXInspector.context(params: request.params)
         case .performAction:
             return performAction(request.params)
+        case .activateApp:
+            return AppActivation.activate(params: request.params)
         case .emergencyStop:
             return .success(.object(["stopped": .bool(stopFlag.isSet)]))
         case .shutdown:

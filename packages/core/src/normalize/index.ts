@@ -12,6 +12,7 @@ export {
   type BrowserViewClass
 } from "./browser-view.js";
 export { normalizeLabel, MAX_LABEL_LENGTH } from "./label.js";
+export { FILENAME_ROLES, FILE_EXTENSIONS, clickedFilename, filenameFromLabel } from "./filename.js";
 export { UI_WORDS, isLikelyPersonName, stripPersonNames } from "./names.js";
 export {
   buildToken,

@@ -1,5 +1,6 @@
 import type { ActionPolicyMode, ApprovalRequest, ApprovalScope, Run, RunDetail, RunStep, Skill } from "@apprentice/schemas";
 import { ServiceError } from "../errors.js";
+import { initialAppTarget } from "./app-focus.js";
 import { createRun, createStep, isTerminal, withStatus } from "./run-state.js";
 import { executeStep, type ActiveRun, type ApprovalResolution, type QuestionAnswer, type RunnerHost, type StepOutcome } from "./step-runner.js";
 import type { RunEngineDeps } from "./types.js";
@@ -70,7 +71,7 @@ export class RunEngine implements RunnerHost {
       throw new ServiceError("policy_blocked", "low_risk_auto is an experimental mode; enable it in Settings first");
     }
     const run = createRun(skill, effectiveMode, this.deps.model.providerType(), this.deps.model.modelName(), this.deps.clock.now());
-    const active: ActiveRun = { run, steps: [], skill, variables, priorActions: [], consecutive: { stale: 0, invalid: 0, verifyFail: 0 }, subtaskVerified: false, stopRequested: null };
+    const active: ActiveRun = { run, steps: [], skill, variables, priorActions: [], consecutive: { stale: 0, invalid: 0, verifyFail: 0 }, subtaskVerified: false, stopRequested: null, targetBundleId: undefined };
     let resolveDone: (value: Run) => void = () => undefined;
     const done = new Promise<Run>((resolve) => {
       resolveDone = resolve;
@@ -78,6 +79,9 @@ export class RunEngine implements RunnerHost {
     this.session = { active, pendingApproval: null, pendingQuestion: null, done, resolveDone };
     this.deps.storage.current.runs.save(run);
     await this.deps.hooks?.beforeStart?.(skill, run.id);
+    // The user usually starts a run from the Apprentice window, so the frontmost app is rarely the target.
+    const frontmost = await this.deps.context.frontmost().catch(() => undefined);
+    active.targetBundleId = initialAppTarget(skill, frontmost?.bundleId);
     this.deps.hooks?.onActiveChange?.(true);
     this.deps.analytics.track("run_started", { mode: effectiveMode, subtasks: skill.subtasks.length, source: skill.source }, skill.riskClass);
     active.run = withStatus(run, "running", this.deps.clock.now());
@@ -148,6 +152,7 @@ export class RunEngine implements RunnerHost {
       };
       this.deps.emit("event:approvalRequest", request);
       this.emitDetail(session);
+      this.deps.raiseWindow?.(active.run.id);
     });
   }
 
@@ -166,6 +171,7 @@ export class RunEngine implements RunnerHost {
         }
       };
       this.emitDetail(session);
+      this.deps.raiseWindow?.(active.run.id);
     });
   }
 

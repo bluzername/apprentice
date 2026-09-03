@@ -29,6 +29,7 @@ public enum HelperCommand: String, CaseIterable {
     case focusedElement
     case accessibilityContextAtPoint
     case performAction
+    case activateApp
     case emergencyStop
     case shutdown
 }
