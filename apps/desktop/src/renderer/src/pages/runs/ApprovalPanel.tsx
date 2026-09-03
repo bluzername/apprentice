@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type JSX } from "react";
 import type { ApprovalRequest } from "@apprentice/schemas";
 import { Badge, RiskBadge } from "../../components/Badge";
 import { Button } from "../../components/Button";
-import { actionTarget, describeAction, hotkeyLabel, keyLabel, markerRadius, scalePoint } from "../../lib/annotation";
+import { actionTarget, describeAction, hotkeyLabel, keyLabel, markerPosition, markerRadius } from "../../lib/annotation";
 import { formatPercent, humanize } from "../../lib/format";
 import { TypedTextPreview } from "./TypedTextPreview";
 
@@ -19,11 +19,15 @@ interface ApprovalPanelProps {
 export function ApprovalPanel({ request, busy, onDecide }: ApprovalPanelProps): JSX.Element {
   const imgRef = useRef<HTMLImageElement>(null);
   const [displayed, setDisplayed] = useState({ width: 0, height: 0 });
+  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const img = imgRef.current;
     if (!img) return;
-    const update = (): void => setDisplayed({ width: img.clientWidth, height: img.clientHeight });
+    const update = (): void => {
+      setDisplayed({ width: img.clientWidth, height: img.clientHeight });
+      setImageOffset({ x: img.offsetLeft, y: img.offsetTop });
+    };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(img);
@@ -33,7 +37,7 @@ export function ApprovalPanel({ request, busy, onDecide }: ApprovalPanelProps): 
   const natural = { width: request.screenshotWidth, height: request.screenshotHeight };
   const target = request.target ?? actionTarget(request.proposed);
   const targetLabel = request.target?.label;
-  const marker = target ? scalePoint(target, natural, displayed) : null;
+  const marker = target ? markerPosition(target, natural, displayed, imageOffset) : null;
   const radius = markerRadius(displayed.width);
   const action = request.proposed;
 

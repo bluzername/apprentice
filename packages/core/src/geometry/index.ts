@@ -60,17 +60,23 @@ export interface StaleScreenResult {
 export const DEFAULT_MAX_SCREEN_AGE_MS = 5000;
 export const DEFAULT_MAX_SCREEN_HAMMING = 10;
 
-/** A screen is stale when the screenshot is too old or the content changed materially. */
+/**
+ * A screen is stale when its content changed materially since the proposal
+ * screenshot. Age alone only counts when no fresh capture is available to
+ * compare against: a local model takes 10-20 s per proposal, and an unchanged
+ * screen is still the screen the action was proposed for.
+ */
 export function isStaleScreen(input: StaleScreenInput): StaleScreenResult {
   const maxAgeMs = input.maxAgeMs ?? DEFAULT_MAX_SCREEN_AGE_MS;
   const maxHamming = input.maxHamming ?? DEFAULT_MAX_SCREEN_HAMMING;
   const reasons: string[] = [];
   const age = input.now - input.capturedAt;
   if (age < 0) reasons.push("captured_in_future");
-  if (age > maxAgeMs) reasons.push(`age_exceeded:${age}ms>${maxAgeMs}ms`);
   if (input.beforeHash !== undefined && input.afterHash !== undefined) {
     const distance = hammingDistance(input.beforeHash, input.afterHash);
     if (distance > maxHamming) reasons.push(`content_changed:hamming=${distance}>${maxHamming}`);
+  } else if (age > maxAgeMs) {
+    reasons.push(`age_exceeded:${age}ms>${maxAgeMs}ms`);
   }
   return { stale: reasons.length > 0, reasons };
 }

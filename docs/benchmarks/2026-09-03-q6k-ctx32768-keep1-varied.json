@@ -1,0 +1,115 @@
+{
+  "generatedAt": "2026-09-03T14:56:50.898Z",
+  "baseUrl": "http://127.0.0.1:8000/v1",
+  "model": "UI_Mate",
+  "provider": "uimate",
+  "label": "Q6_K ctx 32768 imagesToKeep 1 varied images",
+  "turns": 3,
+  "imagesToKeep": 1,
+  "scenarios": [
+    {
+      "name": "finder-window-2x.png",
+      "imageWidth": 1840,
+      "imageHeight": 984,
+      "modelWidth": 1856,
+      "modelHeight": 992,
+      "estimatedImageTokens": 1798,
+      "calls": [
+        {
+          "turn": 0,
+          "wallMs": 14607,
+          "providerLatencyMs": 14476,
+          "usage": {
+            "completion_tokens": 196,
+            "prompt_tokens": 4216,
+            "total_tokens": 4412,
+            "prompt_tokens_details": {
+              "cached_tokens": 2223
+            }
+          },
+          "timings": {
+            "cache_n": 2223,
+            "prompt_n": 1993,
+            "prompt_ms": 7542.281,
+            "prompt_per_token_ms": 3.7843858504766685,
+            "prompt_per_second": 264.2436684605095,
+            "predicted_n": 196,
+            "predicted_ms": 6895.399,
+            "predicted_per_token_ms": 35.36102051282052,
+            "predicted_per_second": 28.279726814938485
+          },
+          "httpStatus": 200,
+          "action": "click",
+          "actionSummary": "Click the \"Allow\" button on the Granola permission dialog to proceed.",
+          "parseErrors": []
+        },
+        {
+          "turn": 1,
+          "wallMs": 7752,
+          "providerLatencyMs": 7630,
+          "usage": {
+            "completion_tokens": 209,
+            "prompt_tokens": 4312,
+            "total_tokens": 4521,
+            "prompt_tokens_details": {
+              "cached_tokens": 4212
+            }
+          },
+          "timings": {
+            "cache_n": 4212,
+            "prompt_n": 100,
+            "prompt_ms": 311.849,
+            "prompt_per_token_ms": 3.11849,
+            "prompt_per_second": 320.668015610119,
+            "predicted_n": 209,
+            "predicted_ms": 7275.566,
+            "predicted_per_token_ms": 34.97868269230769,
+            "predicted_per_second": 28.588841060613014
+          },
+          "httpStatus": 200,
+          "action": "move",
+          "actionSummary": "Scroll up on the screen to see if there's a Finder window with the invoice PDF visible.",
+          "parseErrors": [
+            "1 additional tool call(s) ignored; Apprentice executes one action per step"
+          ]
+        },
+        {
+          "turn": 2,
+          "wallMs": 6196,
+          "providerLatencyMs": 6041,
+          "usage": {
+            "completion_tokens": 160,
+            "prompt_tokens": 4451,
+            "total_tokens": 4611,
+            "prompt_tokens_details": {
+              "cached_tokens": 4308
+            }
+          },
+          "timings": {
+            "cache_n": 4308,
+            "prompt_n": 143,
+            "prompt_ms": 427.776,
+            "prompt_per_token_ms": 2.9914405594405595,
+            "prompt_per_second": 334.2871035308199,
+            "predicted_n": 160,
+            "predicted_ms": 5573.635,
+            "predicted_per_token_ms": 35.05430817610063,
+            "predicted_per_second": 28.527164050031978
+          },
+          "httpStatus": 200,
+          "action": "click",
+          "actionSummary": "Click on the desktop area to check for a Finder window or desktop icons.",
+          "parseErrors": []
+        }
+      ],
+      "memoryBefore": {
+        "rssBytes": 8702443520,
+        "gpuInUseBytes": 11597430784
+      },
+      "memoryPeak": {
+        "rssBytes": 8708898816,
+        "gpuInUseBytes": 12344999936
+      }
+    }
+  ]
+}

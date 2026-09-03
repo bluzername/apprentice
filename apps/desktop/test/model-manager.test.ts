@@ -8,13 +8,17 @@ import { silentLogger } from "../src/main/services/logger.js";
 import { MODEL_MANIFEST } from "../src/main/services/model/manifest.js";
 import { ModelManager } from "../src/main/services/model/model-manager.js";
 import { RuntimeManager } from "../src/main/services/model/runtime-manager.js";
+import { chatReply, countImagesInBody, createFakeFetch, modelsReply, routeByPath } from "../../../packages/model-adapters/src/testing/fake-fetch.js";
 import { makeContext } from "./helpers.js";
 
-function setup() {
+const CLICK_REPLY = "<action>\nClick the button.\n</action>\n\n<tool_call>\n<function=computer_use>\n<parameter=action>\nleft_click\n</parameter>\n<parameter=coordinate>\n[500, 500]\n</parameter>\n</function>\n</tool_call>";
+
+function setup(options: { fetchImpl?: typeof fetch; runtime?: RuntimeManager } = {}) {
   const context = makeContext();
   const recorder = createRecordingEmitter();
-  const runtime = new RuntimeManager({ paths: context.paths, manifest: MODEL_MANIFEST, clock: systemClock, logger: silentLogger });
+  const runtime = options.runtime ?? new RuntimeManager({ paths: context.paths, manifest: MODEL_MANIFEST, clock: systemClock, logger: silentLogger });
   const manager = new ModelManager({
+    fetchImpl: options.fetchImpl,
     settings: context.settings,
     secrets: context.secrets,
     runtime,
@@ -32,7 +36,107 @@ function setup() {
   return { context, recorder, runtime, manager };
 }
 
+/** A managed runtime that reports running on a loopback port without spawning anything. */
+function runningRuntimeStub(baseUrl: string, options: { running?: boolean; starts?: number[] } = {}): RuntimeManager {
+  let running = options.running ?? true;
+  const state = () => ({ runtimeInstalled: true, modelInstalled: true, processState: running ? ("running" as const) : ("stopped" as const), port: running ? 8000 : undefined });
+  const stub = {
+    onChange: () => () => undefined,
+    baseUrl: () => (running ? baseUrl : null),
+    isRunning: () => running,
+    state,
+    start: () => {
+      running = true;
+      options.starts?.push(Date.now());
+      return Promise.resolve(state());
+    },
+    restart: () => Promise.resolve(state()),
+    stop: () => {
+      running = false;
+      return Promise.resolve(state());
+    }
+  };
+  return stub as unknown as RuntimeManager;
+}
+
+function proposal(turn: number) {
+  return {
+    runId: "run_images",
+    sessionId: "session_images",
+    instruction: "File the invoice",
+    skill: { name: "File the invoice", subtasks: [{ title: "Open the PDF", goal: "Open the PDF", completionCriteria: "Preview shows the PDF", keySteps: [] }] },
+    currentSubtaskIndex: 0,
+    priorActions: [],
+    screenshot: { id: `shot_${turn}`, pngBase64: "QUJD", width: 1280, height: 800 },
+    platform: "macos" as const,
+    variables: {}
+  };
+}
+
 describe("model manager", () => {
+  it("switches from the mock provider to the managed UI-Mate provider when the local runtime is started", async () => {
+    const baseUrl = "http://127.0.0.1:8000/v1";
+    const fake = createFakeFetch(routeByPath({ models: () => modelsReply(["UI_Mate"]), chat: () => chatReply(CLICK_REPLY) }));
+    const { manager, context } = setup({ fetchImpl: fake.fetchImpl, runtime: runningRuntimeStub(baseUrl) });
+    expect(context.settings.get().model.providerType).toBe("mock");
+    const status = await manager.runtimeAction("start", true);
+    expect(context.settings.get().model).toMatchObject({ providerType: "uimate", managedRuntime: true });
+    expect(status.providerType).toBe("uimate");
+    expect(status.location).toBe("local_managed");
+    expect(status.health?.ok).toBe(true);
+    const result = await manager.propose(proposal(0));
+    expect(result.provider).toBe("uimate");
+  });
+
+  it("starts the managed runtime at launch when the user chose it", async () => {
+    const baseUrl = "http://127.0.0.1:8000/v1";
+    const fake = createFakeFetch(routeByPath({ models: () => modelsReply(["UI_Mate"]), chat: () => chatReply(CLICK_REPLY) }));
+    const starts: number[] = [];
+    const { manager, context } = setup({ fetchImpl: fake.fetchImpl, runtime: runningRuntimeStub(baseUrl, { running: false, starts }) });
+    context.settings.update({ model: { ...context.settings.get().model, providerType: "uimate", managedRuntime: true } });
+    manager.start();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(starts).toHaveLength(1);
+    const status = await manager.status();
+    expect(status.location).toBe("local_managed");
+    expect(status.health?.ok).toBe(true);
+    manager.stop();
+  });
+
+  it("does not start the managed runtime at launch for the mock provider", async () => {
+    const starts: number[] = [];
+    const { manager } = setup({ runtime: runningRuntimeStub("http://127.0.0.1:8000/v1", { running: false, starts }) });
+    manager.start();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(starts).toHaveLength(0);
+    manager.stop();
+  });
+
+  it("leaves the provider alone when the runtime is stopped", async () => {
+    const baseUrl = "http://127.0.0.1:8000/v1";
+    const fake = createFakeFetch(routeByPath({ models: () => modelsReply(["UI_Mate"]), chat: () => chatReply(CLICK_REPLY) }));
+    const { manager, context } = setup({ fetchImpl: fake.fetchImpl, runtime: runningRuntimeStub(baseUrl) });
+    await manager.runtimeAction("start", true);
+    await manager.runtimeAction("stop", true);
+    expect(context.settings.get().model).toMatchObject({ providerType: "uimate", managedRuntime: true });
+  });
+
+  it("keeps only the manifest's imagesToKeep screenshots in the managed runtime's prompt", async () => {
+    const baseUrl = "http://127.0.0.1:8000/v1";
+    const fake = createFakeFetch(routeByPath({ models: () => modelsReply(["UI_Mate"]), chat: () => chatReply(CLICK_REPLY) }));
+    const { manager, context } = setup({ fetchImpl: fake.fetchImpl, runtime: runningRuntimeStub(baseUrl) });
+    context.settings.update({ model: { ...context.settings.get().model, providerType: "uimate", managedRuntime: true } });
+    expect(MODEL_MANIFEST.model.imagesToKeep).toBe(8);
+    for (let turn = 0; turn < 10; turn += 1) await manager.propose(proposal(turn));
+    const chats = fake.requests.filter((request) => request.url.endsWith("chat/completions"));
+    expect(chats.length).toBe(10);
+    expect(countImagesInBody(chats[0]!.body)).toBe(1);
+    expect((chats[0]!.body as { max_tokens?: number }).max_tokens).toBe(MODEL_MANIFEST.model.maxTokens);
+    expect(MODEL_MANIFEST.model.maxTokens).toBe(2048);
+    expect(countImagesInBody(chats[7]!.body)).toBe(8);
+    expect(countImagesInBody(chats[9]!.body)).toBe(MODEL_MANIFEST.model.imagesToKeep);
+  });
+
   it("emits health and status while running", async () => {
     const { manager, recorder } = setup();
     manager.start();

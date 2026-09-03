@@ -26,7 +26,7 @@ const SERVER_JS = [
 
 describe("llama-server argument arrays", () => {
   it("match scripts/lib/llama-args.mjs exactly", () => {
-    expect(buildLocalServerArgs({ modelPath: "/m.gguf", mmprojPath: "/p.gguf", port: 8000, logPath: "/l.log" })).toEqual(["-m", "/m.gguf", "--mmproj", "/p.gguf", "--host", "127.0.0.1", "--port", "8000", "-ngl", "99", "-c", "8192", "--alias", "UI_Mate", "--log-file", "/l.log"]);
+    expect(buildLocalServerArgs({ modelPath: "/m.gguf", mmprojPath: "/p.gguf", port: 8000, logPath: "/l.log" })).toEqual(["-m", "/m.gguf", "--mmproj", "/p.gguf", "--host", "127.0.0.1", "--port", "8000", "-ngl", "99", "-c", "32768", "--alias", "UI_Mate", "--log-file", "/l.log"]);
     expect(buildHfServerArgs({ hfSpec: "repo:Q6_K", port: 8001, logPath: "/l.log", contextSize: 4096, gpuLayers: 10, alias: "x" })).toEqual(["-hf", "repo:Q6_K", "--host", "127.0.0.1", "--port", "8001", "-ngl", "10", "-c", "4096", "--alias", "x", "--log-file", "/l.log"]);
     expect(() => buildLocalServerArgs({ modelPath: "", mmprojPath: "/p", port: 1, logPath: "/l" })).toThrow(/modelPath/);
     expect(() => buildLocalServerArgs({ modelPath: "/m", mmprojPath: "/p", port: 70000, logPath: "/l" })).toThrow(/port/);

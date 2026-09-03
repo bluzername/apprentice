@@ -1,0 +1,141 @@
+{
+  "generatedAt": "2026-09-03T14:56:21.120Z",
+  "baseUrl": "http://127.0.0.1:8000/v1",
+  "model": "UI_Mate",
+  "provider": "uimate",
+  "label": "Q6_K ctx 32768 imagesToKeep 2 varied images",
+  "turns": 4,
+  "imagesToKeep": 2,
+  "scenarios": [
+    {
+      "name": "finder-window-2x.png",
+      "imageWidth": 1840,
+      "imageHeight": 984,
+      "modelWidth": 1856,
+      "modelHeight": 992,
+      "estimatedImageTokens": 1798,
+      "calls": [
+        {
+          "turn": 0,
+          "wallMs": 17187,
+          "providerLatencyMs": 17052,
+          "usage": {
+            "completion_tokens": 257,
+            "prompt_tokens": 4216,
+            "total_tokens": 4473,
+            "prompt_tokens_details": {
+              "cached_tokens": 2223
+            }
+          },
+          "timings": {
+            "cache_n": 2223,
+            "prompt_n": 1993,
+            "prompt_ms": 7490.419,
+            "prompt_per_token_ms": 3.758363773206222,
+            "prompt_per_second": 266.0732330194079,
+            "predicted_n": 257,
+            "predicted_ms": 9247.776,
+            "predicted_per_token_ms": 36.124125,
+            "predicted_per_second": 27.68233140595101
+          },
+          "httpStatus": 200,
+          "action": "click",
+          "actionSummary": "Click the \"Don't Allow\" button on the Granola permission dialog to dismiss it.",
+          "parseErrors": []
+        },
+        {
+          "turn": 1,
+          "wallMs": 11615,
+          "providerLatencyMs": 11444,
+          "usage": {
+            "completion_tokens": 108,
+            "prompt_tokens": 6109,
+            "total_tokens": 6217,
+            "prompt_tokens_details": {
+              "cached_tokens": 4212
+            }
+          },
+          "timings": {
+            "cache_n": 4212,
+            "prompt_n": 1897,
+            "prompt_ms": 7405.248,
+            "prompt_per_token_ms": 3.9036626251976805,
+            "prompt_per_second": 256.16967858470105,
+            "predicted_n": 108,
+            "predicted_ms": 3961.107,
+            "predicted_per_token_ms": 37.019691588785044,
+            "predicted_per_second": 27.012650756467824
+          },
+          "httpStatus": 200,
+          "action": "click",
+          "actionSummary": "Click the \"Don't Allow\" button on the Granola permission dialog.",
+          "parseErrors": []
+        },
+        {
+          "turn": 2,
+          "wallMs": 19979,
+          "providerLatencyMs": 19810,
+          "usage": {
+            "completion_tokens": 128,
+            "prompt_tokens": 6205,
+            "total_tokens": 6333,
+            "prompt_tokens_details": {
+              "cached_tokens": 2223
+            }
+          },
+          "timings": {
+            "cache_n": 2223,
+            "prompt_n": 3982,
+            "prompt_ms": 15124.896,
+            "prompt_per_token_ms": 3.7983164239075844,
+            "prompt_per_second": 263.2745375571508,
+            "predicted_n": 128,
+            "predicted_ms": 4605.062,
+            "predicted_per_token_ms": 36.260330708661414,
+            "predicted_per_second": 27.578347479360758
+          },
+          "httpStatus": 200,
+          "action": "click",
+          "actionSummary": "Click the \"Don't Allow\" button in the Granola permission dialog.",
+          "parseErrors": []
+        },
+        {
+          "turn": 3,
+          "wallMs": 20184,
+          "providerLatencyMs": 20037,
+          "usage": {
+            "completion_tokens": 141,
+            "prompt_tokens": 6301,
+            "total_tokens": 6442,
+            "prompt_tokens_details": {
+              "cached_tokens": 2223
+            }
+          },
+          "timings": {
+            "cache_n": 2223,
+            "prompt_n": 4078,
+            "prompt_ms": 14954.672,
+            "prompt_per_token_ms": 3.6671584109857776,
+            "prompt_per_second": 272.69070160816636,
+            "predicted_n": 141,
+            "predicted_ms": 5009.965,
+            "predicted_per_token_ms": 35.78546428571428,
+            "predicted_per_second": 27.94430699615666
+          },
+          "httpStatus": 200,
+          "action": "click",
+          "actionSummary": "Click the \"Don't Allow\" button in the Granola dialog.",
+          "parseErrors": []
+        }
+      ],
+      "memoryBefore": {
+        "rssBytes": 7927463936,
+        "gpuInUseBytes": 11665358848
+      },
+      "memoryPeak": {
+        "rssBytes": 9385705472,
+        "gpuInUseBytes": 12422840320
+      }
+    }
+  ]
+}

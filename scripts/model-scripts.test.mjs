@@ -112,6 +112,13 @@ describe("start-local-model.mjs", () => {
     expect(json.error).toMatch(/APPRENTICE_LLAMA_SERVER/);
   });
 
+  it("rejects a non-numeric --ctx before touching the runtime", async () => {
+    const { code, json } = await run("start-local-model.mjs", ["--json", "--ctx", "lots"]);
+    expect(code).toBe(1);
+    expect(json.ok).toBe(false);
+    expect(json.error).toMatch(/--ctx must be an integer/);
+  });
+
   it("starts a fake llama-server via APPRENTICE_LLAMA_SERVER, reports running, then stops it", async () => {
     const fakeDir = join(dataDir, "fake-runtime");
     const fakeScript = join(fakeDir, "fake-server.mjs");
@@ -133,7 +140,7 @@ describe("start-local-model.mjs", () => {
     await writeFile(fakeBinary, `#!/bin/sh\nexec "${process.execPath}" "${fakeScript}" "$@"\n`);
     chmodSync(fakeBinary, 0o755);
 
-    const child = await spawnLogged(process.execPath, [script("start-local-model.mjs"), "--json"], {
+    const child = await spawnLogged(process.execPath, [script("start-local-model.mjs"), "--json", "--ctx", "16384"], {
       env: { ...baseEnv, APPRENTICE_LLAMA_SERVER: fakeBinary },
       logPath: join(dataDir, "start-test.log")
     });
@@ -158,12 +165,14 @@ describe("start-local-model.mjs", () => {
     expect(endpoint.model).toBe("UI_Mate");
     expect(endpoint.baseUrl).toBe(`http://127.0.0.1:${endpoint.port}/v1`);
     expect(endpoint.modelSource).toBe("hf-cache");
+    expect(endpoint.contextSize).toBe(16384);
     expect(endpoint.pid).toBeGreaterThan(0);
 
     const health = await fetch(`http://127.0.0.1:${endpoint.port}/health`);
     expect(health.status).toBe(200);
     const loggedArgs = JSON.parse((await readFile(`${endpoint.logPath}`, "utf8")).split("\n")[0]);
     expect(loggedArgs.slice(0, 4)).toEqual(["-hf", "bartowski/tencent_UI-Mate-9B-GGUF:Q6_K", "--host", "127.0.0.1"]);
+    expect(loggedArgs[loggedArgs.indexOf("-c") + 1]).toBe("16384");
 
     const status = await run("start-local-model.mjs", ["--status", "--json"]);
     expect(status.json).toMatchObject({ state: "running", healthy: true, port: endpoint.port, pid: endpoint.pid });

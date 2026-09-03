@@ -69,9 +69,26 @@ export async function resizeToLongEdge(resizer: PngResizer, png: Buffer, width: 
   return resizer(png, Math.max(1, Math.round(width * scale)), Math.max(1, Math.round(height * scale)));
 }
 
-/** Resize to the official UI-Mate processing dimensions (the size the model actually sees). */
+/**
+ * Longest edge of the image the model sees. Retina captures arrive at 2x
+ * (3456 px wide on a 16" MacBook Pro); measured on an M3 Max, such a capture is
+ * about 7,560 image tokens and 22-27 s of prefill per step, while a 1920 px
+ * capture is about 2,340 tokens and 10-12 s. Every step re-sends the newest
+ * screenshot, so this cap sets the per-step latency floor.
+ */
+export const MODEL_MAX_LONG_EDGE = 1920;
+
+function cappedDims(width: number, height: number): { width: number; height: number } {
+  const longEdge = Math.max(width, height);
+  if (longEdge <= MODEL_MAX_LONG_EDGE) return { width, height };
+  const scale = MODEL_MAX_LONG_EDGE / longEdge;
+  return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
+}
+
+/** Resize to the official UI-Mate processing dimensions (the size the model actually sees), after the long-edge cap. */
 export async function resizeForModel(resizer: PngResizer, png: Buffer, width: number, height: number): Promise<ResizedPng> {
-  const target = uimate.processImageDims(width, height);
+  const capped = cappedDims(width, height);
+  const target = uimate.processImageDims(capped.width, capped.height);
   if (target.width === width && target.height === height) return { png, width, height };
   return resizer(png, target.width, target.height);
 }

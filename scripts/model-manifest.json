@@ -66,15 +66,19 @@
     },
     "expectedDownloadBytes": 8618425984,
     "expectedDiskBytes": 8618425984,
-    "contextSize": 8192,
+    "contextSize": 32768,
     "gpuLayers": 99,
-    "imagesToKeep": 2,
+    "imagesToKeep": 8,
     "memoryRecommendation": {
-      "recommendedUnifiedMemoryGb": 24,
-      "minimumUnifiedMemoryGb": 16,
-      "note": "Q6_K weights (7.7 GB) + f16 mmproj (0.9 GB) + 8192 context + KV cache and image encoder fit comfortably in 24 GB. On 16 GB machines use a smaller quant (IQ4_XS or Q4_K_M from the same repo) or an external endpoint."
+      "recommendedUnifiedMemoryGb": 32,
+      "minimumUnifiedMemoryGb": 24,
+      "note": "Measured on an M3 Max with 36 GB (2026-09-03): Q6_K weights (7.7 GB) + f16 mmproj (0.9 GB) + a 32768-token context hold about 11.5 GB of GPU memory during inference (llama-server RSS about 10 GB). 24 GB machines work but leave little room for a browser; 16 GB machines need a smaller quant (IQ4_XS or Q4_K_M from the same repo), a 16384 context, or an external endpoint. 8192 tokens is too small: one full-screen Retina capture is about 7,600 image tokens and the second step of a subtask overflows it."
     },
-    "officialMacCommand": "llama-server -hf bartowski/tencent_UI-Mate-9B-GGUF:Q6_K --port 8000 -ngl 99 -c 8192 --alias UI_Mate"
+    "officialMacCommand": "llama-server -hf bartowski/tencent_UI-Mate-9B-GGUF:Q6_K --port 8000 -ngl 99 -c 8192 --alias UI_Mate",
+    "contextSizeNote": "32768 tokens. The official Mac command uses -c 8192, which overflows on the second full-screen Retina screenshot of a subtask (measured 10,571 tokens); the KV cache for 32768 costs about 1.4 GB more GPU memory than 8192 on this runtime.",
+    "imagesToKeepNote": "8 screenshots kept in history (the official agent default is 5). Measured on llama.cpp b10752: dropping the oldest non-initial screenshot rewrites the prompt and invalidates the server's prefix cache, so every later step re-encodes all kept screenshots (imagesToKeep 2 made window steps cost 20 s instead of 10 s from the third step on). Keeping 8 means a subtask of up to 8 steps never collapses; with the desktop app's 1920 px long-edge cap, 8 screenshots plus history stay under 24k tokens of the 32768 context. Sessions reset per subtask.",
+    "maxTokens": 2048,
+    "maxTokensNote": "Reply cap for the managed runtime. The official agent default is 16384; UI-Mate normally answers in 100-330 tokens, but one observed reply ran to about 1,300 tokens of thinking and took 70 s at 32 tok/s. 2048 bounds a step to about 65 s of generation; a truncated reply fails the step as invalid_action instead of hanging the run."
   },
   "mlx": {
     "hfPath": "tencent/UI-Mate-9B",

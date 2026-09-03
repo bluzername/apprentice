@@ -67,6 +67,16 @@ function systemText(body: Record<string, unknown>): string {
 }
 
 describe("UIMateProvider.proposeNextAction", () => {
+  it("sends the official max_tokens by default and a caller-supplied cap when given", async () => {
+    const official = providerWith([CLICK]);
+    await official.provider.proposeNextAction(input("run_tokens", 0));
+    expect(chatBodies(official.fake.requests)[0]?.["max_tokens"]).toBe(16384);
+    const capped = providerWith([CLICK], { maxTokens: 2048 });
+    await capped.provider.proposeNextAction(input("run_tokens", 0));
+    expect(chatBodies(capped.fake.requests)[0]?.["max_tokens"]).toBe(2048);
+    expect(() => new UIMateProvider({ baseUrl: BASE_URL, maxTokens: 10 })).toThrow(RangeError);
+  });
+
   it("sends the official request shape and returns a translated click", async () => {
     const { provider, fake } = providerWith([CLICK]);
     const result = await provider.proposeNextAction(input("run_1", 0));

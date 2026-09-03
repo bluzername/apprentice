@@ -5,7 +5,7 @@
 import { LOOPBACK_HOST } from "./spawn.mjs";
 
 export const DEFAULT_ALIAS = "UI_Mate";
-export const DEFAULT_CONTEXT_SIZE = 8192;
+export const DEFAULT_CONTEXT_SIZE = 32768;
 export const DEFAULT_GPU_LAYERS = 99;
 
 function assertNonEmptyString(value, name) {

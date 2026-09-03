@@ -9,8 +9,8 @@ or a system-wide install, and every file the scripts write lives under
 |---|---|---|
 | 1. Demo mode (no model) | First look, CI, Playwright journeys | any |
 | 2. Existing OpenAI-compatible endpoint | You already run llama.cpp, LM Studio, Ollama, vLLM, or a remote server | depends on host |
-| 3. Recommended: llama.cpp + UI-Mate-9B Q6_K (managed) | Alpha default for Apple Silicon | 24 GB recommended |
-| 4. Advanced: MLX 6-bit | You want the official MLX route | 24 GB recommended |
+| 3. Recommended: llama.cpp + UI-Mate-9B Q6_K (managed) | Alpha default for Apple Silicon | 32 GB recommended, 24 GB minimum (measured) |
+| 4. Advanced: MLX 6-bit | You want the official MLX route | 24 GB recommended (not measured) |
 
 All commands run from the repo root with Node 24. Every script accepts `--json`
 (machine-readable result on stdout, progress on stderr) and `--check`/`--status`
@@ -18,14 +18,21 @@ modes that never touch the network.
 
 ## Memory guidance
 
-- Q6_K weights are 7.7 GB and the f16 mmproj is 0.9 GB. With `-c 8192`, the KV
-  cache and the image encoder, plan on 24 GB of unified memory for comfortable use
-  next to a browser and the Electron app.
+- Q6_K weights are 7.7 GB and the f16 mmproj is 0.9 GB. With `-c 32768` the
+  server holds about 11.5 GB of GPU memory during inference (measured, see
+  `docs/MODEL_PERFORMANCE.md`). 32 GB of unified memory is recommended next to a
+  browser and the Electron app; 24 GB is the minimum.
 - 16 GB machines: do not use Q6_K. Either download a smaller quant from the same
   repository (`IQ4_XS` or `Q4_K_M` in `bartowski/tencent_UI-Mate-9B-GGUF`) and start
-  it manually via path 2, or point the app at an external endpoint.
-- Apprentice keeps at most 2 screenshots in model context (`imagesToKeep`), which
-  is the verified limit for both runtimes.
+  it manually via path 2 with `--ctx 16384`, or point the app at an external endpoint.
+- Why 32768 and not the official `-c 8192`: one full-screen Retina capture is about
+  7,600 image tokens, and the second step of a subtask overflowed 8192 in testing.
+- Apprentice keeps 8 screenshots in model context (`imagesToKeep`; the official
+  agent default is 5) and caps the model image at 1920 px on the long edge, so
+  eight screenshots plus history stay under 24k tokens. Dropping a screenshot
+  invalidates llama-server's prefix cache and doubles the next step's prompt
+  processing, so the limit is set above the length of a normal subtask. The MLX
+  route keeps 2.
 
 ## Path 1: demo mode (no model)
 
@@ -116,6 +123,7 @@ own cache under `~/Library/Caches/llama.cpp`). Nothing is downloaded by the scri
 ```bash
 node scripts/start-local-model.mjs                # or: pnpm model:start
 node scripts/start-local-model.mjs --port 8000    # fixed port instead of a free one
+node scripts/start-local-model.mjs --ctx 16384    # smaller KV cache (default 32768 from the manifest)
 node scripts/start-local-model.mjs --hf           # official -hf form (uses llama.cpp cache)
 node scripts/start-local-model.mjs --status
 node scripts/start-local-model.mjs --stop
@@ -124,13 +132,13 @@ node scripts/start-local-model.mjs --stop
 The launcher builds this argument array (no shell, every value its own argv entry):
 
 ```text
--m <weights> --mmproj <mmproj> --host 127.0.0.1 --port <port> -ngl 99 -c 8192 --alias UI_Mate --log-file <log>
+-m <weights> --mmproj <mmproj> --host 127.0.0.1 --port <port> -ngl 99 -c 32768 --alias UI_Mate --log-file <log>
 ```
 
 or, with `--hf` (or when the model was recorded with `--use-hf-cache`):
 
 ```text
--hf bartowski/tencent_UI-Mate-9B-GGUF:Q6_K --host 127.0.0.1 --port <port> -ngl 99 -c 8192 --alias UI_Mate --log-file <log>
+-hf bartowski/tencent_UI-Mate-9B-GGUF:Q6_K --host 127.0.0.1 --port <port> -ngl 99 -c 32768 --alias UI_Mate --log-file <log>
 ```
 
 It waits for `GET /health` to return 200 (default timeout 300 s, `--timeout <ms>`),
@@ -241,32 +249,37 @@ applies it inside the venv's site-packages, and appends an entry
 - MLX `pip install` fails on Python version: mlx 0.32.2 ships wheels for CPython
   3.10-3.13 on macOS arm64; use `/usr/local/bin/python3` (3.13) or a pyenv 3.12.
 
-## Verification status (this machine, 2026-09-02)
+## Verification status (this machine, 2026-09-02 and 2026-09-03)
 
-Verified for real:
+Verified for real on 2026-09-02 (scratch data directory):
 
-- `node scripts/install-local-runtime.mjs --json` with `APPRENTICE_DATA_DIR` set to
-  a scratch directory: downloaded the 11,072,747 byte tarball, matched the pinned
-  SHA-256, extracted `llama-b10752/`, and `llama-server --version` printed
+- `node scripts/install-local-runtime.mjs --json` downloaded the 11,072,747 byte tarball,
+  matched the pinned SHA-256, extracted `llama-b10752/`, and `llama-server --version` printed
   `version: 0.3.0-dev (build 10752, commit b96806d96)`; `INSTALLED.json` written.
-- `--check` and `--status` modes of all four scripts against an empty data dir
-  (no network).
-- `pnpm run test:scripts`: resumable download against a local Range-capable HTTP
-  server (abort after ~300 KB, resume, hash match), corrupted download rejected and
-  removed, free loopback port, exact llama-server argument arrays, manifest
-  validation, CLI check/status/consent behaviour, and a full start -> status ->
-  stop cycle against a fake `llama-server` that answers `/health`.
-- PyPI metadata for mlx-vlm 0.6.17 (`requires_dist`), mlx 0.32.2 (cp313 macOS
-  arm64 wheels present) and transformers 5.16.1; `mlx_vlm.server` accepts
-  `--host/--port/--model` and serves `GET /health`; `mlx_vlm.convert` accepts
-  `--hf-path/--mlx-path/-q/--q-bits/--q-group-size` (checked in the v0.6.17 source).
+- `--check` and `--status` modes of all four scripts against an empty data dir (no network).
+- `pnpm run test:scripts`: resumable download against a local Range-capable HTTP server, corrupted
+  download rejected and removed, free loopback port, exact llama-server argument arrays, manifest
+  validation, CLI check/status/consent behaviour, and a full start -> status -> stop cycle against
+  a fake `llama-server` that answers `/health`.
+- PyPI metadata for mlx-vlm 0.6.17, mlx 0.32.2 and transformers 5.16.1; `mlx_vlm.server` and
+  `mlx_vlm.convert` argument names checked in the v0.6.17 source.
+
+Verified for real on 2026-09-03 (the app's own data directory, M3 Max, 36 GB):
+
+- `node scripts/install-uimate-model.mjs --yes` downloaded the 7,700,259,968 byte Q6_K GGUF and
+  the 918,166,016 byte mmproj (about 16 minutes), both SHA-256 verified; `--check --verify`
+  re-hashed them.
+- `node scripts/start-local-model.mjs --port 8000 --ctx 8192|32768` served the model; healthy in
+  2-7 s from a warm page cache.
+- `RUN_LOCAL_MODEL_TEST=1 pnpm test:local-model` passed against the real server (12 s).
+- `pnpm bench:local-model` measured latency, token counts and memory (docs/MODEL_PERFORMANCE.md).
+- The packaged app's model manager started, adopted and health-checked the managed runtime, and
+  six guided runs executed real actions proposed by UI-Mate (docs/BUILD_STATUS.md).
 
 NOT verified on this machine:
 
-- No UI-Mate weights were downloaded (neither the 8.6 GB GGUF pair nor the MLX
-  checkpoint); the GGUF sizes and hashes come from `docs/BUILD_ENVIRONMENT.md`.
-- No inference was run against a real llama-server or mlx_vlm.server; the
-  start/stop cycle was exercised with a fake server only.
-- The MLX venv was not created and `mlx-vlm==0.6.17` was not installed here; only
+- The MLX route: the venv was not created and `mlx-vlm==0.6.17` was not installed here; only
   `--check` and `--dry-run` paths ran. Disk estimates for the MLX route are estimates.
 - No cache patch was applied (none is shipped).
+- Machines with less than 36 GB of unified memory; the 24 GB minimum is derived from the
+  measured 11.5 GB footprint, not tested.

@@ -1,7 +1,7 @@
 import type { ActionPolicyMode, ApprovalRequest, ApprovalScope, Run, RunDetail, RunStep, Skill } from "@apprentice/schemas";
 import { ServiceError } from "../errors.js";
 import { initialAppTarget } from "./app-focus.js";
-import { createRun, createStep, isTerminal, withStatus } from "./run-state.js";
+import { createRun, createStep, isTerminal, withStatus, isSyntheticEscapeEcho } from "./run-state.js";
 import { executeStep, type ActiveRun, type ApprovalResolution, type QuestionAnswer, type RunnerHost, type StepOutcome } from "./step-runner.js";
 import type { RunEngineDeps } from "./types.js";
 
@@ -112,6 +112,10 @@ export class RunEngine implements RunnerHost {
   async stop(runId: string, by: "user_escape" | "menu_bar" | "ui_stop" = "ui_stop"): Promise<RunDetail> {
     const session = this.session;
     if (!session || session.active.run.id !== runId) return this.get(runId);
+    if (by === "user_escape" && isSyntheticEscapeEcho(session.active.lastEscapeExecutedAt, this.deps.clock.now())) {
+      this.deps.logger.info("ignoring Escape stop: the run itself just pressed Escape", { runId });
+      return this.detail(session);
+    }
     session.active.stopRequested = { kind: "user", by };
     await this.deps.emergencyStop?.().catch(() => undefined);
     session.pendingApproval?.resolve({ decision: "interrupted", scope: "once" });

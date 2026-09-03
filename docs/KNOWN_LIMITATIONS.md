@@ -62,12 +62,23 @@ during the build; items marked "by design" are intentional alpha scope.
 ## Model
 
 - Demo mode uses a deterministic mock provider; it does not perform real inference.
-- The recommended local route (llama.cpp Q6_K) needs about 8.6 GB of downloads and 24 GB of unified
-  memory for comfortable use with an 8192-token context. 16 GB machines should use a smaller
-  quantization or an external endpoint.
-- Real UI-Mate inference was not exercised on the build machine because the weights were not
-  downloaded (they require explicit confirmation); the OpenAI-compatible request path and the
-  parser are covered by tests with recorded official responses and by the opt-in smoke test.
+- The recommended local route (llama.cpp Q6_K) needs about 8.6 GB of downloads and holds about
+  11.5 GB of GPU memory at the 32768-token context (measured on an M3 Max, see
+  `docs/MODEL_PERFORMANCE.md`). 32 GB of unified memory is recommended, 24 GB is the minimum,
+  and 16 GB machines need a smaller quantization or an external endpoint.
+- Real inference is slow compared with the demo provider: 10-12 s per proposed action for a
+  normal window on an M3 Max, dominated by prompt processing of the screenshot. Smaller Apple
+  Silicon chips will be proportionally slower; nothing below an M3 Max was measured.
+- The official `-c 8192` context is not used because one full-screen Retina capture is about
+  7,600 image tokens; the app pins 32768 and caps the model image at 1920 px on the long edge.
+- Replies are capped at 2048 tokens for the managed runtime; a proposal that needs more thinking
+  fails the step as invalid_action instead of taking minutes.
+- Captures are display crops of the target window's bounds, so a dialog from another app that
+  overlaps the window (a macOS permission prompt, for example) is visible to the model, and the
+  model will try to dismiss it. Move the dialog or the window; Apprentice never clicks system
+  prompts by itself because every action needs approval.
+- The first proposal of a run can be rejected as a stale screen when the target window is still
+  repainting after activation; the run retries once automatically.
 
 ## Feedback
 

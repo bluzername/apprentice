@@ -1,5 +1,5 @@
 import { normalizeAppName } from "@apprentice/core";
-import type { Overview } from "@apprentice/schemas";
+import type { ExecutableAction, Overview } from "@apprentice/schemas";
 import { createAppContext, type AppContext } from "./app-context.js";
 import { ActivityService } from "./activity.js";
 import { APP_VERSION } from "./app-version.js";
@@ -87,6 +87,8 @@ export interface Services {
   onRunActiveChange(listener: (active: boolean) => void): () => void;
   /** Fired when a run needs the user (approval or question); the Electron layer raises the window on that run. */
   onRunAttention(listener: (runId: string) => void): () => void;
+  /** Called before and after every helper execution with the exact executable action. */
+  onRunExecution(listener: (action: ExecutableAction, phase: "before" | "after") => Promise<void> | void): () => void;
   start(): Promise<void>;
   shutdown(): Promise<void>;
 }
@@ -103,6 +105,7 @@ export function composeServices(adapters: CompositionAdapters): Services {
   const hardware = new HardwareService(context.paths.root, adapters.hardwareProbe);
   const shell = adapters.shell ?? noopShell;
   const runActiveListeners: Array<(active: boolean) => void> = [];
+  const runExecutionListeners: Array<(action: ExecutableAction, phase: "before" | "after") => Promise<void> | void> = [];
   const runAttentionListeners: Array<(runId: string) => void> = [];
 
   const screenSource = new Switchable<ScreenSource>(adapters.screenSource);
@@ -133,6 +136,10 @@ export function composeServices(adapters: CompositionAdapters): Services {
     logger: logger.child("learning"),
     observation: { start: () => pipeline.start(), stop: () => pipeline.stop() },
     model: { busy: () => model.busy(), unavailable: () => model.unavailable() }
+  });
+  // The menu bar and header derive "model unavailable" from the last health check; re-derive whenever it changes.
+  hub.subscribe((name) => {
+    if (name === "event:modelHealth") learning.refresh();
   });
   const scheduler = new DiscoveryScheduler({ storage, emit, analytics, clock, logger: logger.child("discovery") });
   pipeline.onStored(() => scheduler.schedule());
@@ -180,7 +187,13 @@ export function composeServices(adapters: CompositionAdapters): Services {
     hooks: {
       beforeStart: (skill) => demo.prepareRun(skill),
       onActiveChange: (active) => runActiveListeners.forEach((listener) => listener(active)),
-      onSubtaskAdvance: (_runId, index) => demo.advanceSubtask(index)
+      onSubtaskAdvance: (_runId, index) => demo.advanceSubtask(index),
+      beforeExecute: async (action) => {
+        for (const listener of runExecutionListeners) await listener(action, "before");
+      },
+      afterExecute: async (action) => {
+        for (const listener of runExecutionListeners) await listener(action, "after");
+      }
     },
     settleMs: adapters.settleMs
   });
@@ -262,6 +275,13 @@ export function composeServices(adapters: CompositionAdapters): Services {
       return () => {
         const index = runActiveListeners.indexOf(listener);
         if (index >= 0) runActiveListeners.splice(index, 1);
+      };
+    },
+    onRunExecution: (listener) => {
+      runExecutionListeners.push(listener);
+      return () => {
+        const index = runExecutionListeners.indexOf(listener);
+        if (index >= 0) runExecutionListeners.splice(index, 1);
       };
     },
     onRunAttention: (listener) => {

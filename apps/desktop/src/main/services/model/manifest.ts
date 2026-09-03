@@ -36,6 +36,7 @@ export const ModelManifestSchema = z.object({
     contextSize: z.number().int().positive(),
     gpuLayers: z.number().int().nonnegative(),
     imagesToKeep: z.number().int().positive(),
+    maxTokens: z.number().int().min(256),
     memoryRecommendation: z.object({ recommendedUnifiedMemoryGb: z.number(), minimumUnifiedMemoryGb: z.number(), note: z.string() })
   })
 });

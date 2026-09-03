@@ -17,6 +17,10 @@ import { ElectronScreenSource, electronPngResizer } from "./capture.js";
 import { createElectronPowerProbe } from "./power.js";
 import { createSafeStorageProtector } from "./protector.js";
 import { createShortcutController } from "./shortcuts.js";
+import { usesEscapeKey } from "../services/runs/run-state.js";
+
+/** Time for the helper's Escape to clear the event queue before the global shortcut is re-armed. */
+const ESCAPE_RESUME_DELAY_MS = 250;
 import { createElectronPermissionSystem, createElectronShell } from "./system.js";
 import { createTray } from "./tray.js";
 import { createMainWindow, raiseWindow, rendererHtmlPath, showWindow } from "./window.js";
@@ -111,6 +115,17 @@ export async function bootApp(options: BootOptions): Promise<BootedApp> {
       navigate("teach");
     },
     onEscape: () => void services.runEngine.stopActive("user_escape")
+  });
+  // A registered global Escape swallows the key system-wide, so an approved Escape would never reach the
+  // target app and would stop the run instead. Lift the shortcut around the helper's own Escape press.
+  services.onRunExecution(async (action, phase) => {
+    if (!usesEscapeKey(action)) return;
+    if (phase === "before") {
+      shortcuts.unregisterEscape();
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, ESCAPE_RESUME_DELAY_MS));
+    if (services.runEngine.isActive()) shortcuts.registerEscape();
   });
   const applyTeachShortcut = (): void => {
     const result = shortcuts.registerTeach(services.context.settings.get().shortcuts.teach);

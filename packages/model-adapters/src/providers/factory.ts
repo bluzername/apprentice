@@ -20,6 +20,8 @@ export interface ProviderFactoryConfig {
   readonly sleep?: SleepImpl;
   /** Analysis provider UI-Mate fails over to (optional). */
   readonly fallback?: VisionAgentProvider;
+  /** UI-Mate reply token cap (max_tokens). */
+  readonly maxTokens?: number;
   readonly mock?: MockProviderOptions;
 }
 
@@ -55,7 +57,8 @@ export function createProvider(config: ProviderFactoryConfig): VisionAgentProvid
         timeoutMs: config.timeoutMs,
         resizeImage: config.resizeImage,
         sleep: config.sleep,
-        fallback: config.fallback
+        fallback: config.fallback,
+        maxTokens: config.maxTokens
       });
     }
     default: {

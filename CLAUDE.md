@@ -53,6 +53,7 @@ pnpm package:mac   # arm64 dmg + zip via electron-builder
 pnpm alpha:bundle  # dist/alpha/
 pnpm alpha:smoke   # scripts/smoke-test-alpha.sh
 RUN_LOCAL_MODEL_TEST=1 pnpm test:local-model   # opt-in real endpoint smoke test
+pnpm bench:local-model                         # opt-in latency/token/memory benchmark (docs/MODEL_PERFORMANCE.md)
 ```
 
 ## Definition of Done

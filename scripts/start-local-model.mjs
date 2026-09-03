@@ -3,7 +3,7 @@
  * Starts llama-server on a loopback port with the UI-Mate model, waits for
  * /health, prints the endpoint JSON and stays in the foreground.
  *
- *   node scripts/start-local-model.mjs [--port N] [--hf] [--timeout MS] [--json]
+ *   node scripts/start-local-model.mjs [--port N] [--ctx TOKENS] [--hf] [--timeout MS] [--json]
  *   node scripts/start-local-model.mjs --status [--json]
  *   node scripts/start-local-model.mjs --stop [--json]
  */
@@ -22,7 +22,8 @@ const options = {
   stop: { type: "boolean", default: false },
   status: { type: "boolean", default: false },
   json: { type: "boolean", default: false },
-  timeout: { type: "string", default: "300000" }
+  timeout: { type: "string", default: "300000" },
+  ctx: { type: "string" }
 };
 
 const HEALTH_PROBE_TIMEOUT_MS = 2000;
@@ -85,6 +86,17 @@ async function stop(manifest) {
   return { ok: true, state: "stopped", stopped: true, pid: record.pid, forced };
 }
 
+function parseContextSize(value, fallback) {
+  if (value === undefined) {
+    return fallback;
+  }
+  const size = Number(value);
+  if (!Number.isInteger(size) || size < 1024 || size > 1048576) {
+    throw new CliError(`--ctx must be an integer between 1024 and 1048576 tokens, got ${value}`);
+  }
+  return size;
+}
+
 function parsePort(value) {
   if (value === undefined) {
     return undefined;
@@ -96,11 +108,12 @@ function parsePort(value) {
   return port;
 }
 
-async function resolveServerArgs(manifest, { hf, port, logPath }) {
+async function resolveServerArgs(manifest, { hf, port, logPath, contextSize }) {
   const model = await modelStatus(manifest);
   const useHf = hf || model.mode === "hf-cache";
+  const common = { port, logPath, contextSize, gpuLayers: manifest.model.gpuLayers, alias: manifest.model.alias };
   if (useHf) {
-    return { args: buildHfServerArgs({ hfSpec: manifest.model.hfSpec, port, logPath }), modelSource: "hf-cache", modelPath: null };
+    return { args: buildHfServerArgs({ hfSpec: manifest.model.hfSpec, ...common }), modelSource: "hf-cache", modelPath: null };
   }
   if (!model.installed) {
     throw new CliError(
@@ -108,7 +121,7 @@ async function resolveServerArgs(manifest, { hf, port, logPath }) {
     );
   }
   return {
-    args: buildLocalServerArgs({ modelPath: model.files.weights.path, mmprojPath: model.files.mmproj.path, port, logPath }),
+    args: buildLocalServerArgs({ modelPath: model.files.weights.path, mmprojPath: model.files.mmproj.path, ...common }),
     modelSource: "local",
     modelPath: model.files.weights.path
   };
@@ -136,12 +149,13 @@ async function start(manifest, args) {
   if (current.state !== "stopped") {
     return { ...current, alreadyRunning: true };
   }
+  const contextSize = parseContextSize(args.ctx, manifest.model.contextSize);
   const paths = runtimePaths(manifest);
   const runtime = await locateLlamaServer(manifest);
   const port = parsePort(args.port) ?? (await findFreePort());
   await mkdir(paths.logsDir, { recursive: true });
   const logPath = join(paths.logsDir, `llama-server-${new Date().toISOString().replace(/[:.]/g, "-")}.log`);
-  const { args: serverArgs, modelSource, modelPath } = await resolveServerArgs(manifest, { hf: args.hf, port, logPath });
+  const { args: serverArgs, modelSource, modelPath } = await resolveServerArgs(manifest, { hf: args.hf, port, logPath, contextSize });
 
   logProgress(`Starting ${runtime.serverPath} (${runtime.source}) on 127.0.0.1:${port}`);
   const child = await spawnLogged(runtime.serverPath, serverArgs, { cwd: runtime.cwd, logPath: `${logPath}.stdio` });
@@ -152,6 +166,7 @@ async function start(manifest, args) {
     model: manifest.model.alias,
     modelSource,
     modelPath,
+    contextSize,
     serverPath: runtime.serverPath,
     logPath,
     startedAt: new Date().toISOString()
@@ -178,7 +193,7 @@ async function start(manifest, args) {
   }
 
   printResult(
-    { baseUrl: record.baseUrl, model: record.model, port, pid: child.pid, logPath, modelSource },
+    { baseUrl: record.baseUrl, model: record.model, port, pid: child.pid, logPath, modelSource, contextSize },
     { json: true }
   );
   const { code, signal } = await exitPromise;

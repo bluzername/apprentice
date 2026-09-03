@@ -105,3 +105,13 @@ export function describeAction(action: ProposedAction): string {
       return "Report that the task cannot continue";
   }
 }
+
+/**
+ * Marker position inside the screenshot box: the image is centered in its
+ * container (object-fit: contain), so the container-relative position is the
+ * image's offset plus the point scaled into the displayed image.
+ */
+export function markerPosition(point: Point, natural: Size, displayed: Size, imageOffset: Point): Point {
+  const scaled = scalePoint(point, natural, displayed);
+  return { x: imageOffset.x + scaled.x, y: imageOffset.y + scaled.y };
+}

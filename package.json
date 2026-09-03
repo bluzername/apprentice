@@ -28,7 +28,8 @@
     "model:start": "node scripts/start-local-model.mjs",
     "audit": "pnpm audit --audit-level=high",
     "licenses": "node scripts/license-inventory.mjs",
-    "test:scripts": "vitest run --config vitest.scripts.config.ts"
+    "test:scripts": "vitest run --config vitest.scripts.config.ts",
+    "bench:local-model": "RUN_LOCAL_MODEL_BENCH=1 pnpm --filter @apprentice/model-adapters run bench:local-model"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

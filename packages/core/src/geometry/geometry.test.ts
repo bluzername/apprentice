@@ -55,6 +55,17 @@ describe("isStaleScreen", () => {
     expect(isStaleScreen({ capturedAt: 0, now: 100, beforeHash: "0000000000000000", afterHash: "0000000000000007", maxHamming: 2 }).stale).toBe(true);
     expect(isStaleScreen({ capturedAt: 500, now: 100 }).reasons).toContain("captured_in_future");
   });
+
+  it("does not age out a screenshot whose content still matches the fresh capture", () => {
+    // A local model takes 10-20 s per proposal; the screen is only stale when it actually changed.
+    const unchanged = isStaleScreen({ capturedAt: 0, now: 17_000, beforeHash: "0000000000000000", afterHash: "0000000000000003" });
+    expect(unchanged).toEqual({ stale: false, reasons: [] });
+    const changed = isStaleScreen({ capturedAt: 0, now: 17_000, beforeHash: "0000000000000000", afterHash: "ffffffffffffffff" });
+    expect(changed.stale).toBe(true);
+    expect(changed.reasons).toHaveLength(1);
+    expect(changed.reasons[0]).toMatch(/content_changed/);
+    expect(isStaleScreen({ capturedAt: 0, now: 17_000 }).reasons[0]).toMatch(/age_exceeded/);
+  });
 });
 
 describe("rect helpers", () => {

@@ -35,7 +35,9 @@ the build machine described in `docs/BUILD_ENVIRONMENT.md` and produced the stat
 | `pnpm install` | ok (pnpm 10.33.0, 8 workspace projects) |
 | `pnpm lint` | ok: eslint 0 problems, typography lint passed |
 | `pnpm typecheck` | ok: all 7 packages |
-| `pnpm test` | ok (after the live-test fixes, 2026-09-03): schemas 14, extension 101, core 163, worker 35, adapters 115, fixtures 282, desktop 166, scripts 39, Swift 97. Total 1012 automated tests, 0 failures, 0 skipped (the only intentional skip is the opt-in real-model test under its own config) |
+| `pnpm test` | ok (after the real-model fixes, 2026-09-03 evening): schemas 14, extension 101, core 164, worker 35, adapters 116, fixtures 282, desktop 181, scripts 40, Swift 97. Total 1030 automated tests, 0 failures, 0 skipped (the only intentional skips are the opt-in real-model test and benchmark under their own configs) |
+| `pnpm test:local-model` | ok against the real managed llama-server (UI-Mate-9B Q6_K): one parsed action, 12 s |
+| `pnpm bench:local-model` | ok: latency, token and memory benchmark against the real server (`packages/model-adapters/bench`, see docs/MODEL_PERFORMANCE.md) |
 | `pnpm audit --audit-level=high` | No known vulnerabilities found |
 | `pnpm test:e2e` | ok: 1 passed (demo journey) |
 | `pnpm build` | ok: schemas, core, adapters typecheck; fixtures rendered; extension dist + zip; worker dry-run bundle (833 KiB); electron-vite main/preload/renderer |
@@ -50,7 +52,7 @@ the build machine described in `docs/BUILD_ENVIRONMENT.md` and produced the stat
 | Notarization | No APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID in the environment | Export the three variables and run `pnpm package:mac`; evidence: `spctl -a -vv Apprentice.app` prints "accepted" and `xcrun stapler validate` succeeds |
 | Cloudflare deployment | No CLOUDFLARE_API_TOKEN / account | Follow services/feedback-worker/README.md; evidence: `GET https://<worker>/health` returns `{ ok: true }` and a test upload appears in the admin summary |
 | Screen Recording and Accessibility grants | Interactive TCC prompts cannot be answered in a non-interactive build session | Launch the packaged app, complete onboarding step 4, confirm both badges show "granted" and the Activity view shows a real screenshot thumbnail |
-| Real UI-Mate inference | No model weights downloaded (8.6 GB, requires explicit confirmation) | Run `node scripts/install-uimate-model.mjs --yes`, `node scripts/start-local-model.mjs`, then `RUN_LOCAL_MODEL_TEST=1 pnpm test:local-model`; evidence: the test prints a parsed UI-Mate action |
+| Real UI-Mate inference | Done on 2026-09-03 (see "Real model on the build machine" below); the row is kept for other machines | Run `node scripts/install-uimate-model.mjs --yes`, `node scripts/start-local-model.mjs`, then `RUN_LOCAL_MODEL_TEST=1 pnpm test:local-model`; evidence: the test prints a parsed UI-Mate action |
 
 ## Signing state of this build
 
@@ -165,5 +167,73 @@ completions confirmed by the user, summary "All subtasks verified". Teach draft 
 new build: the shortcut artifact is gone ("Work in finder, preview, textedit" fallback name).
 Activity and teach lists render blurred screenshot thumbnails.
 
-Not verified live: the browser extension (needs a manual unpacked install) and real UI-Mate
-inference (weights not downloaded).
+Not verified live at that point: the browser extension (needs a manual unpacked install). Real
+UI-Mate inference followed the same afternoon (next section).
+
+## Real model on the build machine (2026-09-03, evening)
+
+Everything in this section ran on the same M3 Max (36 GB) with the packaged app from
+/Applications, the pinned llama.cpp b10752 runtime and UI-Mate-9B Q6_K weights, both installed
+and hash-verified by the repository scripts (8.62 GB downloaded in about 16 minutes). Numbers
+are in `docs/MODEL_PERFORMANCE.md`; this is the pass/fail record.
+
+Verified:
+- `node scripts/install-local-runtime.mjs` and `node scripts/install-uimate-model.mjs --yes`
+  installed and verified the runtime and weights; `--check --verify` re-hashed both files.
+- `node scripts/start-local-model.mjs --port 8000 --ctx N` served the model; healthy in 2-7 s.
+- `RUN_LOCAL_MODEL_TEST=1 pnpm test:local-model` passed against the real server (one parsed
+  UI-Mate action for a synthetic screenshot, 12 s).
+- `pnpm bench:local-model` (new) measured latency, tokens and memory for real screenshots at
+  three context sizes and three history depths (tables in the performance document).
+- In-app managed runtime: Settings > Model > Start spawned llama-server with the manifest
+  arguments, health turned green, and after the fixes below the runtime auto-starts 4 s after
+  launch and is healthy 7 s after launch.
+- Six guided runs with the real model against real Finder, Preview and TextEdit windows: seven
+  approved actions executed through the helper (clicks 55-58 ms, double-clicks 145-162 ms, a
+  Command+W 25 ms, an Escape 14 ms), every one verified via screen and OCR diff; the model
+  clicked the "Today at 12:52" cell the subtask named, double-clicked download-3.pdf so that it
+  really opened in Preview, and closed it with Command+W. Rejections ended runs as
+  user_rejected, and a proposal aimed at a foreign permission dialog was refused as
+  invalid_action by the hit-test guard. No run completed all subtasks: the model never emitted
+  subtask_complete and moved on to the next subtask's action instead (documented in
+  docs/MODEL_PERFORMANCE.md as the next thing to fix).
+
+Bugs found only because a real model was in the loop, all fixed with tests the same evening:
+1. The pinned 8192-token context overflowed on the second full-screen Retina screenshot of a
+   subtask (HTTP 400 from llama-server). Context is now 32768.
+2. The managed runtime sent up to 5 screenshots per request instead of the manifest's limit
+   (`imagesToKeep` was undefined for the managed path); the limit is now taken from the manifest.
+3. Keeping only 2 screenshots invalidated llama-server's prefix cache on every step after the
+   second, doubling prompt processing; `imagesToKeep` is 8 and the model image is capped at
+   1920 px on the long edge so eight screenshots fit.
+4. Settings > Model > Start left the provider on "mock": only onboarding ever switched to the
+   UI-Mate provider. Starting or restarting the managed runtime now adopts it.
+5. Every real proposal was rejected as a stale screen because the 5 s screenshot age limit is
+   shorter than one inference (10-20 s). Age now only counts when no fresh capture can be
+   compared; unchanged content is not stale.
+6. The Escape emergency-stop shortcut both swallowed the helper's approved Escape keypress and
+   interrupted the run as "user pressed Escape". The shortcut is lifted around a synthetic
+   Escape and an echo guard ignores an Escape stop within 1.5 s of one the run executed.
+7. The managed runtime did not start with the app, and the header pill stayed on
+   "Model unavailable" after the model became healthy (nothing refreshed the learning status on
+   health changes). Both fixed.
+8. One reply ran to about 1,300 tokens of thinking (70 s). The managed runtime now caps replies
+   at 2048 tokens (manifest `maxTokens`).
+9. During a subtask the engine dragged the subtask's app back in front before every capture, so
+   after the model opened Preview from Finder it only ever saw Finder again and re-proposed the
+   same double-click. Within a subtask the target now follows the frontmost allowed app; the
+   subtask's app is activated once when the subtask starts.
+10. The approval card drew the target marker offset from the click point when the screenshot
+    was centered in its box (container-relative instead of image-relative position).
+
+Observed but not changed:
+- A macOS permission dialog belonging to another app ("Allow Granola to find devices on local
+  networks?") sat over the Finder window; the display-crop capture includes it and the model
+  proposed clicking "Don't Allow" on it every time. The test moved the target windows away from
+  the dialog instead of touching a system prompt. A window-only capture (ScreenCaptureKit by
+  window) would remove the overlap; see KNOWN_LIMITATIONS.
+- The first proposal of a run is sometimes rejected as stale because the target window is
+  captured while it is still repainting from inactive to active appearance; the engine retries
+  and the second proposal goes through.
+- Per-step latency with a real model is 10-18 s of inference plus the time the user takes to
+  approve; the mock provider hid this entirely.

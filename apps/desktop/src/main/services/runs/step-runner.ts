@@ -4,7 +4,7 @@ import { mintApprovalToken } from "../helper/approval-token.js";
 import { InferenceCancelledError } from "../model/inference-queue.js";
 import { appAllowed } from "./app-focus.js";
 import { ensureTargetFrontmost, syncTargetWithSubtask } from "./focus-guard.js";
-import { addModelLatency, bumpMetrics, failStep, stepWithTiming } from "./run-state.js";
+import { addModelLatency, bumpMetrics, failStep, stepWithTiming, usesEscapeKey } from "./run-state.js";
 import { isUsableCapture, takeSnapshot, type ScreenSnapshot } from "./snapshot.js";
 import { subtaskSatisfied, userConfirmedVerification, verifyDeterministic } from "./verification.js";
 import type { AxHit, RunEngineDeps, StopReason } from "./types.js";
@@ -28,6 +28,10 @@ export interface ActiveRun {
   stopRequested: StopReason | null;
   /** Bundle id of the app the run acts on; re-activated before every capture and execution. */
   targetBundleId: string | undefined;
+  /** Clock time of the last Escape the run itself posted through the helper (see isSyntheticEscapeEcho). */
+  lastEscapeExecutedAt?: number;
+  /** Subtask index whose app has been brought forward; within it the target follows the frontmost allowed app. */
+  focusPinnedSubtask?: number;
 }
 
 export type StepOutcome = { readonly kind: "continue" } | { readonly kind: "finish"; readonly status: RunStatus; readonly failureCategory?: FailureCategory; readonly interruptedBy?: Run["interruptedBy"]; readonly summary?: string };
@@ -214,11 +218,15 @@ async function execute(host: RunnerHost, active: ActiveRun, action: ProposedActi
   const executable = toExecutableAction(action, fresh.transform);
   const token = mintApprovalToken(secret, executable);
   const started = performance.now();
+  await host.deps.hooks?.beforeExecute?.(executable);
   try {
     const result = await host.deps.actuator().perform(executable, token);
+    if (usesEscapeKey(executable)) active.lastEscapeExecutedAt = host.deps.clock.now();
     if (!result.performed) return finish("failed", "helper_error", "The helper did not perform the approved action");
   } catch (error) {
     return finish("failed", "helper_error", `Helper error: ${error instanceof Error ? error.message : String(error)}`.slice(0, 1000));
+  } finally {
+    await host.deps.hooks?.afterExecute?.(executable);
   }
   return { executed: executable, executeMs: performance.now() - started };
 }

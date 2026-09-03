@@ -1,5 +1,5 @@
 import { newId } from "@apprentice/core";
-import type { ActionPolicyMode, FailureCategory, Run, RunStatus, RunStep, Skill } from "@apprentice/schemas";
+import type { ExecutableAction, ActionPolicyMode, FailureCategory, Run, RunStatus, RunStep, Skill } from "@apprentice/schemas";
 
 /** Pure builders and updaters; every function returns a new object. */
 export function createRun(skill: Skill, mode: ActionPolicyMode, provider: string, model: string | undefined, now: number): Run {
@@ -75,4 +75,18 @@ export function stepWithTiming(step: RunStep, patch: Partial<RunStep["timing"]>)
   const timing = { ...step.timing, ...rounded };
   const totalMs = timing.captureMs + timing.proposeMs + timing.approvalWaitMs + timing.executeMs + timing.verifyMs;
   return { ...step, timing: { ...timing, totalMs: Math.round(totalMs) } };
+}
+
+/** Window after the helper posts an Escape during which a global Escape stop is treated as the echo of that key. */
+export const SYNTHETIC_ESCAPE_GRACE_MS = 1500;
+
+export function usesEscapeKey(action: ExecutableAction): boolean {
+  return (action.type === "press_key" || action.type === "hotkey") && action.key === "escape";
+}
+
+/** True when a "user pressed Escape" stop arrives within the grace window of an Escape the run itself executed. */
+export function isSyntheticEscapeEcho(lastEscapeExecutedAt: number | undefined, now: number): boolean {
+  if (lastEscapeExecutedAt === undefined) return false;
+  const elapsed = now - lastEscapeExecutedAt;
+  return elapsed >= 0 && elapsed <= SYNTHETIC_ESCAPE_GRACE_MS;
 }

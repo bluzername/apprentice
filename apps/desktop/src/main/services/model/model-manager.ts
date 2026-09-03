@@ -93,7 +93,23 @@ export class ModelManager {
     const interval = this.deps.healthIntervalMs ?? 60_000;
     this.healthTimer = setInterval(() => void this.checkHealth().catch(() => undefined), interval);
     this.healthTimer.unref?.();
+    if (this.shouldAutoStartRuntime()) {
+      this.deps.logger.info("starting the managed model runtime at launch");
+      void this.deps.runtime
+        .start()
+        .then(() => this.checkHealth())
+        .catch((error: unknown) => this.deps.logger.warn("managed runtime failed to start at launch", { error: error instanceof Error ? error.message : String(error) }));
+      return;
+    }
     void this.checkHealth().catch(() => undefined);
+  }
+
+  /** The user chose the managed local model: bring it up with the app instead of showing "unavailable" until Start is clicked. */
+  private shouldAutoStartRuntime(): boolean {
+    const model = this.deps.settings.get().model;
+    if (model.providerType !== "uimate" || !model.managedRuntime) return false;
+    const state = this.deps.runtime.state();
+    return state.runtimeInstalled && state.modelInstalled && !this.deps.runtime.isRunning();
   }
 
   stop(): void {
@@ -172,7 +188,7 @@ export class ModelManager {
     };
     if (providerType === "openai_compatible") return createProvider({ providerType, ...common });
     const analysis = new DeterministicAnalysisProvider(() => this.deps.clock.now());
-    const action = createProvider({ providerType: "uimate", ...common, model: endpoint.model || this.deps.manifest.model.alias, fallback: analysis });
+    const action = createProvider({ providerType: "uimate", ...common, model: endpoint.model || this.deps.manifest.model.alias, fallback: analysis, maxTokens: this.deps.manifest.model.maxTokens });
     return new CompositeVisionAgentProvider({ action, analysis });
   }
 
@@ -182,7 +198,8 @@ export class ModelManager {
     if (this.built && this.built.key === key) return this.built.provider;
     const model = this.deps.settings.get().model;
     const baseUrl = this.resolveBaseUrl();
-    const endpoint: EndpointRequest | undefined = baseUrl ? { baseUrl, model: model.endpoint?.model ?? this.deps.manifest.model.alias, imagesToKeep: model.endpoint?.imagesToKeep } : undefined;
+    // The manifest's imagesToKeep (2) is the verified history limit for the local runtime; the provider default (5) is only for external endpoints that set it explicitly.
+    const endpoint: EndpointRequest | undefined = baseUrl ? { baseUrl, model: model.endpoint?.model ?? this.deps.manifest.model.alias, imagesToKeep: model.endpoint?.imagesToKeep ?? this.deps.manifest.model.imagesToKeep } : undefined;
     const apiKey = model.endpoint?.hasApiKey ? (this.deps.secrets.get(API_KEY_SECRET_NAME) ?? undefined) : undefined;
     const provider = this.build(model.providerType, endpoint, apiKey);
     this.built = { key, provider };
@@ -311,6 +328,19 @@ export class ModelManager {
     return this.status();
   }
 
+  /**
+   * Starting the managed runtime is an explicit choice of the local UI-Mate
+   * model, so the provider follows it; otherwise a Start from Settings would
+   * leave the mock provider serving demo answers next to a running server.
+   */
+  private adoptManagedRuntime(): void {
+    const model = this.deps.settings.get().model;
+    if (model.providerType === "uimate" && model.managedRuntime) return;
+    this.deps.settings.update({ model: { ...model, providerType: "uimate", managedRuntime: true } });
+    this.lastHealth = null;
+    this.deps.analytics.track("model_configured", { provider: "uimate", managedRuntime: true });
+  }
+
   async runtimeAction(action: "installRuntime" | "installModel" | "start" | "stop" | "restart" | "cancelDownload", confirmed: boolean): Promise<ModelStatus> {
     const runtime = this.deps.runtime;
     switch (action) {
@@ -322,18 +352,21 @@ export class ModelManager {
         break;
       case "start":
         await runtime.start();
+        this.adoptManagedRuntime();
         break;
       case "stop":
         await runtime.stop();
         break;
       case "restart":
         await runtime.restart();
+        this.adoptManagedRuntime();
         break;
       case "cancelDownload":
         runtime.cancelDownload();
         break;
     }
     this.built = null;
+    if (action === "start" || action === "restart") await this.checkHealth();
     return this.status();
   }
 

@@ -66,6 +66,9 @@ export interface RunEngineHooks {
   readonly onActiveChange?: (active: boolean) => void;
   /** Fired when the run moves to the next subtask (demo mode advances its screen timeline). */
   readonly onSubtaskAdvance?: (runId: string, subtaskIndex: number) => void;
+  /** Bracket every helper execution: the Electron layer suspends the global Escape stop around a synthetic Escape. */
+  readonly beforeExecute?: (action: ExecutableAction) => Promise<void> | void;
+  readonly afterExecute?: (action: ExecutableAction) => Promise<void> | void;
 }
 
 export interface RunEngineDeps {

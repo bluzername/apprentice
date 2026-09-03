@@ -79,6 +79,8 @@ export interface UIMateProviderOptions {
   readonly fallback?: VisionAgentProvider;
   readonly resizeImage?: ImageResizer;
   readonly historyN?: number;
+  /** Reply token cap sent as max_tokens (official default 16384; the desktop app bounds it so one step cannot take minutes). */
+  readonly maxTokens?: number;
   readonly maxAttempts?: number;
   readonly sleep?: SleepImpl;
   readonly now?: () => number;
@@ -171,6 +173,7 @@ export class UIMateProvider implements VisionAgentProvider {
   private readonly fallback: VisionAgentProvider | undefined;
   private readonly resizeImage: ImageResizer;
   private readonly historyN: number;
+  private readonly maxTokens: number;
   private readonly now: () => number;
   private sessions: ReadonlyMap<string, UIMateSession> = new Map();
 
@@ -199,6 +202,10 @@ export class UIMateProvider implements VisionAgentProvider {
     this.fallback = options.fallback;
     this.resizeImage = options.resizeImage ?? identityResizer;
     this.historyN = options.historyN ?? DEFAULT_HISTORY_N;
+    if (options.maxTokens !== undefined && (!Number.isInteger(options.maxTokens) || options.maxTokens < 256)) {
+      throw new RangeError("maxTokens must be an integer of at least 256");
+    }
+    this.maxTokens = options.maxTokens ?? DEFAULT_MAX_TOKENS;
     this.now = options.now ?? Date.now;
   }
 
@@ -264,7 +271,7 @@ export class UIMateProvider implements VisionAgentProvider {
     return chatCompletion(this.http, {
       model: this.model,
       messages: collapsed,
-      max_tokens: DEFAULT_MAX_TOKENS,
+      max_tokens: this.maxTokens,
       temperature: DEFAULT_TEMPERATURE,
       top_p: DEFAULT_TOP_P,
       chat_template_kwargs: { enable_thinking: this.enableThinking }

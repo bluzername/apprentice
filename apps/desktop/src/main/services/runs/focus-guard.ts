@@ -16,11 +16,25 @@ export type FocusOutcome = Extract<StepOutcome, { kind: "finish" }>;
 const DEFAULT_ACTIVATION_WAIT_MS = 1500;
 const DEFAULT_ACTIVATION_POLL_MS = 150;
 
-/** Adopts the current subtask's app as the target when it names a different allowed app. */
+/**
+ * Adopts the current subtask's app as the target when a subtask starts. Within
+ * a subtask the target follows the run (an approved double-click in Finder may
+ * open Preview, and the model must then see Preview), so this is a no-op once
+ * the subtask's app has been brought forward.
+ */
 export function syncTargetWithSubtask(active: ActiveRun): void {
+  if (active.focusPinnedSubtask === active.run.currentSubtaskIndex) return;
   const subtask = active.skill.subtasks[active.run.currentSubtaskIndex];
   const wanted = resolveAppTarget(active.skill, subtask?.appOrDomain);
   if (wanted !== undefined && wanted !== active.targetBundleId) active.targetBundleId = wanted;
+}
+
+function subtaskPinned(active: ActiveRun): boolean {
+  return active.focusPinnedSubtask === active.run.currentSubtaskIndex;
+}
+
+function pinSubtask(active: ActiveRun): void {
+  active.focusPinnedSubtask = active.run.currentSubtaskIndex;
 }
 
 async function frontmostBundleId(host: RunnerHost): Promise<string | undefined> {
@@ -106,18 +120,28 @@ export async function ensureTargetFrontmost(host: RunnerHost, active: ActiveRun,
     frontmost = await frontmostBundleId(host);
     if (onTarget(active, frontmost)) {
       settle(active, frontmost);
+      pinSubtask(active);
       return null;
     }
+    // Once the subtask's app has been brought forward, another allowed app in front is where the
+    // run went (an action opened it): follow it instead of dragging the subtask's app back.
+    if (subtaskPinned(active) && allowedElsewhere(active, frontmost) && settle(active, frontmost)) return null;
     // Apprentice (the user just clicked in it) or another allowed app: bring the target back.
     if (isApprenticeApp(frontmost) || allowedElsewhere(active, frontmost)) frontmost = await bringTargetForward(host, active, frontmost);
-    if (settle(active, frontmost)) return null;
+    if (settle(active, frontmost)) {
+      pinSubtask(active);
+      return null;
+    }
     if (active.stopRequested !== null) return interrupted(active);
     // The user went somewhere outside the allowlist: ask instead of stealing focus or aborting.
     const answer = await host.awaitQuestion(active, step, switchQuestion(active));
     if (answer === null) return interrupted(active);
     frontmost = await frontmostBundleId(host);
     if (!onTarget(active, frontmost)) frontmost = await bringTargetForward(host, active, frontmost);
-    if (settle(active, frontmost)) return null;
+    if (settle(active, frontmost)) {
+      pinSubtask(active);
+      return null;
+    }
   } catch (error) {
     return { kind: "finish", status: "failed", failureCategory: "helper_error", summary: `Could not read the frontmost app: ${error instanceof Error ? error.message : String(error)}`.slice(0, 1000) };
   }

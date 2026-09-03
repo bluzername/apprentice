@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProposedAction } from "@apprentice/schemas";
-import { actionTarget, describeAction, fitContain, hotkeyLabel, markerRadius, scalePoint } from "./annotation";
+import { actionTarget, describeAction, fitContain, hotkeyLabel, markerPosition, markerRadius, scalePoint } from "./annotation";
 
 const base = {
   purpose: "p",
@@ -62,5 +62,13 @@ describe("describeAction", () => {
     expect(describeAction(scroll)).toBe("Scroll up at (1, 2)");
     const wait: ProposedAction = { ...base, type: "wait", ms: 1500 };
     expect(describeAction(wait)).toBe("Wait 1.5s");
+  });
+});
+
+describe("markerPosition", () => {
+  it("adds the centered image's offset inside its container to the scaled point", () => {
+    // Natural 1408x960 shown at 704x480, centered in a 900 px wide box: 98 px of left offset.
+    expect(markerPosition({ x: 462, y: 269 }, { width: 1408, height: 960 }, { width: 704, height: 480 }, { x: 98, y: 0 })).toEqual({ x: 329, y: 134.5 });
+    expect(markerPosition({ x: 0, y: 0 }, { width: 100, height: 100 }, { width: 50, height: 50 }, { x: 10, y: 5 })).toEqual({ x: 10, y: 5 });
   });
 });

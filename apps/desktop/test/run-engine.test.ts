@@ -58,6 +58,7 @@ function harness(options: HarnessOptions = {}) {
   /** Run status observed when each question was asked. */
   const questionStatuses: RunStatus[] = [];
   const raised: string[] = [];
+  const executionPhases: string[] = [];
   const helper = options.helper;
   const helperContext: RunContextSource | undefined = helper
     ? {
@@ -132,7 +133,15 @@ function harness(options: HarnessOptions = {}) {
     metrics: context.metrics,
     clock: systemClock,
     logger: silentLogger,
-    hooks: { onSubtaskAdvance: (_runId, index) => simulator.advanceToSubtask(index) },
+    hooks: {
+      onSubtaskAdvance: (_runId, index) => simulator.advanceToSubtask(index),
+      beforeExecute: (action) => {
+        executionPhases.push(`before:${action.type}`);
+      },
+      afterExecute: (action) => {
+        executionPhases.push(`after:${action.type}`);
+      }
+    },
     settleMs: 0,
     domQueryTimeoutMs: 50
   });
@@ -141,7 +150,7 @@ function harness(options: HarnessOptions = {}) {
     const finished = await engine.waitForCompletion(started.id);
     return { run: finished, steps: storage.current.runs.steps(started.id) };
   };
-  return { engine, simulator, approvals, questions, questionStatuses, raised, storage, skill, context, targets, run };
+  return { engine, simulator, approvals, questions, questionStatuses, raised, storage, skill, context, targets, run, executionPhases };
 }
 
 const UNRELATED_APP = "com.example.Unrelated";
@@ -240,6 +249,9 @@ describe("run engine", () => {
     expect(h.approvals[0]?.screenshotPngBase64.length).toBeGreaterThan(100);
     expect(h.approvals.some((request) => request.proposed.type === "type_text")).toBe(true);
     expect(h.simulator.performed.length).toBe(executed.length);
+    // Every helper execution is bracketed by the before/after hooks (the Electron layer suspends the Escape shortcut there).
+    expect(h.executionPhases.filter((phase) => phase.startsWith("before:")).length).toBe(executed.length);
+    expect(h.executionPhases.filter((phase) => phase.startsWith("after:")).length).toBe(executed.length);
     expect(h.storage.current.screenshots.count()).toBeGreaterThan(0);
     expect(h.context.storage.current.productEvents.countByName("run_completed")).toBe(1);
     expect(JSON.stringify(steps)).not.toContain("<think>");
