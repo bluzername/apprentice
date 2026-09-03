@@ -196,6 +196,8 @@ export const ipcContract = {
   "runs:get": { request: z.object({ id: IdSchema }), response: RunDetailSchema },
   "runs:approve": { request: z.object({ runId: IdSchema, stepId: IdSchema, decision: z.enum(["approved", "rejected"]), scope: ApprovalScopeSchema.default("once") }), response: RunDetailSchema },
   "runs:answer": { request: z.object({ runId: IdSchema, stepId: IdSchema, answer: z.string().max(500), confirmSubtask: z.boolean().default(false) }), response: RunDetailSchema },
+  /** The user ends the current subtask; the run continues with the next one. */
+  "runs:advanceSubtask": { request: z.object({ runId: IdSchema }), response: RunDetailSchema },
   "runs:stop": { request: z.object({ runId: IdSchema }), response: RunDetailSchema },
   "runs:exportDiagnostics": { request: z.object({ runId: IdSchema }), response: ExportResultSchema },
   "runs:previewDiagnostics": { request: z.object({ runId: IdSchema }), response: DiagnosticsPreviewSchema },

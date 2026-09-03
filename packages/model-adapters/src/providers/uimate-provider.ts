@@ -52,6 +52,7 @@ import {
   SUBTASK_COMPLETE_PATCH,
   WORKFLOW_SYSTEM_SECTION,
   buildGuidance,
+  buildTurnReminder,
   planFromSkillSubtasks,
   workflowAfterPredict,
   type WorkflowPlan,
@@ -265,7 +266,8 @@ export class UIMateProvider implements VisionAgentProvider {
       collapseText: COLLAPSED_SCREENSHOT_TEXT,
       guidance: buildGuidance(plan, index),
       workflowSection: UIMATE_WORKFLOW_SECTION_WITH_SAFETY,
-      actionPatch: SUBTASK_COMPLETE_PATCH
+      actionPatch: SUBTASK_COMPLETE_PATCH,
+      latestTurnSuffix: buildTurnReminder(plan, index)
     });
     const { messages: collapsed } = collapseMessages(messages, this.imagesToKeep, 1, COLLAPSED_SCREENSHOT_TEXT);
     return chatCompletion(this.http, {

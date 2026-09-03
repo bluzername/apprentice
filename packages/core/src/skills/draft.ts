@@ -6,6 +6,7 @@ import { redactText } from "../redaction/redact-text.js";
 import { riskClassRank } from "../risk/dictionaries.js";
 import { tokenRiskClass } from "../risk/token-risk.js";
 import { detectVariables } from "../candidates/variables.js";
+import { changedTitlePart, contextEvidence, timelineEvidence, type DraftEvidence, type GroupRange } from "./evidence.js";
 import { groupByContext, type TokenEntry, type TokenGroup } from "./group.js";
 import { anchorEntry, outcomeEntry } from "./outcome.js";
 
@@ -25,29 +26,44 @@ export interface CoreSkillDraft extends Omit<SkillDraft, "subtasks"> {
 
 const MAX_KEY_STEPS = 20;
 
-function titleEventsInRange(events: readonly ActivityEvent[], startTs: number, endTs: number): string[] {
-  return events
-    .filter((event) => (event.type === "window_title_changed" || event.type === "page_title") && event.ts >= startTs && event.ts <= endTs)
-    .map((event) => event.payload?.["title"])
-    .filter((title): title is string => typeof title === "string" && title.trim().length > 0);
+function groupRange(group: TokenGroup, next: TokenGroup | undefined): GroupRange {
+  const nextStart = next?.entries[0]?.ts;
+  return {
+    context: group.context,
+    startTs: group.entries[0]!.ts,
+    endTs: group.entries[group.entries.length - 1]!.ts,
+    ...(nextStart === undefined ? {} : { nextStartTs: nextStart })
+  };
 }
 
-function predicatesFor(group: TokenGroup, titles: readonly string[]): CompletionPredicate[] {
+/** The bundle id the workflow moves to once this group is done, when that is another app. */
+function appSwitchTarget(group: TokenGroup, next: TokenGroup | undefined, evidence: DraftEvidence): string | undefined {
+  if (next === undefined || next.context === group.context) return undefined;
+  const target = evidence.bundleIdFor(next.context);
+  return target === undefined || target === evidence.bundleIdFor(group.context) ? undefined : target;
+}
+
+/**
+ * Completion predicates from what was actually recorded: the route the group
+ * navigated to, a switch to another app, and the title left on screen after the
+ * group's last action. `user_confirm` is the last resort and means only the
+ * user can say this subtask is done.
+ */
+function predicatesFor(group: TokenGroup, next: TokenGroup | undefined, evidence: DraftEvidence): CompletionPredicate[] {
   const last = group.entries[group.entries.length - 1]!;
   const parts = parseToken(last.token);
-  if (parts["action"] === "navigate" && parts["route"] !== undefined) {
-    const domain = parts["domain"] ?? "";
-    return [{ kind: "url_pattern", pattern: `${domain}${parts["route"]}`.slice(0, 256) }];
-  }
-  const title = titles[titles.length - 1];
-  if (title !== undefined) {
-    const text = redactText(title).text.trim().slice(0, 160);
-    if (text.length > 0) return [{ kind: "title_contains", text }];
-  }
-  return [{ kind: "user_confirm" }];
+  const route: CompletionPredicate[] =
+    parts["action"] === "navigate" && parts["route"] !== undefined ? [{ kind: "url_pattern", pattern: `${parts["domain"] ?? ""}${parts["route"]}`.slice(0, 256) }] : [];
+  const switched = appSwitchTarget(group, next, evidence);
+  const frontmost: CompletionPredicate[] = switched === undefined ? [] : [{ kind: "app_frontmost", bundleId: switched.slice(0, 256) }];
+  const observed = evidence.titleAfter(groupRange(group, next));
+  const titleText = observed === undefined ? "" : redactText(changedTitlePart(observed.after, observed.before)).text.trim().slice(0, 160);
+  const title: CompletionPredicate[] = titleText.length > 0 ? [{ kind: "title_contains", text: titleText }] : [];
+  const derived = [...route, ...frontmost, ...title];
+  return derived.length > 0 ? derived : [{ kind: "user_confirm" }];
 }
 
-function subtaskFromGroup(group: TokenGroup, index: number, titles: readonly string[]): DraftSubtask {
+function subtaskFromGroup(group: TokenGroup, index: number, next: TokenGroup | undefined, evidence: DraftEvidence): DraftSubtask {
   const steps = group.entries.map((entry) => humanizeToken(entry.token));
   const anchor = humanizeToken(anchorEntry(group.entries).token);
   const context = group.context;
@@ -57,7 +73,7 @@ function subtaskFromGroup(group: TokenGroup, index: number, titles: readonly str
     completionCriteria: `${anchor} has visibly succeeded on ${context}`.slice(0, 500),
     keySteps: steps.slice(0, MAX_KEY_STEPS).map((step) => step.slice(0, 300)),
     appOrDomain: context,
-    completionPredicates: predicatesFor(group, titles)
+    completionPredicates: predicatesFor(group, next, evidence)
   };
 }
 
@@ -103,11 +119,8 @@ export function draftSkillFromEvents(events: readonly ActivityEvent[], options: 
     .filter((entry): entry is TokenEntry => entry.token !== null);
   if (entries.length === 0) throw new Error("draftSkillFromEvents: no action events in range");
   const groups = groupByContext(entries);
-  const subtasks = groups.map((group, index) => {
-    const startTs = group.entries[0]!.ts;
-    const endTs = group.entries[group.entries.length - 1]!.ts;
-    return subtaskFromGroup(group, index, titleEventsInRange(sorted, startTs, endTs));
-  });
+  const evidence = timelineEvidence(sorted);
+  const subtasks = groups.map((group, index) => subtaskFromGroup(group, index, groups[index + 1], evidence));
   const tokens = entries.map((entry) => entry.token);
   const first = entries[0]!;
   const contexts = [...new Set(entries.map((entry) => entry.context))];
@@ -130,14 +143,19 @@ export function draftSkillFromEvents(events: readonly ActivityEvent[], options: 
   };
 }
 
-/** Deterministic skill draft from a candidate and its evidence episodes. */
-export function draftSkillFromCandidate(candidate: WorkflowCandidate, episodes: readonly Episode[]): CoreSkillDraft {
+/**
+ * Deterministic skill draft from a candidate and its evidence episodes.
+ * `evidenceEvents` are the recorded events behind those episodes; without them
+ * the subtasks fall back to `user_confirm`.
+ */
+export function draftSkillFromCandidate(candidate: WorkflowCandidate, episodes: readonly Episode[], evidenceEvents: readonly ActivityEvent[] = []): CoreSkillDraft {
   if (candidate.steps.length === 0) throw new Error("draftSkillFromCandidate: candidate has no steps");
   const entries: TokenEntry[] = candidate.steps.map((step) => ({ token: step.token, ts: step.index, context: step.appOrDomain ?? "unknown" }));
   const groups = groupByContext(entries);
-  const subtasks = groups.map((group, index) => subtaskFromGroup(group, index, []));
-  const evidence = episodes.filter((episode) => candidate.evidenceEpisodeIds.includes(episode.id));
-  const sequences = evidence.map((episode) => episode.actionTokens);
+  const evidence = contextEvidence(evidenceEvents);
+  const subtasks = groups.map((group, index) => subtaskFromGroup(group, index, groups[index + 1], evidence));
+  const evidenceEpisodes = episodes.filter((episode) => candidate.evidenceEpisodeIds.includes(episode.id));
+  const sequences = evidenceEpisodes.map((episode) => episode.actionTokens);
   const tokens = candidate.steps.map((step) => step.token);
   const variables: VariableSlot[] = candidate.variables.length > 0 ? [...candidate.variables] : detectVariables(tokens, sequences);
   return {

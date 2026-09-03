@@ -77,7 +77,8 @@ describe("draftSkillFromEvents", () => {
     expect(draft.subtasks.length).toBeLessThanOrEqual(12);
     expect(draft.subtasks.map((subtask) => subtask.appOrDomain)).toEqual(["notion", "crm.example", "mail.example"]);
     expect(draft.subtasks[0]!.keySteps).toEqual(["Click the 'Meeting notes' button", "Press Cmd+C"]);
-    expect(draft.subtasks[0]!.completionPredicates).toEqual([{ kind: "user_confirm" }]);
+    // The notion group ends with a switch to Chrome, so it completes on that app coming forward.
+    expect(draft.subtasks[0]!.completionPredicates).toEqual([{ kind: "app_frontmost", bundleId: "com.google.Chrome" }]);
     expect(draft.subtasks[1]!.completionPredicates).toEqual([{ kind: "title_contains", text: "Contact [name] - CRM" }]);
     expect(draft.subtasks[2]!.completionCriteria).toMatch(/Submit the message form has visibly succeeded on mail.example/);
     expect(draft.variables.map((variable) => variable.name)).toContain("contact_id");
@@ -103,6 +104,45 @@ describe("draftSkillFromEvents", () => {
     expect(last.completionPredicates).toEqual([{ kind: "url_pattern", pattern: "mail.example/inbox" }]);
     expect(draft.name).toBe("mail.example: Click the 'Send' button");
     expect(draft.goal).toBe("Click the 'Send' button has visibly succeeded on mail.example");
+  });
+
+  it("takes the title predicate from after the last action and keeps only the part that changed", () => {
+    const app = { bundleId: "com.apple.TextEdit", name: "TextEdit" };
+    const events = [
+      makeEvent({ ts: 0, type: "window_title_changed", app, payload: { title: "Untitled - TextEdit" } }),
+      makeEvent({ ts: 1000, type: "mouse_down", app, element: { role: "AXButton", name: "Body" } }),
+      makeEvent({ ts: 2000, type: "shortcut", app, payload: { keys: ["cmd", "s"] } }),
+      // The save renames the window 3 s after the last action: inside the outcome tail window.
+      makeEvent({ ts: 5000, type: "window_title_changed", app, payload: { title: "Report Q3 - TextEdit" } })
+    ];
+    const last = draftSkillFromEvents(events).subtasks.at(-1)!;
+    expect(last.completionPredicates).toEqual([{ kind: "title_contains", text: "Report Q3" }]);
+  });
+
+  it("ignores a title that only appears once the next subtask has started", () => {
+    const notion = { bundleId: "notion.id", name: "Notion" };
+    const events = [
+      makeEvent({ ts: 0, type: "mouse_down", app: notion, element: { role: "AXButton", name: "Notes" } }),
+      makeEvent({ ts: 1000, type: "shortcut", app: notion, payload: { keys: ["cmd", "c"] } }),
+      makeClick({ ts: 2000, domain: "crm.example", name: "Contacts" }),
+      makeEvent({ ts: 2500, type: "page_title", source: "extension", domain: "crm.example", payload: { title: "Contacts - CRM" } }),
+      makeClick({ ts: 3000, domain: "crm.example", name: "Log activity" }),
+      makeClick({ ts: 4000, domain: "crm.example", name: "Save" })
+    ];
+    const draft = draftSkillFromEvents(events);
+    // The Notion subtask must not borrow the CRM title that appeared after the switch.
+    expect(draft.subtasks[0]!.completionPredicates).toEqual([{ kind: "app_frontmost", bundleId: "com.google.Chrome" }]);
+  });
+
+  it("falls back to user_confirm when nothing observable ends the subtask", () => {
+    const app = { bundleId: "com.apple.finder", name: "Finder" };
+    const events = [
+      makeEvent({ ts: 0, type: "mouse_down", app, element: { role: "AXButton", name: "Documents" } }),
+      makeEvent({ ts: 1000, type: "mouse_down", app, element: { role: "AXButton", name: "Downloads" } }),
+      makeEvent({ ts: 2000, type: "mouse_down", app, element: { role: "AXButton", name: "Desktop" } })
+    ];
+    const draft = draftSkillFromEvents(events);
+    expect(draft.subtasks.every((subtask) => subtask.completionPredicates[0]!.kind === "user_confirm")).toBe(true);
   });
 
   it("names and describes the goal from the last strong outcome, not a closing shortcut", () => {
@@ -147,6 +187,16 @@ describe("draftSkillFromEvents", () => {
     expect(draft.variables.map((variable) => variable.name)).toContain("contact_id");
     expect(draft.confidence).toBe(candidate!.confidence);
     expect(() => draftSkillFromCandidate({ ...candidate!, steps: [] }, episodes)).toThrow();
+    // Without evidence events a candidate subtask can only be confirmed by the user.
+    expect(draft.subtasks.every((subtask) => subtask.completionPredicates[0]!.kind === "user_confirm")).toBe(true);
+
+    const evidenceEvents = [
+      makeEvent({ ts: 0, type: "mouse_down", app: { bundleId: "notion.id", name: "Notion" }, element: { role: "AXButton", name: "Meeting notes" } }),
+      makeEvent({ ts: 1000, type: "page_title", source: "extension", app: { bundleId: "com.google.Chrome", name: "Google Chrome" }, domain: "crm.example", payload: { title: "Contact Alice Johnson - CRM" } })
+    ];
+    const withEvidence = draftSkillFromCandidate(candidate!, episodes, evidenceEvents);
+    expect(withEvidence.subtasks[0]!.completionPredicates).toEqual([{ kind: "app_frontmost", bundleId: "com.google.Chrome" }]);
+    expect(withEvidence.subtasks.at(-1)!.completionPredicates).toContainEqual({ kind: "title_contains", text: "Contact [name] - CRM" });
   });
 });
 

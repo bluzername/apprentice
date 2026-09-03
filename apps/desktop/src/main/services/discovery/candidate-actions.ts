@@ -1,5 +1,5 @@
 import { draftSkillFromCandidate, skillFromDraft } from "@apprentice/core";
-import type { CandidateUserAction, CandidateSuppressionState, Run, Skill, SkillDraft, WorkflowCandidate } from "@apprentice/schemas";
+import type { ActivityEvent, CandidateUserAction, CandidateSuppressionState, Episode, Run, Skill, SkillDraft, WorkflowCandidate } from "@apprentice/schemas";
 import type { Analytics } from "../analytics.js";
 import type { StorageRef } from "../app-context.js";
 import type { Clock } from "../clock.js";
@@ -40,8 +40,14 @@ export class CandidateActions {
   draft(id: string): SkillDraft {
     const candidate = this.get(id);
     const episodes = this.deps.storage.current.episodes.byIds(candidate.evidenceEpisodeIds);
-    const core = draftSkillFromCandidate(candidate, episodes);
+    const core = draftSkillFromCandidate(candidate, episodes, this.evidenceEvents(episodes));
     return { ...core, subtasks: core.subtasks.map(({ completionPredicates: _predicates, ...rest }) => rest) };
+  }
+
+  /** Recorded events behind the evidence episodes; they carry the titles and apps the predicates are derived from. */
+  private evidenceEvents(episodes: readonly Episode[]): ActivityEvent[] {
+    const ids = episodes.flatMap((episode) => episode.eventIds);
+    return ids.length === 0 ? [] : this.deps.storage.current.events.byIds(ids);
   }
 
   /** Materializes the candidate as a version-1 skill and marks the candidate converted. */
@@ -49,7 +55,7 @@ export class CandidateActions {
     const storage = this.deps.storage.current;
     const candidate = this.get(id);
     const episodes = storage.episodes.byIds(candidate.evidenceEpisodeIds);
-    const draft = draftSkillFromCandidate(candidate, episodes);
+    const draft = draftSkillFromCandidate(candidate, episodes, this.evidenceEvents(episodes));
     const skill = storage.skills.save(
       skillFromDraft(draft, { source: "candidate", evidence: { episodeIds: [...candidate.evidenceEpisodeIds], candidateId: candidate.id }, mode, now: this.deps.clock.now() })
     );

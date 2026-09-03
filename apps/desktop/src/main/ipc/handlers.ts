@@ -92,6 +92,7 @@ export function createIpcHandlers(services: Services): IpcHandlers {
     "runs:get": ({ id }) => runEngine.get(id),
     "runs:approve": ({ runId, stepId, decision, scope }) => runEngine.approve(runId, stepId, decision, scope),
     "runs:answer": ({ runId, stepId, answer, confirmSubtask }) => runEngine.answer(runId, stepId, answer, confirmSubtask),
+    "runs:advanceSubtask": ({ runId }) => runEngine.advanceSubtask(runId),
     "runs:stop": ({ runId }) => runEngine.stop(runId, "ui_stop"),
     "runs:exportDiagnostics": ({ runId }) => feedback.exportDiagnostics(runId),
     "runs:previewDiagnostics": ({ runId }) => feedback.previewDiagnostics(runId),

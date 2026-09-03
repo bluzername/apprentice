@@ -146,6 +146,7 @@ export function installDevMock(): void {
     "runs:get": (p) => ((p as { id: string }).id === "run-0" ? { run: sampleFinishedRun, steps: sampleSteps, pendingApproval: null, pendingQuestion: null } : runDetail),
     "runs:approve": () => ({ ...runDetail, pendingApproval: null, run: { ...sampleRun, status: "running" } }),
     "runs:answer": () => runDetail,
+    "runs:advanceSubtask": () => ({ ...runDetail, pendingApproval: null, pendingQuestion: null, run: { ...sampleRun, status: "running", currentSubtaskIndex: Math.min(sampleRun.currentSubtaskIndex + 1, sampleRun.subtaskCount - 1) } }),
     "runs:stop": () => ({ ...runDetail, pendingApproval: null, run: { ...sampleRun, status: "interrupted", interruptedBy: "ui_stop", endedAt: Date.now() } }),
     "runs:exportDiagnostics": () => ({ path: "/tmp/run-1-diagnostics.zip", byteLength: 14_000, fileCount: 3, includesScreenshots: false }),
     "runs:previewDiagnostics": () => ({ files: [{ name: "run.json", byteLength: 4000, preview: JSON.stringify({ id: "run-1", status: "interrupted" }, null, 2) }, { name: "steps.json", byteLength: 9000, preview: "[...]" }], redactedFields: ["typedText", "ocr", "screenshot", "windowTitle"] }),

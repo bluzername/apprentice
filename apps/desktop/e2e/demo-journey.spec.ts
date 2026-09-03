@@ -277,7 +277,11 @@ test("demo journey: onboarding, candidate, skill, guided run, feedback, privacy"
       previous = stateKey(state);
       if (state.kind === "approval") {
         approvals += 1;
-        if (approvals === 1) await shot("12-run-approval");
+        if (approvals === 1) {
+          // The run is provably active here, so the user-driven subtask advance must be offered.
+          await expect(page.getByRole("button", { name: "Subtask complete, continue" })).toBeVisible();
+          await shot("12-run-approval");
+        }
         await approveCurrentStep();
       } else if (state.kind === "question") {
         questions += 1;

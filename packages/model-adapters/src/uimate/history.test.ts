@@ -83,6 +83,29 @@ describe("buildMessages (parity with UIMateAgent.build_messages)", () => {
     expect(messages).toEqual(golden.releasedNoThink);
   });
 
+  it("appends the latest-turn suffix to the last user turn only, leaving the first turn byte-identical", () => {
+    const plain = buildMessages(baseOptions());
+    const withSuffix = buildMessages({ ...baseOptions(), latestTurnSuffix: "REMINDER" });
+    const users = (messages: readonly ChatMessage[]) => messages.filter((message) => message.role === "user");
+    expect(users(withSuffix).length).toBe(users(plain).length);
+    expect(users(withSuffix).length).toBeGreaterThan(1);
+    // Every turn but the last is untouched.
+    expect(withSuffix.slice(0, -1)).toEqual(plain.slice(0, -1));
+    const last = withSuffix.at(-1)!;
+    const before = plain.at(-1)!;
+    expect(typeof last.content === "string" ? [] : last.content).toEqual([
+      ...(typeof before.content === "string" ? [] : before.content),
+      { type: "text", text: "\nREMINDER" }
+    ]);
+  });
+
+  it("never adds the suffix when the latest turn is also the window's first turn", () => {
+    const single = { ...baseOptions(), screenshots: golden.screenshots.slice(0, 1), responses: [], actions: [] };
+    expect(buildMessages({ ...single, latestTurnSuffix: "REMINDER" })).toEqual(buildMessages(single));
+    // Same for a null suffix on a multi-turn request.
+    expect(buildMessages({ ...baseOptions(), latestTurnSuffix: null })).toEqual(buildMessages(baseOptions()));
+  });
+
   it("releaseOutOfWindowScreenshots nulls entries before the window without mutating", () => {
     const shots = ["a", "b", "c", "d", "e"];
     const released = releaseOutOfWindowScreenshots(shots, 2);
