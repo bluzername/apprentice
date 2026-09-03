@@ -78,7 +78,13 @@
     "contextSizeNote": "32768 tokens. The official Mac command uses -c 8192, which overflows on the second full-screen Retina screenshot of a subtask (measured 10,571 tokens); the KV cache for 32768 costs about 1.4 GB more GPU memory than 8192 on this runtime.",
     "imagesToKeepNote": "8 screenshots kept in history (the official agent default is 5). Measured on llama.cpp b10752: dropping the oldest non-initial screenshot rewrites the prompt and invalidates the server's prefix cache, so every later step re-encodes all kept screenshots (imagesToKeep 2 made window steps cost 20 s instead of 10 s from the third step on). Keeping 8 means a subtask of up to 8 steps never collapses; with the desktop app's 1920 px long-edge cap, 8 screenshots plus history stay under 24k tokens of the 32768 context. Sessions reset per subtask.",
     "maxTokens": 2048,
-    "maxTokensNote": "Reply cap for the managed runtime. The official agent default is 16384; UI-Mate normally answers in 100-330 tokens, but one observed reply ran to about 1,300 tokens of thinking and took 70 s at 32 tok/s. 2048 bounds a step to about 65 s of generation; a truncated reply fails the step as invalid_action instead of hanging the run."
+    "maxTokensNote": "Reply cap for the managed runtime. The official agent default is 16384; UI-Mate normally answers in 100-330 tokens, but one observed reply ran to about 1,300 tokens of thinking and took 70 s at 32 tok/s. 2048 bounds a step to about 65 s of generation; a truncated reply fails the step as invalid_action instead of hanging the run.",
+    "sampling": {
+      "temperature": 0.2,
+      "topP": 0.95,
+      "enableThinking": true,
+      "note": "The official UI-Mate evaluation defaults are temperature 1.0 / top_p 0.95 / enable_thinking true. Apprentice lowers the temperature to 0.2: a GUI action policy that must hit a specific control benefits from near-greedy decoding, and observed runs at 1.0 produced coordinate and tool-call variance across otherwise identical screens. enableThinking stays on and is A/B tested against the benchmark (pnpm bench:local-model)."
+    }
   },
   "mlx": {
     "hfPath": "tencent/UI-Mate-9B",

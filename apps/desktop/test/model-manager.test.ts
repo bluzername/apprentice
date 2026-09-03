@@ -137,6 +137,59 @@ describe("model manager", () => {
     expect(countImagesInBody(chats[9]!.body)).toBe(MODEL_MANIFEST.model.imagesToKeep);
   });
 
+  it("drives the managed runtime with the manifest's sampling values", async () => {
+    const baseUrl = "http://127.0.0.1:8000/v1";
+    const fake = createFakeFetch(routeByPath({ models: () => modelsReply(["UI_Mate"]), chat: () => chatReply(CLICK_REPLY) }));
+    const { manager, context } = setup({ fetchImpl: fake.fetchImpl, runtime: runningRuntimeStub(baseUrl) });
+    context.settings.update({ model: { ...context.settings.get().model, providerType: "uimate", managedRuntime: true } });
+    await manager.propose(proposal(0));
+    const chat = fake.requests.find((request) => request.url.endsWith("chat/completions"));
+    expect(chat?.body).toMatchObject({
+      temperature: MODEL_MANIFEST.model.sampling.temperature,
+      top_p: MODEL_MANIFEST.model.sampling.topP,
+      chat_template_kwargs: { enable_thinking: MODEL_MANIFEST.model.sampling.enableThinking }
+    });
+    expect(MODEL_MANIFEST.model.sampling.temperature).toBe(0.2);
+    expect(MODEL_MANIFEST.model.sampling.topP).toBe(0.95);
+    expect(MODEL_MANIFEST.model.sampling.enableThinking).toBe(true);
+  });
+
+  it("skips the analysis round trip when only the deterministic stand-in is configured", async () => {
+    const baseUrl = "http://127.0.0.1:8000/v1";
+    const fake = createFakeFetch(routeByPath({ models: () => modelsReply(["UI_Mate"]), chat: () => chatReply(CLICK_REPLY) }));
+    const { manager, context } = setup({ fetchImpl: fake.fetchImpl, runtime: runningRuntimeStub(baseUrl) });
+    context.settings.update({ model: { ...context.settings.get().model, providerType: "uimate", managedRuntime: true } });
+    expect(manager.analysisIsDeterministic()).toBe(true);
+    expect(manager.supportsVerification()).toBe(false);
+
+    const before = fake.requests.length;
+    const draft = {
+      name: "File the invoice",
+      description: "",
+      goal: "",
+      trigger: "An invoice PDF arrives",
+      subtasks: [{ title: "Open the PDF", goal: "Open the PDF", completionCriteria: "Preview shows the PDF", keySteps: [] }],
+      variables: [],
+      successCriteria: [],
+      riskNotes: [],
+      allowedApps: [],
+      allowedDomains: [],
+      origin: "deterministic" as const,
+      confidence: 0.5
+    };
+    const refined = await manager.refiner().refine({ deterministicDraft: draft, redactedSummary: "", actionTokens: [], screenshots: [] });
+    expect(refined).toBeNull();
+    // No HTTP call at all: not the draft request, and not the health probe it used to trigger.
+    expect(fake.requests.length).toBe(before);
+  });
+
+  it("reports the mock provider as verification-capable", async () => {
+    const { manager } = setup();
+    expect(manager.analysisIsDeterministic()).toBe(false);
+    await manager.checkHealth();
+    expect(manager.supportsVerification()).toBe(true);
+  });
+
   it("emits health and status while running", async () => {
     const { manager, recorder } = setup();
     manager.start();

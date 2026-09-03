@@ -5,7 +5,7 @@
  * collapsing (`collapse_messages`). Everything here is pure: inputs are never
  * mutated and the returned arrays are freshly allocated.
  */
-import { COLLAPSED_SCREENSHOT_TEXT } from "./constants.js";
+import { COLLAPSED_SCREENSHOT_TEXT, type PromptPlatform } from "./constants.js";
 import { compactResponseForHistory } from "./parser.js";
 import { buildSystemPrompt, type ToolsSchemaPatch } from "./prompt.js";
 import { pyStrip } from "./python-compat.js";
@@ -173,6 +173,8 @@ export interface BuildMessagesOptions {
   readonly workflowSection?: string | null;
   /** obs["workflow_action_patch"]. */
   readonly actionPatch?: ToolsSchemaPatch | null;
+  /** Apprentice deviation: platform-specific system prompt fragments. Defaults to the official Ubuntu text. */
+  readonly platform?: PromptPlatform;
 }
 
 function wrapToolResponse(parts: readonly ContentBlock[]): readonly ContentBlock[] {
@@ -250,7 +252,7 @@ export function buildMessages(options: BuildMessagesOptions): readonly ChatMessa
     content: [
       {
         type: "text",
-        text: buildSystemPrompt({ workflowSection: options.workflowSection, actionPatch: options.actionPatch })
+        text: buildSystemPrompt({ workflowSection: options.workflowSection, actionPatch: options.actionPatch, platform: options.platform })
       }
     ]
   };

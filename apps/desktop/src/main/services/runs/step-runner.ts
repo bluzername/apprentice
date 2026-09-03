@@ -77,7 +77,9 @@ function proposalInput(active: ActiveRun, snapshot: ScreenSnapshot, sessionId: s
   return {
     runId: active.run.id,
     sessionId,
-    instruction: `${active.skill.name}: ${active.skill.description}`.slice(0, 2000),
+    // The provider's instruction is the skill name plus description; the platform line
+    // tells a model trained on Linux screenshots which desktop it is actually looking at.
+    instruction: `You are operating macOS.\n${active.skill.name}: ${active.skill.description}`.slice(0, 2000),
     skill: { name: active.skill.name, subtasks: active.skill.subtasks.map((subtask) => ({ title: subtask.title, goal: subtask.goal, completionCriteria: subtask.completionCriteria, keySteps: [...subtask.keySteps] })) },
     currentSubtaskIndex: active.run.currentSubtaskIndex,
     priorActions: active.priorActions.slice(-200),
@@ -378,8 +380,9 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
   const subtask = active.skill.subtasks[active.run.currentSubtaskIndex]!;
   const verified = await verifyDeterministic({ before: prepared.fresh, after, expectedResult: action.expectedResult, predicates: subtask.completionPredicates, dom: deps.dom, domTimeoutMs: deps.domQueryTimeoutMs ?? DEFAULT_DOM_TIMEOUT_MS });
   let verification = verified.verification;
-  // Supporting model evidence only from real target windows; a display fallback after the action stays with the deterministic result.
-  if (!verification.passed && isUsableCapture(after.capture)) {
+  // Supporting model evidence only from real target windows, and only when a model can
+  // actually produce it; a display fallback after the action stays with the deterministic result.
+  if (!verification.passed && isUsableCapture(after.capture) && deps.model.supportsVerification()) {
     try {
       const supporting = await deps.model.verify({ runId: active.run.id, expectedResult: action.expectedResult, completionCriteria: subtask.completionCriteria, before: { pngBase64: prepared.fresh.resized.png.toString("base64"), width: prepared.fresh.resized.width, height: prepared.fresh.resized.height }, after: { pngBase64: after.resized.png.toString("base64"), width: after.resized.width, height: after.resized.height } });
       active.run = addModelLatency(active.run, 0, 2);

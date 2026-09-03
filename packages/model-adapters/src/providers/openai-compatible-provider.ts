@@ -135,7 +135,7 @@ export class OpenAICompatibleVisionProvider implements VisionAgentProvider {
 
   private async complete(system: string, user: readonly ContentBlock[]): Promise<{ readonly json: unknown; readonly latencyMs: number }> {
     const started = this.now();
-    const reply = await chatCompletion(this.http, {
+    const { content: reply } = await chatCompletion(this.http, {
       model: this.model,
       messages: [
         { role: "system", content: [text(`${system}\n\n${SAFETY_SECTION}\n\n${JSON_ONLY}`)] },

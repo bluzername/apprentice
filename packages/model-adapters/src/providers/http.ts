@@ -1,8 +1,13 @@
 /**
  * Minimal OpenAI-compatible transport: JSON over global fetch with an
- * AbortController timeout and the same retry policy as the reference
- * `UIMateAgent.call_llm` (connection errors, timeouts, 400/429/5xx are
+ * AbortController timeout and a retry policy close to the reference
+ * `UIMateAgent.call_llm` (connection errors, timeouts, 429 and 5xx are
  * retried; the back-off is min(5s * attempt, 30s) and injectable).
+ *
+ * Deviation from the reference client: HTTP 400 is NOT retried. A 400 from an
+ * OpenAI-compatible server is a request-shaped failure (context overflow, a
+ * payload the server rejects); retrying it cannot succeed and only spends the
+ * 5 s back-off before the same error surfaces.
  */
 import { z } from "zod";
 import type { ModelHealth, ProviderType } from "@apprentice/schemas";
@@ -62,10 +67,10 @@ export async function requestJson(options: HttpOptions, method: "GET" | "POST", 
   }
 }
 
-/** Mirrors the reference retryable set: transport/timeouts, 400, 429 and 5xx. */
+/** Retryable set: transport errors, timeouts, 429 and 5xx. 400 is not retryable (see the file header). */
 export function isRetryable(error: unknown): boolean {
   if (error instanceof HttpStatusError) {
-    return error.status === 400 || error.status === 429 || error.status >= 500;
+    return error.status === 429 || error.status >= 500;
   }
   return true;
 }
@@ -107,7 +112,8 @@ const ChatCompletionSchema = z
       .array(
         z
           .object({
-            message: z.object({ content: ContentPartSchema.nullable().optional() }).loose()
+            message: z.object({ content: ContentPartSchema.nullable().optional() }).loose(),
+            finish_reason: z.string().nullable().optional()
           })
           .loose()
       )
@@ -131,8 +137,15 @@ export function extractContentText(content: unknown): string {
   return String(content);
 }
 
-/** POST /chat/completions and return the assistant text (never the raw envelope). */
-export async function chatCompletion(options: HttpOptions, payload: Record<string, unknown>): Promise<string> {
+export interface ChatCompletionResult {
+  /** Assistant text of the first choice (never the raw envelope). */
+  readonly content: string;
+  /** OpenAI `finish_reason` of that choice; "length" means the reply hit max_tokens. */
+  readonly finishReason: string | undefined;
+}
+
+/** POST /chat/completions and return the assistant text plus why generation stopped. */
+export async function chatCompletion(options: HttpOptions, payload: Record<string, unknown>): Promise<ChatCompletionResult> {
   const raw = await requestWithRetry(options, "POST", "chat/completions", payload);
   const parsed = ChatCompletionSchema.safeParse(raw);
   if (!parsed.success) {
@@ -142,7 +155,11 @@ export async function chatCompletion(options: HttpOptions, payload: Record<strin
       parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`)
     );
   }
-  return extractContentText(parsed.data.choices[0]?.message.content);
+  const choice = parsed.data.choices[0];
+  return {
+    content: extractContentText(choice?.message.content),
+    finishReason: choice?.finish_reason ?? undefined
+  };
 }
 
 const ModelsSchema = z.union([

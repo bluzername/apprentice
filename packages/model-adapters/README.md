@@ -120,6 +120,37 @@ explicit; no JSON is ever coaxed out of UI-Mate.
 6. **Transport failure raises.** After the two attempts the reference returns
    `""` (which parses to FAIL); this port throws `ProviderUnavailableError` so
    the run engine can record `model_unavailable` instead of a model failure.
+7. **Terminal tokens are explicit only.** `parse_response` maps a reply without
+   an `<action>` block to FAIL, and a reply with `<action>` but no `<tool_call>`
+   to DONE or FAIL by a keyword heuristic. Here only an explicit `finished` call
+   yields DONE/FAIL and only `subtask_complete` yields SUBTASK_COMPLETE.
+   Everything else the parser cannot map - no `<action>`, no `<tool_call>`, an
+   unknown action name, a `call_user` that sounds infeasible - is `action: null`
+   plus `parseErrors` and no control token, so the run engine retries the step
+   instead of ending the run on a claim the model never made.
+8. **A truncated reply is an invalid action.** When the server reports
+   `finish_reason: "length"` the reply hit `max_tokens` mid-generation. The
+   provider returns `action: null` with the single parse error
+   `reply truncated at max_tokens`, leaves session state untouched, and emits no
+   control token. Nothing from the incomplete text is trusted.
+9. **HTTP 400 is not retried.** The reference client retries 400 alongside 429
+   and 5xx. A 400 from an OpenAI-compatible server is request-shaped (context
+   overflow, a rejected payload); retrying it cannot succeed and only spends the
+   5 s back-off, so `isRetryable` excludes it.
+10. **Sampling is configurable.** `temperature`, `topP` and `enableThinking` are
+    provider options. Absent them the official evaluation values (1.0 / 0.95 /
+    true) are used, so the golden request shape is unchanged. The desktop app
+    passes `model.sampling` from `scripts/model-manifest.json` (temperature 0.2)
+    for the managed runtime.
+11. **macOS prompt variant.** `NextActionInput.platform` selects the system
+    prompt fragments. With `"macos"` the OSWorld `<IMPORTANT_NOTES>` block
+    (LibreOffice and GIMP notes) and the "no terminal, click desktop icons"
+    environment line are replaced by macOS text: menu bar, Dock, Finder, Command
+    shortcuts, the target application is already frontmost, and do not switch
+    applications unless the instruction says so. The `1000x1000` resolution line
+    and every other line stay byte-identical, and `platform: "ubuntu"` (the
+    default) reproduces the official prompt exactly - the golden prompt tests
+    cover that path.
 
 ### Action mapping
 

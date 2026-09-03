@@ -86,8 +86,13 @@ describe("translateResponse action mapping", () => {
     expect(multi.parseErrors[0]).toMatch(/exactly one key/);
     const unknown = translateResponse(response(param("action", "launch_app")), ctx);
     expect(unknown.action).toBeNull();
-    expect(unknown.controlToken).toBe("FAIL");
+    // A tool call Apprentice cannot map is a parse failure, not a claim that the task failed.
+    expect(unknown.controlToken).toBeUndefined();
     expect(unknown.parseErrors[0]).toMatch(/unknown action/);
+    const nameless = translateResponse(response(param("coordinate", "[1, 1]")), ctx);
+    expect(nameless.action).toBeNull();
+    expect(nameless.controlToken).toBeUndefined();
+    expect(nameless.parseErrors[0]).toMatch(/no action name/);
   });
 
   it("maps hotkeys with the ctrl->command remap recorded in the rationale", () => {
@@ -144,9 +149,12 @@ describe("translateResponse action mapping", () => {
     const ask = translateResponse(response(param("action", "call_user") + param("text", "Which account?")), ctx);
     expect(ask.action).toMatchObject({ type: "ask_user", question: "Which account?" });
     expect(ask.controlToken).toBeUndefined();
+    // call_user is a question, never a terminal signal: only an explicit finished call ends a run.
     const askInfeasible = translateResponse(response(param("action", "call_user") + param("text", "This is not possible.")), ctx);
-    expect(askInfeasible.controlToken).toBe("FAIL");
+    expect(askInfeasible.controlToken).toBeUndefined();
+    expect(askInfeasible.action).toMatchObject({ type: "ask_user" });
     expect(askInfeasible.action?.confidence).toBe(0.5);
+    expect(askInfeasible.rationale).toMatch(/infeasible/);
 
     const done = translateResponse(response(param("action", "finished") + param("status", "success"), "All done."), ctx);
     expect(done.action).toMatchObject({ type: "done", summary: "All done." });
@@ -162,15 +170,21 @@ describe("translateResponse action mapping", () => {
     expect(sc.parseErrors).toEqual([]);
   });
 
-  it("mirrors parse_response fallbacks for missing blocks", () => {
+  it("reports missing blocks as parse errors, never as a terminal token", () => {
+    // A truncated or malformed reply must not be read as "the task is finished" or "the task failed":
+    // only an explicit finished / subtask_complete tool call produces a terminal token.
     const noAction = translateResponse("<think>hidden</think><tool_call></tool_call>", ctx);
-    expect(noAction).toMatchObject({ action: null, controlToken: "FAIL", actionSummary: "" });
+    expect(noAction).toMatchObject({ action: null, actionSummary: "" });
+    expect(noAction.controlToken).toBeUndefined();
     expect(noAction.parseErrors[0]).toMatch(/no <action>/);
     const noCall = translateResponse("<action>Finished.</action>", ctx);
-    expect(noCall).toMatchObject({ action: null, controlToken: "DONE" });
+    expect(noCall).toMatchObject({ action: null, actionSummary: "Finished." });
+    expect(noCall.controlToken).toBeUndefined();
+    expect(noCall.parseErrors[0]).toMatch(/no <tool_call>/);
     const noCallInfeasible = translateResponse("<action>The task is infeasible.</action>", ctx);
-    expect(noCallInfeasible.controlToken).toBe("FAIL");
-    expect(translateResponse("", ctx).controlToken).toBe("FAIL");
+    expect(noCallInfeasible.controlToken).toBeUndefined();
+    expect(translateResponse("", ctx).controlToken).toBeUndefined();
+    expect(translateResponse("", ctx).action).toBeNull();
   });
 
   it("applies terminal precedence and reports ignored extra calls", () => {

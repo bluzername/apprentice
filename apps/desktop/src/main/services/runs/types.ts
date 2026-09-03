@@ -58,6 +58,12 @@ export interface ModelPort {
   resetSession(sessionId: string): Promise<void>;
   providerType(): ProviderType;
   modelName(): string | undefined;
+  /**
+   * False when `verify` would land on the deterministic stand-in or on a
+   * provider without structured output. The step runner then skips the call
+   * instead of paying for a round trip whose answer it cannot use.
+   */
+  supportsVerification(): boolean;
 }
 
 export interface RunEngineHooks {

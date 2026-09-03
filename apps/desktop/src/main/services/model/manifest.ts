@@ -37,6 +37,12 @@ export const ModelManifestSchema = z.object({
     gpuLayers: z.number().int().nonnegative(),
     imagesToKeep: z.number().int().positive(),
     maxTokens: z.number().int().min(256),
+    /** Sampling the managed runtime is driven with; see the manifest's own note for why it differs from the official defaults. */
+    sampling: z.object({
+      temperature: z.number().min(0).max(2),
+      topP: z.number().gt(0).max(1),
+      enableThinking: z.boolean()
+    }),
     memoryRecommendation: z.object({ recommendedUnifiedMemoryGb: z.number(), minimumUnifiedMemoryGb: z.number(), note: z.string() })
   })
 });

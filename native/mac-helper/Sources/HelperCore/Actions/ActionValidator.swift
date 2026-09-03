@@ -62,7 +62,13 @@ public enum ActionValidator {
             return key(action).map { .pressKey(keyName: $0.name, keyCode: $0.code) }
         case "hotkey":
             return key(action).flatMap { k in
-                modifiers(action).map { .hotkey(modifiers: $0, keyName: k.name, keyCode: k.code) }
+                modifiers(action).flatMap { mods in
+                    // Hard denylist: refused even though the approval token verified.
+                    guard !HotkeyDenylist.isDenied(modifiers: mods, keyName: k.name) else {
+                        return .failure(HelperError(.actionRejected, HotkeyDenylist.rejectionMessage))
+                    }
+                    return .success(.hotkey(modifiers: mods, keyName: k.name, keyCode: k.code))
+                }
             }
         case "wait":
             guard let ms = action["ms"]?.intValue else {

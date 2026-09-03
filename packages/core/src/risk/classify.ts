@@ -8,7 +8,8 @@ import {
   type SemanticElement
 } from "@apprentice/schemas";
 import { isAppDenied, isDomainDenied } from "../allowlist/index.js";
-import { EXTERNAL_COMMUNICATION, maxRiskClass, riskClassRank } from "./dictionaries.js";
+import { detectCredentialShapes } from "./credentials.js";
+import { EXTERNAL_COMMUNICATION, riskClassRank } from "./dictionaries.js";
 import { classifyText, matchTerms } from "./match.js";
 
 export interface RiskInput {
@@ -38,7 +39,20 @@ export const BASE_DECISION: Readonly<Record<RiskClass, PolicyDecision>> = {
 const NAVIGATION_KEYS: ReadonlySet<string> = new Set([
   "tab", "escape", "esc", "up", "down", "left", "right", "home", "end", "pageup", "pagedown"
 ]);
-const NAVIGATION_HOTKEYS: ReadonlySet<string> = new Set(["t", "l", "w", "f", "tab", "[", "]", "1", "2", "3", "4", "5", "6", "7", "8", "9", "q", "h", "m", "`"]);
+// "q" and "w" are deliberately absent: cmd+q, cmd+shift+w and cmd+w are handled
+// as destructive / mutating below, and must never fall through to navigation
+// (which a run-scope navigation approval can auto-approve).
+const NAVIGATION_HOTKEYS: ReadonlySet<string> = new Set(["t", "l", "f", "tab", "[", "]", "1", "2", "3", "4", "5", "6", "7", "8", "9", "h", "m", "`"]);
+/** Shortcuts that end an application, close every window, or force quit. Always approve_strong. */
+const DESTRUCTIVE_COMBOS: ReadonlySet<string> = new Set([
+  "cmd+delete", "cmd+backspace", "cmd+shift+delete",
+  "cmd+q", "cmd+shift+q",
+  "cmd+shift+w",
+  "alt+cmd+escape", "alt+cmd+esc"
+]);
+/** Shortcuts that change state but are recoverable. Approval required, never automatic. */
+const MUTATION_COMBOS: ReadonlySet<string> = new Set(["cmd+s", "cmd+v", "cmd+z", "cmd+x", "cmd+n", "cmd+w"]);
+const READ_ONLY_COMBOS: ReadonlySet<string> = new Set(["cmd+c", "cmd+a", "cmd+f"]);
 const SUBMIT_KEYS: ReadonlySet<string> = new Set(["enter", "return"]);
 const NAVIGATION_ROLES: ReadonlySet<string> = new Set(["link", "tab", "menuitem", "axlink", "axtab", "axmenuitem", "a"]);
 
@@ -95,15 +109,35 @@ function classifyKeyboard(input: RiskInput, text: string): RiskResult {
     if (NAVIGATION_KEYS.has(key)) return result("read_only", [`navigation key: ${key}`], []);
     return result("internal_mutation", [`key press enters input: ${key}`], []);
   }
-  if (combo === "cmd+delete" || combo === "cmd+backspace" || combo === "cmd+shift+delete") {
+  if (DESTRUCTIVE_COMBOS.has(combo)) {
     return result("destructive", [`destructive shortcut: ${combo}`], []);
   }
-  if (combo === "cmd+s" || combo === "cmd+v" || combo === "cmd+z" || combo === "cmd+x" || combo === "cmd+n") {
+  if (MUTATION_COMBOS.has(combo)) {
     return result("internal_mutation", [`mutating shortcut: ${combo}`], []);
   }
-  if (combo === "cmd+c" || combo === "cmd+a" || combo === "cmd+f") return result("read_only", [`read-only shortcut: ${combo}`], []);
+  if (READ_ONLY_COMBOS.has(combo)) return result("read_only", [`read-only shortcut: ${combo}`], []);
   if (NAVIGATION_HOTKEYS.has(key)) return result("reversible_navigation", [`navigation shortcut: ${combo}`], []);
   return result("unknown", [`unrecognized shortcut: ${combo}`], []);
+}
+
+/**
+ * Typed text is never classified through the button-label dictionaries: a note
+ * that mentions "password", "admin" or "delete" is ordinary prose, and routing
+ * it through those dictionaries used to abort the run as financial_or_access.
+ * Instead the content is checked for credential SHAPES, which only add a reason.
+ * The class stays internal_mutation, so the decision is capped at "approve" and
+ * the exact text is put in front of the user. A genuinely sensitive destination
+ * (a secure text field) is caught earlier by detectSensitiveContext, which
+ * aborts before this runs.
+ */
+function classifyTypedText(typed: string): RiskResult {
+  const shapes = detectCredentialShapes(typed);
+  const reasons = ["typing enters input; exact text must be shown for approval"];
+  if (shapes.length > 0) {
+    reasons.push(`typed text has a credential shape: ${shapes.join(", ")}`);
+  }
+  // Reason kinds only: the typed value itself is never copied into the result.
+  return result("internal_mutation", reasons, shapes);
 }
 
 function classifyPointer(input: RiskInput, text: string): RiskResult {
@@ -143,12 +177,9 @@ export function classifyRisk(input: RiskInput): RiskResult {
     case "scroll":
       classified = result("read_only", [`${action.type} does not change state`], []);
       break;
-    case "type_text": {
-      const textRisk = classifyText(`${text} ${action.text}`);
-      const riskClass = maxRiskClass(["internal_mutation", textRisk.riskClass === "unknown" ? "internal_mutation" : textRisk.riskClass]);
-      classified = result(riskClass, ["typing enters input; exact text must be shown for approval"], textRisk.matchedTerms);
+    case "type_text":
+      classified = classifyTypedText(action.text);
       break;
-    }
     case "press_key":
     case "hotkey":
       classified = classifyKeyboard(input, text);
