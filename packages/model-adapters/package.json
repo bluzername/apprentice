@@ -14,7 +14,8 @@
     "test:local-model": "vitest run --config vitest.local-model.config.ts",
     "golden:regenerate": "python3 scripts/gen-golden.py",
     "build": "tsc --noEmit -p tsconfig.json",
-    "bench:local-model": "vitest run --config vitest.bench.config.ts"
+    "bench:local-model": "vitest run --config vitest.bench.config.ts",
+    "bench:grounding": "vitest run --config vitest.grounding.config.ts"
   },
   "dependencies": {
     "@apprentice/schemas": "workspace:*",

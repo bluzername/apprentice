@@ -7,7 +7,7 @@ import { defineConfig } from "vitest/config";
  */
 export default defineConfig({
   test: {
-    include: ["src/**/*.test.ts", "test/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "test/**/*.test.ts", "bench/grounding-score.test.ts"],
     exclude: ["**/node_modules/**", "test/local-model.test.ts"]
   }
 });
