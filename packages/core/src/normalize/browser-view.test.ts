@@ -70,3 +70,13 @@ describe("browserViewFromEvent", () => {
     expect(browserViewFromEvent(native)).toBeNull();
   });
 });
+
+describe("browserViewFromTitle with a Chrome profile suffix", () => {
+  it("drops the browser name and the profile name after it", () => {
+    const view = browserViewFromTitle("Search results - alex@example.com - Gmail - Google Chrome - Alex", CHROME);
+    expect(view).toEqual({ site: "gmail", view: "search", sensitive: false });
+    const sheet = browserViewFromTitle("Q3 budget - Google Sheets - Google Chrome - Alex", CHROME);
+    expect(sheet?.site).toBe("google-sheets");
+    expect(sheet?.view).toBe("document");
+  });
+});

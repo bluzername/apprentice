@@ -87,8 +87,10 @@ function splitSegments(title: string): readonly string[] {
     .split(SEGMENT_SEPARATOR_RE)
     .map((segment) => cleanSegment(segment))
     .filter((segment) => segment.length > 0 && !EMAIL_RE.test(segment));
-  const last = segments[segments.length - 1];
-  if (last !== undefined && segments.length > 1 && BROWSER_NAMES.has(last.toLowerCase())) return segments.slice(0, -1);
+  // Browsers append their own name and, in Chrome, the profile name after it
+  // ("Inbox - Gmail - Google Chrome - Alex"). Keep only the page-side segments.
+  const browserIndex = segments.findIndex((segment, index) => index > 0 && BROWSER_NAMES.has(segment.toLowerCase()));
+  if (browserIndex > 0) return segments.slice(0, browserIndex);
   return segments;
 }
 
