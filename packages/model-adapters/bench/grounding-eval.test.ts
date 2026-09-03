@@ -28,12 +28,9 @@
  * `timings` fields are captured from the raw reply through a fetch wrapper, the
  * same technique as bench/local-model-bench.test.ts.
  *
- * TODO(provider): temperature is fixed at the official DEFAULT_TEMPERATURE
- * inside UIMateProvider and is not an option on UIMateProviderOptions, so it is
- * not configurable here. Thinking is configurable (`enableThinking`) but
- * `createProvider` does not forward it; the provider is owned elsewhere, so
- * APPRENTICE_GROUNDING_THINKING builds a UIMateProvider directly instead of
- * widening the factory config.
+ * APPRENTICE_GROUNDING_TEMPERATURE and APPRENTICE_GROUNDING_THINKING ("1" or "0")
+ * are passed through createProvider; unset keeps the provider defaults
+ * (temperature 1.0, thinking on).
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
@@ -41,7 +38,6 @@ import { afterAll, describe, expect, it } from "vitest";
 import { ProviderTypeSchema, type ProposedAction } from "@apprentice/schemas";
 import { createProvider } from "../src/providers/factory.js";
 import { readPngDimensions } from "../src/providers/image.js";
-import { UIMateProvider } from "../src/providers/uimate-provider.js";
 import type { VisionAgentProvider } from "../src/providers/types.js";
 import {
   GroundingManifestSchema,
@@ -106,12 +102,20 @@ function capturingFetch(sink: Captured[]): typeof fetch {
   };
 }
 
+/** Sampling temperature for the run; unset keeps the provider default (the official 1.0). */
+const TEMPERATURE = process.env["APPRENTICE_GROUNDING_TEMPERATURE"] === undefined ? undefined : Number(process.env["APPRENTICE_GROUNDING_TEMPERATURE"]);
+
 function buildProvider(sink: Captured[]): VisionAgentProvider {
   const shared = { baseUrl: BASE_URL, model: MODEL, fetchImpl: capturingFetch(sink), timeoutMs: REQUEST_TIMEOUT_MS, imagesToKeep: 1 };
-  if (THINKING !== undefined && PROVIDER === "uimate") {
-    return new UIMateProvider({ ...shared, enableThinking: THINKING === "1" });
+  if (TEMPERATURE !== undefined && (!Number.isFinite(TEMPERATURE) || TEMPERATURE < 0)) {
+    throw new Error(`APPRENTICE_GROUNDING_TEMPERATURE must be a non-negative number, got ${String(process.env["APPRENTICE_GROUNDING_TEMPERATURE"])}`);
   }
-  return createProvider({ providerType: PROVIDER, ...shared });
+  return createProvider({
+    providerType: PROVIDER,
+    ...shared,
+    temperature: TEMPERATURE,
+    enableThinking: THINKING === undefined ? undefined : THINKING === "1"
+  });
 }
 
 /**
@@ -281,6 +285,7 @@ describe("UI-Mate GUI grounding accuracy", () => {
       casesPath: CASES_PATH,
       tolerancePx: TOLERANCE,
       thinking: THINKING ?? "provider default",
+      temperature: TEMPERATURE ?? "provider default",
       summary,
       outcomes
     };
