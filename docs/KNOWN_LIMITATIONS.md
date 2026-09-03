@@ -32,6 +32,15 @@ during the build; items marked "by design" are intentional alpha scope.
 - Variable detection is heuristic (route ids, differing labels). Free-text variables typed into
   fields are never captured, so they cannot be inferred.
 
+## Observation without the browser extension
+
+- Without the companion extension, browser activity is observed only through the frontmost
+  window: app switches, coarse window-title view tokens (site plus inbox, search, message,
+  document), clicks enriched through Accessibility, and modifier chords. Tabs that are not the
+  active tab of the frontmost window are invisible. Install the extension for page-level detail.
+- Automated input that bypasses the HID layer (browser automation, scripted keystrokes) is not
+  observed and does not count as user activity; this only matters for test harnesses.
+
 ## Assisted runs
 
 - Guide and approval-every-step modes only. `low_risk_auto` exists behind an experimental flag,
@@ -40,6 +49,9 @@ during the build; items marked "by design" are intentional alpha scope.
   user, done, fail. Drag, triple click, key hold, and any shell or file operation are unsupported
   and rejected.
 - Financial, credential, permission, and sensitive-context actions abort as unsupported.
+- A run needs the target application to have an open window; if it does not, the run pauses with
+  a question instead of acting. Approvals bring the Apprentice window forward; the engine
+  re-activates the target application before each capture and action.
 - Verification is deterministic-first (predicates, before/after screen and OCR diff); the model's
   own verification is only supporting evidence. Some subtasks end with a user confirmation.
 - Coordinates from the model are mapped through the resize transform and checked against OCR and

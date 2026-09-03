@@ -146,6 +146,18 @@ splitting episodes after a save; teach shortcut recorded as the last taught step
 not linked to their events in Activity; guided runs aborting because the dashboard is frontmost
 when a run starts (see the run-engine target-app activation change).
 
+Guided run, re-tested after the target-app activation change: started from the dashboard, the
+engine activated Finder itself, captured the real Finder window, the mock proposed a click, the
+approval panel opened with the annotated target and a Navigation risk badge, approval executed a
+real click through the helper (display point 956,513, 55 ms) with validation resolved via
+Accessibility, verification passed via screen and OCR diff, subtask completion asked for user
+confirmation (no deterministic predicate on a candidate-derived skill), subtask 2 switched to
+Preview and executed a second approved click. Subtask 3 exposed a safety gap: the target app had
+no window, the capture fell back to the display, and the proposal pointed at Apprentice's own
+window; it was rejected by the user and the engine now refuses that case (see the target-window
+guard change). Run feedback and the Runs trace (validation, approval, execution, verification,
+timing) were verified. Diagnostics preview truncation bug (4002 characters) found and fixed.
+
 Not verified live: the browser extension (needs a manual unpacked install), real UI-Mate
-inference (weights not downloaded), and the guided run executing a real click (blocked by the
-frontmost-app gap until the activation change is deployed; re-tested below when available).
+inference (weights not downloaded), and a guided run reaching "completed" on a real skill (the
+third subtask needs an open target window; re-test pending the guard change).
