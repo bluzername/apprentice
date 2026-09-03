@@ -20,3 +20,4 @@ playwright-report/
 .env
 .env.*
 !.env.example
+.claude/worktrees/
