@@ -12,6 +12,7 @@ import {
   ExtensionEventSchema,
   PRODUCT_NAME
 } from "./index.js";
+import { EpisodeBoundaryReasonSchema } from "./episodes.js";
 import { SettingsPatchSchema } from "./settings.js";
 
 describe("schemas", () => {
@@ -116,6 +117,11 @@ describe("schemas", () => {
     expect(ok.success).toBe(true);
     const bad = ExtensionEventSchema.safeParse({ id: "1", ts: 1, type: "field_input", domain: "crm.example", value: "secret" });
     expect(bad.success).toBe(false);
+  });
+
+  it("accepts the absorbed_tail episode boundary reason", () => {
+    expect(EpisodeBoundaryReasonSchema.parse("absorbed_tail")).toBe("absorbed_tail");
+    expect(EpisodeBoundaryReasonSchema.safeParse("trailing").success).toBe(false);
   });
 
   it("has a non-empty IPC contract", () => {

@@ -56,6 +56,24 @@ enum AXAttributes {
         return nil
     }
 
+    /// Up to `max` AXChildren; a bounded copy so huge outlines stay cheap.
+    static func children(_ element: AXUIElement, max: Int) -> [AXUIElement] {
+        var values: CFArray?
+        let result = AXUIElementCopyAttributeValues(element, kAXChildrenAttribute as CFString, 0, max, &values)
+        guard result == .success, let values else { return [] }
+        return (values as [AnyObject]).compactMap { value in
+            guard CFGetTypeID(value) == AXUIElementGetTypeID() else { return nil }
+            return unsafeBitCast(value, to: AXUIElement.self)
+        }
+    }
+
+    /// The string value of a static text element only. Any other role returns nil so
+    /// field contents are never read.
+    static func staticTextValue(_ element: AXUIElement, role: String) -> String? {
+        guard role == "AXStaticText" else { return nil }
+        return string(element, kAXValueAttribute)
+    }
+
     static func pid(_ element: AXUIElement) -> pid_t? {
         var pid: pid_t = 0
         guard AXUIElementGetPid(element, &pid) == .success else { return nil }

@@ -61,14 +61,16 @@ function nearestAncestorTitle(result: AccessibilityContextAtPointResult): string
 
 /**
  * Semantic element for a stored click. Never carries a value: secure fields keep only
- * their role, and titles are redacted before they are attached.
+ * their role, and titles are redacted before they are attached. The helper's resolved
+ * `name` (own label, labelled descendant, or titled ancestor) wins; the title,
+ * description, and ancestor fallbacks cover helpers that do not resolve names.
  */
 export function elementFromAxContext(result: AccessibilityContextAtPointResult): SemanticElement | undefined {
   const element = result.element;
   if (element === null) return undefined;
   const role = mapAxRole(element.role);
   if (element.isSecure) return role !== undefined ? { role } : undefined;
-  const name = safeElementName(element.title) ?? safeElementName(element.description) ?? safeElementName(nearestAncestorTitle(result));
+  const name = safeElementName(element.name) ?? safeElementName(element.title) ?? safeElementName(element.description) ?? safeElementName(nearestAncestorTitle(result));
   const identifier = element.identifier !== undefined && element.identifier.trim().length > 0 ? element.identifier.trim().slice(0, MAX_IDENTIFIER_LENGTH) : undefined;
   const semantic: SemanticElement = {
     ...(role !== undefined ? { role } : {}),

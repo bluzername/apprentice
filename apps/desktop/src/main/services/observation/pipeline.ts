@@ -52,6 +52,18 @@ const DEFAULT_FLUSH_MS = 500;
 const DEFAULT_BATCH = 50;
 const DEFAULT_CLICK_SETTLE_MS = 400;
 const DEFAULT_INTERVAL_MS = 5000;
+/** A second mouse_down this close in time and space in the same app is a multi-click, not a new click. */
+const MULTI_CLICK_WINDOW_MS = 350;
+const MULTI_CLICK_RADIUS_PX = 6;
+
+/** The most recent buffered click, kept so a double click collapses into it. */
+interface RecentClick {
+  readonly eventId: string;
+  readonly ts: number;
+  readonly x: number;
+  readonly y: number;
+  readonly bundleId: string | undefined;
+}
 
 /**
  * Turns helper and extension events into allowlist-checked ActivityEvents,
@@ -71,6 +83,7 @@ export class ObservationPipeline {
   private unsubscribeHelper: (() => void) | null = null;
   private storedListeners: ReadonlyArray<(events: readonly ActivityEvent[]) => void> = [];
   private lastNavigation: { domain: string; path: string; ts: number } | null = null;
+  private recentClick: RecentClick | null = null;
   private observing = false;
 
   constructor(private readonly deps: ObservationPipelineDeps) {
@@ -288,9 +301,19 @@ export class ObservationPipeline {
       redaction: mapped.type === "window_title_changed" ? "redacted" : "none_needed",
       payload: sensitiveView ? { ...mapped.payload, sensitive: true } : mapped.payload
     });
-    const click = mapped.type === "mouse_down" ? this.clickPoint(mapped) : null;
-    const event = this.pushEvent(draft, { pending: click !== null });
-    if (click !== null) this.trackEnrichment(this.enrichClick(event.id, click.x, click.y));
+    const point = mapped.type === "mouse_down" ? this.clickPoint(mapped) : null;
+    if (point !== null) {
+      const collapsed = this.collapseMultiClick(ts, point, app?.bundleId);
+      if (collapsed !== null) {
+        this.deps.metrics?.increment("click.collapsed");
+        if (mapped.captureReason !== undefined) this.scheduleCapture(mapped.captureReason, collapsed);
+        return;
+      }
+    }
+    const enrich = point !== null && this.deps.helper.connected;
+    const event = this.pushEvent(draft, { pending: enrich });
+    if (point !== null) this.recentClick = { eventId: event.id, ts, x: point.x, y: point.y, bundleId: app?.bundleId };
+    if (enrich && point !== null) this.trackEnrichment(this.enrichClick(event.id, point.x, point.y));
     if (sensitiveView) {
       this.capturePaused = true;
       return;
@@ -299,10 +322,31 @@ export class ObservationPipeline {
   }
 
   private clickPoint(mapped: MappedHelperEvent): { x: number; y: number } | null {
-    if (!this.deps.helper.connected) return null;
     const x = mapped.payload?.["x"];
     const y = mapped.payload?.["y"];
     return typeof x === "number" && typeof y === "number" ? { x, y } : null;
+  }
+
+  /**
+   * Folds a mouse_down that lands within the multi-click window and radius of the previous
+   * click in the same app into that click by bumping `payload.count`. Returns the id of the
+   * absorbing event, or null when the click is a new one (or the previous click already
+   * left the buffer).
+   */
+  private collapseMultiClick(ts: number, point: { x: number; y: number }, bundleId: string | undefined): string | null {
+    const previous = this.recentClick;
+    if (previous === null) return null;
+    const near = ts - previous.ts <= MULTI_CLICK_WINDOW_MS && ts >= previous.ts && Math.abs(point.x - previous.x) <= MULTI_CLICK_RADIUS_PX && Math.abs(point.y - previous.y) <= MULTI_CLICK_RADIUS_PX;
+    if (!near || previous.bundleId !== bundleId) return null;
+    const index = this.buffer.findIndex((entry) => entry.event.id === previous.eventId);
+    if (index === -1) return null;
+    const entry = this.buffer[index]!;
+    const count = entry.event.payload?.["count"];
+    const nextCount = (typeof count === "number" ? count : 1) + 1;
+    const updated: BufferEntry = { ...entry, event: { ...entry.event, payload: { ...entry.event.payload, count: nextCount } } };
+    this.buffer = [...this.buffer.slice(0, index), updated, ...this.buffer.slice(index + 1)];
+    this.recentClick = { ...previous, ts };
+    return previous.eventId;
   }
 
   private trackEnrichment(promise: Promise<void>): void {

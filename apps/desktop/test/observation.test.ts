@@ -198,6 +198,66 @@ describe("native click enrichment", () => {
     await pipeline.shutdown();
   });
 
+  it("prefers the helper's resolved name over the ancestor fallback", async () => {
+    const { helper, pipeline, context } = await setup({
+      ax: () => axResult({ element: { role: "AXTextField", name: "download-1.pdf", nameSource: "descendant", valueLength: 14 }, ancestors: [{ role: "AXCell" }, { role: "AXRow" }, { role: "AXWindow", title: "Apprentice-test-invoices" }] })
+    });
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    helper.emit("mouseDown", { x: 5, y: 5, button: "left", bundleId: CHROME });
+    await pipeline.settleEnrichments();
+    pipeline.flush();
+    const click = context.storage.current.events.query({ types: ["mouse_down"] })[0]!;
+    expect(click.element).toEqual({ role: "textbox", name: "download-1.pdf" });
+    await pipeline.shutdown();
+  });
+
+  it("collapses a double click into one mouse_down with count 2 and enriches it once", async () => {
+    const { helper, pipeline, context } = await setup({ ax: () => axResult({ element: { role: "AXRow", name: "download-1.pdf", nameSource: "descendant" } }) });
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    helper.emit("mouseDown", { x: 100, y: 200, button: "left", bundleId: CHROME });
+    helper.emit("mouseDown", { x: 103, y: 198, button: "left", bundleId: CHROME });
+    await pipeline.settleEnrichments();
+    pipeline.flush();
+    const clicks = context.storage.current.events.query({ types: ["mouse_down"] });
+    expect(clicks).toHaveLength(1);
+    expect(clicks[0]!.payload).toEqual({ x: 100, y: 200, button: "left", count: 2 });
+    expect(clicks[0]!.element).toEqual({ role: "row", name: "download-1.pdf" });
+    expect(helper.requests.filter((request) => request.cmd === "accessibilityContextAtPoint")).toHaveLength(1);
+    expect(context.metrics.counters()["click.collapsed"]).toBe(1);
+    await pipeline.shutdown();
+  });
+
+  it("keeps clicks apart when they are too far in space or time, or in another app", async () => {
+    let now = 1_000_000;
+    const context = makeContext();
+    context.settings.update({ allowlist: { apps: [{ bundleId: CHROME, name: "Google Chrome" }, { bundleId: "com.apple.finder", name: "Finder" }], domains: [] } });
+    const helper = new FakeHelperClient({ now: () => now });
+    await helper.start();
+    const screen = new FixtureScreenSource({ readPng: (name) => fixtures.readScreenshotPng(name), initial: "crmContact" });
+    const capture = new CaptureService({ storage: context.storage, screenSource: screen, ocr: (png) => helper.ocrImage(png), resizer: nodePngResizer, metrics: context.metrics, clock: systemClock, logger: silentLogger, sessionId: context.sessionId });
+    const pipeline = new ObservationPipeline({ storage: context.storage, settings: context.settings, helper, capture, sessionId: context.sessionId, emit: createRecordingEmitter().emit, clock: systemClock, logger: silentLogger, metrics: context.metrics, isCapturing: () => true, flushIntervalMs: 10_000, clickSettleMs: 5, intervalMs: 60_000, clickAxTimeoutMs: 100 });
+    await pipeline.start();
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    helper.emit("mouseDown", { x: 100, y: 200, button: "left", bundleId: CHROME });
+    helper.emit("mouseDown", { x: 120, y: 200, button: "left", bundleId: CHROME });
+    now += 351;
+    helper.emit("mouseDown", { x: 120, y: 200, button: "left", bundleId: CHROME });
+    helper.emit("frontmostAppChanged", { bundleId: "com.apple.finder", name: "Finder", pid: 3 });
+    helper.emit("mouseDown", { x: 120, y: 200, button: "left", bundleId: "com.apple.finder" });
+    now += 100;
+    helper.emit("mouseDown", { x: 121, y: 201, button: "left", bundleId: "com.apple.finder" });
+    await pipeline.settleEnrichments();
+    pipeline.flush();
+    const clicks = context.storage.current.events.query({ types: ["mouse_down"] });
+    expect(clicks.map((click) => [click.app?.bundleId, click.payload?.["x"], click.payload?.["count"]])).toEqual([
+      [CHROME, 100, undefined],
+      [CHROME, 120, undefined],
+      [CHROME, 120, undefined],
+      ["com.apple.finder", 120, 2]
+    ]);
+    await pipeline.shutdown();
+  });
+
   it("never leaks secure field contents, even when the helper misbehaves", async () => {
     const secure = { role: "AXSecureTextField", title: "Password", isSecure: true, valueLength: 7 };
     const { helper, pipeline, context } = await setup({ ax: () => axResult({ element: secure }) });
@@ -227,7 +287,7 @@ describe("browser view titles", () => {
     expect(events.map((event) => event.payload?.["view"])).toEqual(["inbox", "document"]);
     expect(events.map((event) => eventToToken(event))).toEqual(["app:chrome|site:gmail|view:inbox|action:view", "app:chrome|site:google-sheets|view:document|action:view"]);
     const raw = context.storage.current.db.get<{ json: string }>("SELECT json FROM events WHERE id = ?", events[0]!.id)!;
-    expect(raw.json).not.toMatch(/jordan|843|Inbox/);
+    expect(raw.json).not.toMatch(/jordan|\(843\)|Inbox/);
     await pipeline.shutdown();
   });
 

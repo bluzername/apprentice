@@ -5,6 +5,9 @@ import { describeBoundaries, segmentEpisodes } from "./segment.js";
 
 const MIN = 60_000;
 const session = { sessionId: "s1" };
+const textEdit = { bundleId: "com.apple.TextEdit", name: "TextEdit" };
+const finder = { bundleId: "com.apple.finder", name: "Finder" };
+const chrome = { bundleId: "com.google.Chrome" };
 
 describe("segmentEpisodes", () => {
   it("splits on idle gaps and keeps ordering", () => {
@@ -79,7 +82,7 @@ describe("segmentEpisodes", () => {
       makeClick({ ts: 3000, domain: "crm.example", name: "Save contact" }),
       makeClick({ ts: 4000, domain: "crm.example", name: "Contacts" }),
       makeEvent({ ts: 5000, type: "shortcut", app: { bundleId: "notion.id" }, payload: { keys: ["cmd", "s"] } }),
-      makeEvent({ ts: 6000, type: "download", source: "extension", domain: "files.example", payload: { extension: "pdf" } })
+      makeEvent({ ts: 30_000, type: "download", source: "extension", domain: "files.example", payload: { extension: "pdf" } })
     ];
     const episodes = segmentEpisodes(events, session);
     expect(episodes.map((episode) => episode.eventIds.length)).toEqual([2, 2, 2, 1]);
@@ -135,6 +138,146 @@ describe("segmentEpisodes", () => {
     const sensitive = segmentEpisodes([...events, makeEvent({ ts: 4000, type: "secure_field_focused" })], session);
     expect(sensitive[0]!.privacyStatus).toBe("contains_sensitive");
     expect(segmentEpisodes([], session)).toEqual([]);
+  });
+
+  it("absorbs closing actions that follow an outcome event into the same episode", () => {
+    const events = [
+      makeEvent({ ts: 0, type: "app_activated", app: textEdit }),
+      makeEvent({ ts: 1000, type: "shortcut", app: textEdit, payload: { keys: ["cmd", "n"] } }),
+      makeEvent({ ts: 2000, type: "field_input", app: textEdit, payload: { fieldLabel: "Body" } }),
+      makeEvent({ ts: 5000, type: "shortcut", app: textEdit, payload: { keys: ["cmd", "s"] } }),
+      makeEvent({ ts: 6000, type: "shortcut", app: textEdit, payload: { keys: ["cmd", "w"] } }),
+      makeEvent({ ts: 7000, type: "app_activated", app: finder })
+    ];
+    const episodes = segmentEpisodes(events, session);
+    expect(episodes).toHaveLength(1);
+    const [episode] = episodes;
+    expect(episode!.eventIds).toEqual(events.map((event) => event.id));
+    expect(episode!.actionTokens.slice(-2)).toEqual(["app:textedit|action:shortcut|keys:cmd+w", "app:finder|action:activate"]);
+    expect(episode!.boundaryReasons).toEqual(["session_edge", "outcome_event", "absorbed_tail"]);
+    expect(episode!.outcomeHypothesis).toContain("on textedit");
+    expect(episode!.endTs).toBe(7000);
+    expect(describeBoundaries(episodes)[0]).toMatchObject({ endTs: 7000, eventCount: 6, reasons: ["session_edge", "outcome_event", "absorbed_tail"] });
+  });
+
+  it("absorbs every closing action kind within the window and starts a new episode at the next meaningful action", () => {
+    const events = [
+      makeClick({ ts: 0, domain: "crm.example", name: "Contacts" }),
+      makeClick({ ts: 1000, domain: "crm.example", name: "Save contact" }),
+      makeEvent({ ts: 2000, type: "shortcut", app: textEdit, payload: { keys: "escape" } }),
+      makeEvent({ ts: 3000, type: "shortcut", app: textEdit, payload: { keys: ["cmd", "q"] } }),
+      makeEvent({ ts: 4000, type: "window_title_changed", app: textEdit, payload: { title: "Untitled" } }),
+      makeEvent({ ts: 5000, type: "clipboard_changed" }),
+      makeEvent({ ts: 6000, type: "screenshot_captured", payload: { reason: "app_change" } }),
+      makeEvent({ ts: 7000, type: "privacy_gap", privacy: "privacy_gap" }),
+      makeEvent({ ts: 8000, type: "idle_changed", payload: { idle: false } }),
+      makeClick({ ts: 9000, domain: "crm.example", name: "Contacts" }),
+      makeClick({ ts: 10_000, domain: "crm.example", name: "Open" })
+    ];
+    const episodes = segmentEpisodes(events, session);
+    expect(episodes).toHaveLength(2);
+    expect(episodes[0]!.eventIds).toEqual(events.slice(0, 9).map((event) => event.id));
+    expect(episodes[0]!.boundaryReasons).toEqual(["session_edge", "outcome_event", "absorbed_tail"]);
+    expect(episodes[0]!.privacyStatus).toBe("contains_gaps");
+    expect(episodes[1]!.eventIds).toEqual(events.slice(9).map((event) => event.id));
+    expect(episodes[1]!.boundaryReasons).toEqual(["outcome_event", "session_edge"]);
+  });
+
+  it("does not absorb closing actions outside the 20 s window or non-closing events", () => {
+    const late = [
+      makeClick({ ts: 0, domain: "crm.example", name: "Open" }),
+      makeClick({ ts: 1000, domain: "crm.example", name: "Save contact" }),
+      makeEvent({ ts: 1000 + 21_000, type: "shortcut", app: textEdit, payload: { keys: ["cmd", "w"] } }),
+      makeEvent({ ts: 2000 + 21_000, type: "app_activated", app: finder })
+    ];
+    const lateEpisodes = segmentEpisodes(late, session);
+    expect(lateEpisodes).toHaveLength(2);
+    expect(lateEpisodes[0]!.boundaryReasons).toEqual(["session_edge", "outcome_event"]);
+    expect(lateEpisodes[1]!.eventIds).toHaveLength(2);
+
+    const browserView = [
+      makeClick({ ts: 0, domain: "crm.example", name: "Open" }),
+      makeClick({ ts: 1000, domain: "crm.example", name: "Save contact" }),
+      makeEvent({ ts: 2000, type: "window_title_changed", app: chrome, payload: { site: "gmail", view: "inbox" } }),
+      makeClick({ ts: 3000, domain: "mail.example", name: "Archive" })
+    ];
+    const viewEpisodes = segmentEpisodes(browserView, session);
+    expect(viewEpisodes).toHaveLength(2);
+    expect(viewEpisodes[0]!.boundaryReasons).toEqual(["session_edge", "outcome_event"]);
+    expect(viewEpisodes[1]!.actionTokens[0]).toBe("app:chrome|site:gmail|view:inbox|action:view");
+  });
+
+  it("closes an absorbed tail on idle start and opens the next episode with idle_gap", () => {
+    const events = [
+      makeClick({ ts: 0, domain: "crm.example", name: "Open" }),
+      makeClick({ ts: 1000, domain: "crm.example", name: "Save contact" }),
+      makeEvent({ ts: 2000, type: "shortcut", app: textEdit, payload: { keys: ["cmd", "w"] } }),
+      makeEvent({ ts: 3000, type: "idle_changed", payload: { idle: true, idleSeconds: 240 } }),
+      makeClick({ ts: 4000, domain: "crm.example", name: "Contacts" })
+    ];
+    const episodes = segmentEpisodes(events, session);
+    expect(episodes).toHaveLength(2);
+    expect(episodes[0]!.eventIds).toHaveLength(4);
+    expect(episodes[0]!.boundaryReasons).toEqual(["session_edge", "outcome_event", "absorbed_tail", "idle_gap"]);
+    expect(episodes[1]!.boundaryReasons).toEqual(["idle_gap", "session_edge"]);
+  });
+
+  it("merges tiny post-outcome fragments into the previous episode, never into the next", () => {
+    const later = 5 * MIN;
+    const events = [
+      makeClick({ ts: 0, domain: "crm.example", name: "Open" }),
+      makeClick({ ts: 1000, domain: "crm.example", name: "Save contact" }),
+      makeClick({ ts: 2000, domain: "crm.example", name: "OK" }),
+      makeClick({ ts: later, domain: "crm.example", name: "Contacts" }),
+      makeClick({ ts: later + 1000, domain: "crm.example", name: "Open" }),
+      makeClick({ ts: later + 2000, domain: "crm.example", name: "Save contact" }),
+      makeClick({ ts: later + 2000 + 20_000, domain: "crm.example", name: "Contacts" })
+    ];
+    const episodes = segmentEpisodes(events, session);
+    expect(episodes).toHaveLength(3);
+    expect(episodes[0]!.eventIds).toEqual(events.slice(0, 3).map((event) => event.id));
+    expect(episodes[0]!.boundaryReasons).toEqual(["session_edge", "outcome_event", "absorbed_tail", "idle_gap"]);
+    expect(episodes[0]!.meaningfulActionCount).toBe(3);
+    expect(episodes[0]!.outcomeHypothesis).toBe("Click the 'Save contact' button on crm.example");
+    expect(episodes[1]!.eventIds).toEqual(events.slice(3, 6).map((event) => event.id));
+    expect(episodes[1]!.boundaryReasons).toEqual(["idle_gap", "outcome_event"]);
+    expect(episodes[2]!.eventIds).toEqual([events[6]!.id]);
+    expect(episodes[2]!.boundaryReasons).toEqual(["outcome_event", "session_edge"]);
+  });
+
+  it("keeps tiny fragments that have two meaningful actions or follow a non-outcome boundary", () => {
+    const twoActions = [
+      makeClick({ ts: 0, domain: "crm.example", name: "Save contact" }),
+      makeClick({ ts: 1000, domain: "crm.example", name: "Contacts" }),
+      makeClick({ ts: 2000, domain: "crm.example", name: "Open" })
+    ];
+    expect(segmentEpisodes(twoActions, session).map((episode) => episode.eventIds.length)).toEqual([1, 2]);
+
+    const afterCorrection = [
+      makeClick({ ts: 0, domain: "crm.example", name: "Open" }),
+      makeClick({ ts: 1000, domain: "crm.example", name: "Save contact" }),
+      makeEvent({ ts: 2000, type: "click", source: "user", domain: "crm.example", payload: { correction: true } })
+    ];
+    const corrected = segmentEpisodes(afterCorrection, session);
+    expect(corrected).toHaveLength(2);
+    expect(corrected[1]!.boundaryReasons).toEqual(["user_correction", "session_edge"]);
+  });
+
+  it("folds a teach end marker that trails an outcome into the taught episode", () => {
+    const events = [
+      makeEvent({ ts: 0, type: "teach_marker", source: "user", payload: { phase: "start" } }),
+      makeClick({ ts: 1000, domain: "crm.example", name: "Open" }),
+      makeClick({ ts: 2000, domain: "crm.example", name: "Save contact" }),
+      makeEvent({ ts: 3000, type: "shortcut", app: textEdit, payload: { keys: ["cmd", "w"] } }),
+      makeEvent({ ts: 4000, type: "teach_marker", source: "user", payload: { phase: "end" } }),
+      makeClick({ ts: 5000, domain: "crm.example", name: "Contacts" })
+    ];
+    const episodes = segmentEpisodes(events, session);
+    expect(episodes).toHaveLength(2);
+    expect(episodes[0]!.boundary).toBe("explicit");
+    expect(episodes[0]!.eventIds).toEqual(events.slice(0, 5).map((event) => event.id));
+    expect(episodes[0]!.boundaryReasons).toEqual(["teach_marker", "outcome_event", "absorbed_tail", "teach_marker"]);
+    expect(episodes[1]!.boundaryReasons).toEqual(["teach_marker", "session_edge"]);
   });
 
   it("describes boundaries for the debug view", () => {

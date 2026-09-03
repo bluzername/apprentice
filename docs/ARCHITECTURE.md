@@ -40,7 +40,9 @@ Chromium extension, one optional Cloudflare Worker, and four TypeScript packages
    duplicates; the PNG is encrypted into `screenshots/<id>.enc`; OCR runs through the helper and is
    stored encrypted.
 3. Segmentation and discovery. Events become normalized tokens, then episodes (teach markers, idle
-   gaps, outcome events, context shifts). `discoverCandidates` clusters similar episodes into
+   gaps, outcome events, context shifts). Closing actions within 20 s of an outcome (cmd+w, cmd+q,
+   escape, app switch, idle, clipboard, screenshot, privacy gap) stay in the finished episode, and
+   tiny post-outcome fragments fold back into it. `discoverCandidates` clusters similar episodes into
    `WorkflowCandidate`s with component scores and a plain-language confidence explanation.
 4. Teaching. "Learn what I just did" opens the last 15 minutes, lets the user trim and exclude, then
    `draftSkillFromEvents` produces a deterministic draft; a generic provider may refine it. The

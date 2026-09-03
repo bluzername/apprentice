@@ -5,6 +5,8 @@ export const EpisodeBoundaryReasonSchema = z.enum([
   "teach_marker",
   "idle_gap",
   "outcome_event",
+  /** Closing actions (cmd+w, app switch, ...) that followed an outcome event were kept in the episode. */
+  "absorbed_tail",
   "calendar_boundary",
   "context_shift",
   "user_correction",

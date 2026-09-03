@@ -27,6 +27,15 @@ export function dedupeConsecutiveViews(tokens: readonly string[]): string[] {
   return tokens.filter((token, index) => !(index > 0 && tokens[index - 1] === token && tokenAction(token) === "view"));
 }
 
+/** Ordered action tokens for an event list, with browser view flicker collapsed. */
+export function episodeTokens(events: readonly ActivityEvent[]): string[] {
+  return dedupeConsecutiveViews(events.map((event) => eventToToken(event)).filter((token): token is string => token !== null));
+}
+
+export function countMeaningfulActions(events: readonly ActivityEvent[]): number {
+  return episodeTokens(events).filter((token) => isMeaningfulToken(token)).length;
+}
+
 export function episodeId(sessionId: string, events: readonly ActivityEvent[]): string {
   const first = events[0];
   const seed = `${sessionId}:${first?.ts ?? 0}:${first?.id ?? ""}:${events.length}`;
@@ -43,7 +52,7 @@ export interface BuildEpisodeInput {
 export function buildEpisode(input: BuildEpisodeInput): Episode {
   const { events } = input;
   if (events.length === 0) throw new Error("buildEpisode: an episode needs at least one event");
-  const tokens = dedupeConsecutiveViews(events.map((event) => eventToToken(event)).filter((token): token is string => token !== null));
+  const tokens = episodeTokens(events);
   const meaningful = tokens.filter((token) => isMeaningfulToken(token));
   const outcomeTokens = events
     .filter((event) => isOutcomeEvent(event))

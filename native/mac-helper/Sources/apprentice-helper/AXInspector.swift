@@ -4,7 +4,7 @@ import HelperCore
 
 /// Serializes AX elements into AxElementSchema and answers the two AX
 /// commands. Secure-field values are never read; text fields only report a
-/// length.
+/// length; only static text contributes its value to a display name.
 enum AXInspector {
     private static let maxTextLength = 256
 
@@ -34,10 +34,31 @@ enum AXInspector {
             return .success(.object(["element": .null, "ancestors": .array([]), "bundleId": .string("")]))
         }
         return .success(.object([
-            "element": serialize(element),
+            "element": serialize(element, resolvedName: resolveName(of: element, at: CGPoint(x: x, y: y))),
             "ancestors": .array(ancestors(of: element)),
             "bundleId": .string(bundleId(of: element))
         ]))
+    }
+
+    /// Display name for the element under a click: own label, labelled descendants,
+    /// the containing row, then titled ancestors. See AXNameResolver.
+    static func resolveName(of element: AXUIElement, at point: CGPoint) -> AXResolvedName? {
+        let resolver = AXNameResolver<AXUIElement>(
+            facts: { node in
+                let role = AXAttributes.string(node, kAXRoleAttribute) ?? ""
+                return AXNodeFacts(
+                    role: role,
+                    subrole: AXAttributes.string(node, kAXSubroleAttribute),
+                    title: AXAttributes.string(node, kAXTitleAttribute),
+                    description: AXAttributes.string(node, kAXDescriptionAttribute),
+                    staticTextValue: AXAttributes.staticTextValue(node, role: role),
+                    containsPoint: AXAttributes.frame(node)?.contains(point) ?? false
+                )
+            },
+            children: { AXAttributes.children($0, max: AXNameResolver<AXUIElement>.maxDescendantNodes) },
+            parent: { AXAttributes.element($0, kAXParentAttribute) }
+        )
+        return resolver.resolve(hit: element)
     }
 
     static func bundleId(of element: AXUIElement) -> String {
@@ -45,7 +66,7 @@ enum AXInspector {
         return AXAttributes.bundleId(forPid: pid)
     }
 
-    static func serialize(_ element: AXUIElement) -> JSONValue {
+    static func serialize(_ element: AXUIElement, resolvedName: AXResolvedName? = nil) -> JSONValue {
         let role = AXAttributes.string(element, kAXRoleAttribute) ?? ""
         let subrole = AXAttributes.string(element, kAXSubroleAttribute)
         let secure = AXRoleMapping.isSecure(axRole: role, subrole: subrole)
@@ -55,6 +76,10 @@ enum AXInspector {
             "enabled": .bool(AXAttributes.bool(element, kAXEnabledAttribute) ?? true)
         ]
         if let subrole { object["subrole"] = .string(String(subrole.prefix(64))) }
+        if !secure, let resolvedName {
+            object["name"] = .string(String(resolvedName.name.prefix(maxTextLength)))
+            object["nameSource"] = .string(resolvedName.source.rawValue)
+        }
         if let title = AXAttributes.string(element, kAXTitleAttribute), !title.isEmpty {
             object["title"] = .string(String(title.prefix(maxTextLength)))
         }

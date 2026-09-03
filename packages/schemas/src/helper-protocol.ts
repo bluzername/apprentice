@@ -177,12 +177,19 @@ export const OcrImageResultSchema = z.object({
 });
 export type OcrImageResult = z.infer<typeof OcrImageResultSchema>;
 
+/** Where AxElement.name came from: "self" is the element's own label; the others are neighbours in the AX tree. */
+export const AxNameSourceSchema = z.enum(["self", "descendant", "ancestor"]);
+export type AxNameSource = z.infer<typeof AxNameSourceSchema>;
+
 export const AxElementSchema = z.object({
   role: z.string().max(64).default(""),
   subrole: z.string().max(64).optional(),
   title: z.string().max(256).optional(),
   description: z.string().max(256).optional(),
   identifier: z.string().max(256).optional(),
+  /** Display name chosen by the helper (own label, labelled descendant, or titled ancestor). Never a field value. */
+  name: z.string().max(256).optional(),
+  nameSource: AxNameSourceSchema.optional(),
   value: z.string().max(0).optional(),
   valueLength: z.number().int().nonnegative().optional(),
   isSecure: z.boolean().default(false),
