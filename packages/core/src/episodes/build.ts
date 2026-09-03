@@ -7,7 +7,14 @@ import { isSensitiveEvent } from "../sensitive/index.js";
 import { isOutcomeEvent } from "./boundaries.js";
 import { consumptionScore } from "./consumption.js";
 
-export const ACTIVE_GAP_MAX_MS = 60_000;
+/**
+ * Gaps between input events up to this long count as active work. Reading a
+ * document or a PDF produces no input for a minute or more, and the 90 s
+ * candidate gate is measured against this sum, so 60 s dropped deliberate
+ * routines (measured: a 179 s invoice filing scored 61 s active). Longer gaps
+ * are idle; the 4 min idle threshold still splits episodes.
+ */
+export const ACTIVE_GAP_MAX_MS = 120_000;
 
 function unique(values: ReadonlyArray<string | undefined>): string[] {
   return [...new Set(values.filter((value): value is string => value !== undefined && value.length > 0))];

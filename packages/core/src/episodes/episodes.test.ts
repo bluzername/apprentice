@@ -9,6 +9,19 @@ const textEdit = { bundleId: "com.apple.TextEdit", name: "TextEdit" };
 const finder = { bundleId: "com.apple.finder", name: "Finder" };
 const chrome = { bundleId: "com.google.Chrome" };
 
+describe("activeDuration", () => {
+  it("counts reading pauses of up to two minutes as active work and drops longer gaps", () => {
+    const events = [
+      makeClick({ ts: 0, domain: "crm.example", name: "Open" }),
+      makeClick({ ts: 90_000, domain: "crm.example", name: "Details" }),
+      makeClick({ ts: 90_000 + 150_000, domain: "crm.example", name: "Notes" })
+    ];
+    const episodes = segmentEpisodes(events, session);
+    expect(episodes).toHaveLength(1);
+    expect(episodes[0]!.activeDurationMs).toBe(90_000);
+  });
+});
+
 describe("segmentEpisodes", () => {
   it("splits on idle gaps and keeps ordering", () => {
     const events = [
