@@ -34,6 +34,10 @@ export function buildRunTraceFile(run: Run, steps: readonly RunStep[]): RunTrace
   return { json: JSON.stringify({ run: redacted.run, steps: redacted.steps }, null, 2), redactedFields: redacted.redactedFields };
 }
 
+const ELLIPSIS = "...";
+
+/** Truncates to at most `max` characters, ellipsis included, so the IPC schema limit always holds. */
 export function preview(text: string, max = 4000): string {
-  return text.length <= max ? text : `${text.slice(0, max - 1)}…`.replace("…", "...");
+  if (text.length <= max) return text;
+  return `${text.slice(0, Math.max(0, max - ELLIPSIS.length))}${ELLIPSIS}`;
 }

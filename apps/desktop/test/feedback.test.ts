@@ -1,3 +1,4 @@
+import { preview } from "../src/main/services/feedback/diagnostics.js";
 import { execFile } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { createServer, type Server } from "node:http";
@@ -134,5 +135,16 @@ describe("feedback service", () => {
     expect(feedback.pendingPulse()).toBeNull();
     clock.advance(3 * 24 * 60 * 60 * 1000);
     expect(feedback.pendingPulse()).toBe(7);
+  });
+});
+
+describe("diagnostics preview truncation", () => {
+  it("preview never exceeds the schema limit and keeps short text intact", () => {
+    expect(preview("short")).toBe("short");
+    const long = "x".repeat(10_000);
+    expect(preview(long).length).toBe(4000);
+    expect(preview(long).endsWith("...")).toBe(true);
+    expect(preview("y".repeat(4000)).length).toBe(4000);
+    expect(preview("z".repeat(4001)).length).toBe(4000);
   });
 });
