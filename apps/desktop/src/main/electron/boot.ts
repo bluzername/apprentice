@@ -5,6 +5,7 @@ import { createEventEmitter, registerIpcHandlers } from "../ipc/registry.js";
 import { createIpcHandlers } from "../ipc/handlers.js";
 import { defaultDataRoot } from "../paths.js";
 import { assertIsolatedDataDir, createFakeProtector, type KeyProtector } from "../security/keys.js";
+import type { AppContext } from "../services/app-context.js";
 import { composeServices, type Services } from "../services/composition.js";
 import { createFixtureSource, resolveFixturesDir } from "../services/demo/fixture-source.js";
 import { FakeHelperClient } from "../services/helper/fake-helper-client.js";
@@ -13,7 +14,7 @@ import type { HelperClient } from "../services/helper/types.js";
 import { nodePngResizer } from "../services/images/png-resize.js";
 import { FixtureScreenSource, type ScreenSource } from "../services/observation/screen-source.js";
 import { createGrantedPermissionSystem } from "../services/permissions.js";
-import { ElectronScreenSource, electronPngResizer } from "./capture.js";
+import { createElectronScreenSource, electronPngResizer } from "./capture.js";
 import { createElectronPowerProbe } from "./power.js";
 import { createSafeStorageProtector } from "./protector.js";
 import { createShortcutController } from "./shortcuts.js";
@@ -56,7 +57,9 @@ export async function bootApp(options: BootOptions): Promise<BootedApp> {
     ? new FakeHelperClient({ fixtureDelayScale: 0 })
     : new ProcessHelperClient({ executablePath: helperPath, logPath: join(process.env.APPRENTICE_DATA_DIR ?? app.getPath("appData"), "Apprentice", "logs", "helper.log") });
   const fixtures = createFixtureSource(fixturesDir);
-  const screenSource: ScreenSource = options.e2e ? new FixtureScreenSource({ readPng: (name) => fixtures.readScreenshotPng(name), initial: "genericBlank" }) : new ElectronScreenSource(helper);
+  const screenSource: ScreenSource | ((context: AppContext) => ScreenSource) = options.e2e
+    ? new FixtureScreenSource({ readPng: (name) => fixtures.readScreenshotPng(name), initial: "genericBlank" })
+    : (context: AppContext) => createElectronScreenSource({ helper, settings: context.settings, logger: context.logger.child("capture") });
   const services = composeServices({
     dataDir,
     protector: chooseProtector(options.e2e),

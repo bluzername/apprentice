@@ -9,7 +9,7 @@ long it stays, and what can leave the Mac.
 |---|---|---|---|
 | Structured interaction events (app activated, window changed, click with semantic descriptor, form submitted, shortcut chord, download, copy/paste occurrence, idle state) | Only while Learning is on and the frontmost app or browser domain is on your allowlist | SQLite rows; redacted and normalized | 30 days or until you delete them |
 | Window and page titles | Same conditions | Encrypted payload column (AES-256-GCM) | 7 days |
-| Sparse screenshots | On meaningful transitions in allowed context, at most one every 5 seconds, deduplicated | Encrypted files under Application Support | 24 hours after analysis |
+| Sparse screenshots of a single window | On meaningful transitions in allowed context, at most one every 5 seconds, deduplicated | Encrypted files under Application Support | 24 hours after analysis |
 | OCR text of those screenshots | When a screenshot is analyzed locally | Encrypted rows | 7 days |
 | Episodes, candidates, skills, run traces | Derived locally | SQLite rows (run traces redact typed text) | 30 days (skills until you delete them) |
 | Structured feedback and product analytics events | When you submit feedback or use the product | SQLite rows | Until exported, uploaded, or deleted |
@@ -27,6 +27,11 @@ long it stays, and what can leave the Mac.
 - Password managers, banking, payment, health portals, and system authentication dialogs are
   always denied, even if added to the allowlist.
 - Continuous video.
+- The rest of your screen. A screenshot is a capture of one window of the allowlisted app, not of
+  the display it sits on, so other windows, other apps, and the desktop behind it are not in the
+  image even when they overlap it. When no such window capture is possible (no frontmost window, or
+  a window macOS will not composite), the image is discarded rather than stored, sent to OCR, or
+  shown to the model.
 
 ## What can leave the Mac (only with explicit opt-in)
 

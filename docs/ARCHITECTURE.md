@@ -35,10 +35,13 @@ Chromium extension, one optional Cloudflare Worker, and four TypeScript packages
    domains. The main process classifies each event against the allowlist before deciding whether
    a screenshot may be captured (`classifyContext`); outside the allowlist only a `privacy_gap`
    marker is stored.
-2. Capture. `CaptureThrottle` enforces one capture per 5 s outside a run; `desktopCapturer`
-   captures the display and crops to the frontmost window; the perceptual hash drops near
-   duplicates; the PNG is encrypted into `screenshots/<id>.enc`; OCR runs through the helper and is
-   stored encrypted.
+2. Capture. `CaptureThrottle` enforces one capture per 5 s outside a run. The image is scoped to
+   the frontmost window: `desktopCapturer` window source matched by the helper's CGWindowID, then
+   the helper's own window capture, then a display crop that is always flagged as a fallback
+   (ADR 0002). Before anything is written, the capture is re-checked: a display fallback, an image
+   with no owning app, or an app that is no longer allowlisted at the shutter is dropped without
+   being stored or OCR'd. Otherwise the perceptual hash drops near duplicates, the PNG is encrypted
+   into `screenshots/<id>.enc`, and OCR runs through the helper and is stored encrypted.
 3. Segmentation and discovery. Events become normalized tokens, then episodes (teach markers, idle
    gaps, outcome events, context shifts). Closing actions within 20 s of an outcome (cmd+w, cmd+q,
    escape, app switch, idle, clipboard, screenshot, privacy gap) stay in the finished episode, and

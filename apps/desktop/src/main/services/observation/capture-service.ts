@@ -5,7 +5,8 @@ import type { StorageRef } from "../app-context.js";
 import type { Clock } from "../clock.js";
 import { hashPng, resizeToLongEdge, type PngResizer } from "../images/png-resize.js";
 import type { Logger } from "../logger.js";
-import type { ScreenSource } from "./screen-source.js";
+import type { ContextClassifier } from "./context-classifier.js";
+import type { ScreenCapture, ScreenSource } from "./screen-source.js";
 
 export type OcrFn = (pngBase64: string) => Promise<OcrImageResult>;
 
@@ -33,9 +34,19 @@ export interface CaptureServiceDeps {
   readonly minIntervalMs?: number;
   readonly queueCapacity?: number;
   readonly ocrMaxLongEdge?: number;
+  /**
+   * Re-checks the allowlist at the shutter, because the frontmost app can
+   * change between the request and the capture. Omitted only by tests that
+   * drive the service directly; the display-fallback and missing-app refusals
+   * apply either way.
+   */
+  readonly classify?: ContextClassifier;
 }
 
 export const OCR_MAX_LONG_EDGE = 1280;
+
+/** Why a captured image was thrown away instead of being stored and OCR'd. */
+export type CaptureRefusal = "display_fallback" | "unknown_app" | "not_allowed";
 
 export type CapturedListener = (record: ScreenshotRecord) => void;
 
@@ -50,6 +61,7 @@ export class CaptureService {
   private lastHash: string | null = null;
   private captured = 0;
   private deduplicated = 0;
+  private refused = 0;
   private listeners: ReadonlyArray<CapturedListener> = [];
 
   constructor(private readonly deps: CaptureServiceDeps) {
@@ -80,8 +92,8 @@ export class CaptureService {
     this.throttle.reset();
   }
 
-  stats(): { captured: number; deduplicated: number; queue: ReturnType<BackpressureQueue<CaptureJob>["stats"]>; lastHash: string | null } {
-    return { captured: this.captured, deduplicated: this.deduplicated, queue: this.queue.stats(), lastHash: this.lastHash };
+  stats(): { captured: number; deduplicated: number; refused: number; queue: ReturnType<BackpressureQueue<CaptureJob>["stats"]>; lastHash: string | null } {
+    return { captured: this.captured, deduplicated: this.deduplicated, refused: this.refused, queue: this.queue.stats(), lastHash: this.lastHash };
   }
 
   /** Resolves once every queued capture finished (tests and shutdown). */
@@ -114,6 +126,16 @@ export class CaptureService {
     const captureStart = performance.now();
     const capture = await this.deps.screenSource.captureFrontmost();
     this.deps.metrics.record("capture.captureMs", performance.now() - captureStart);
+    const refusal = this.refusalFor(job, capture);
+    if (refusal !== null) {
+      this.refused += 1;
+      this.deps.metrics.increment("capture.refused");
+      this.deps.metrics.increment(`capture.refused.${refusal}`);
+      // A privacy gap, not a failure: the image is dropped before it is hashed,
+      // written, or sent to OCR, and nothing about it is logged.
+      this.deps.logger.debug("screenshot refused before storage", { reason: refusal, method: capture.method });
+      return;
+    }
     const hash = hashPng(capture.png);
     if (this.lastHash !== null && isNearDuplicate(hash, this.lastHash)) {
       this.deduplicated += 1;
@@ -145,6 +167,27 @@ export class CaptureService {
     this.deps.metrics.increment("capture.stored");
     this.notifyCaptured(record);
     await this.runOcr(record, capture.png);
+  }
+
+  /**
+   * The passive path stores only a capture of one window of an app that is
+   * still allowlisted at the shutter. A whole-display image (helper outage, no
+   * frontmost window) would otherwise put apps the user never enabled into the
+   * database and through OCR.
+   */
+  private refusalFor(job: CaptureJob, capture: ScreenCapture): CaptureRefusal | null {
+    if (capture.isDisplayFallback) return "display_fallback";
+    const contextBundleId = job.context.app?.bundleId;
+    // Fixture and demo sources do not name an owner; the requesting context does.
+    const bundleId = capture.bundleId ?? contextBundleId;
+    if (bundleId === undefined || bundleId.length === 0) return "unknown_app";
+    const classify = this.deps.classify;
+    if (classify === undefined) return null;
+    // A domain only qualifies the app it was observed in: once the frontmost
+    // app has changed, the request's domain no longer describes this image.
+    const sameApp = contextBundleId === undefined || bundleId.toLowerCase() === contextBundleId.toLowerCase();
+    const domain = sameApp ? job.context.domain : undefined;
+    return classify({ bundleId, domain }) === "allowed" ? null : "not_allowed";
   }
 
   private notifyCaptured(record: ScreenshotRecord): void {

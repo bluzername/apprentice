@@ -1,4 +1,4 @@
-import { classifyContext, isDomainAllowed, newId, type MetricsRecorder } from "@apprentice/core";
+import { isDomainAllowed, newId, type MetricsRecorder } from "@apprentice/core";
 import type { ActivityEvent, AppRef, ExtensionEvent, HelperEvent, PrivacyClassification, ScreenshotReason, ScreenshotRecord, SemanticElement } from "@apprentice/schemas";
 import type { StorageRef } from "../app-context.js";
 import type { Clock } from "../clock.js";
@@ -7,6 +7,7 @@ import type { HelperClient } from "../helper/types.js";
 import type { Logger } from "../logger.js";
 import type { SettingsStore } from "../settings-store.js";
 import type { CaptureService } from "./capture-service.js";
+import { createContextClassifier, type ContextClassifier, type ContextClassifierInput } from "./context-classifier.js";
 import { DEFAULT_CLICK_AX_TIMEOUT_MS, elementFromAxContext, withTimeout } from "./click-enrichment.js";
 import { mapExtensionEvent, mapHelperEvent, roundTimestamp, withoutUndefined, type ActivityEventDraft, type MappedHelperEvent } from "./event-mapping.js";
 
@@ -88,8 +89,10 @@ export class ObservationPipeline {
   private lastNavigation: { domain: string; path: string; ts: number } | null = null;
   private recentClick: RecentClick | null = null;
   private observing = false;
+  private readonly classifier: ContextClassifier;
 
   constructor(private readonly deps: ObservationPipelineDeps) {
+    this.classifier = createContextClassifier(deps.settings, () => deps.isCapturing());
     this.seq = deps.storage.current.events.latestSeq(deps.sessionId) + 1;
     this.unsubscribeCapture = deps.capture.onCaptured((record) => this.attachScreenshot(record));
   }
@@ -212,15 +215,8 @@ export class ObservationPipeline {
     return { accepted, dropped };
   }
 
-  private classify(input: { bundleId?: string; domain?: string; isSecureInput?: boolean }): PrivacyClassification {
-    const settings = this.deps.settings.get();
-    return classifyContext({
-      bundleId: input.bundleId,
-      domain: input.domain,
-      isSecureInput: input.isSecureInput,
-      learningState: this.deps.isCapturing() ? "learning" : "stopped",
-      allowlist: settings.allowlist
-    });
+  private classify(input: ContextClassifierInput): PrivacyClassification {
+    return this.classifier(input);
   }
 
   private ingestExtensionEvent(raw: ExtensionEvent): boolean {

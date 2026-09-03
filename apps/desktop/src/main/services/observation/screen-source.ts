@@ -2,6 +2,15 @@ import type { FrontmostContextResult, Rect } from "@apprentice/schemas";
 import type { HelperClient } from "../helper/types.js";
 import { hashPng, pngDimensions } from "../images/png-resize.js";
 
+/**
+ * How the image was obtained. `window_source` (a desktopCapturer window
+ * source) is the default; `helper_window` is the helper's ScreenCaptureKit
+ * path; `display_crop` is the last-resort whole-display capture, which is
+ * always flagged as a display fallback so nothing stores it, OCRs it, or shows
+ * it to a model.
+ */
+export type CaptureMethod = "window_source" | "helper_window" | "display_crop" | "fixture";
+
 export interface ScreenCapture {
   readonly png: Buffer;
   readonly width: number;
@@ -18,6 +27,8 @@ export interface ScreenCapture {
    * store, or send such an image to a model.
    */
   readonly isDisplayFallback: boolean;
+  /** Which rung of the capture ladder produced this image. */
+  readonly method: CaptureMethod;
   readonly capturedAt: number;
 }
 
@@ -32,7 +43,8 @@ export function hasCapturableWindow(context: FrontmostContextResult | null | und
   return bounds !== undefined && bounds.width > 0 && bounds.height > 0;
 }
 
-function bundleIdOf(context: FrontmostContextResult | null | undefined): string | undefined {
+/** Bundle id of the app owning the frontmost window, or undefined when unknown. */
+export function bundleIdOf(context: FrontmostContextResult | null | undefined): string | undefined {
   const bundleId = context?.app.bundleId ?? "";
   return bundleId.length > 0 ? bundleId : undefined;
 }
@@ -57,6 +69,7 @@ export class HelperScreenSource implements ScreenSource {
       windowId: result.windowId ?? context?.window?.id,
       displayId: result.displayId,
       isDisplayFallback: result.windowId === undefined && !hasCapturableWindow(context),
+      method: "helper_window",
       capturedAt: this.now()
     };
   }
@@ -118,6 +131,7 @@ export class FixtureScreenSource implements ScreenSource {
       windowId: fallback ? undefined : 1,
       displayId: "fixture-display",
       isDisplayFallback: fallback,
+      method: "fixture",
       capturedAt: (this.options.now ?? Date.now)()
     };
   }

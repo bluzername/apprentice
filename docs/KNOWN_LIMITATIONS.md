@@ -22,6 +22,9 @@ during the build; items marked "by design" are intentional alpha scope.
   text, it is retained for up to seven days unless you delete it.
 - Meeting-end and calendar-boundary signals are inferred only from visible context (titles); there
   is no calendar integration.
+- A screenshot is only ever a capture of one window. When macOS will not composite that window
+  (it is minimized, or on another Space), and the helper cannot capture it either, no screenshot is
+  stored for that moment at all; the events are still recorded (by design, see ADR 0002).
 
 ## Learning
 
@@ -73,10 +76,11 @@ during the build; items marked "by design" are intentional alpha scope.
   7,600 image tokens; the app pins 32768 and caps the model image at 1920 px on the long edge.
 - Replies are capped at 2048 tokens for the managed runtime; a proposal that needs more thinking
   fails the step as invalid_action instead of taking minutes.
-- Captures are display crops of the target window's bounds, so a dialog from another app that
-  overlaps the window (a macOS permission prompt, for example) is visible to the model, and the
-  model will try to dismiss it. Move the dialog or the window; Apprentice never clicks system
-  prompts by itself because every action needs approval.
+- Captures are window-scoped, so a dialog from another app that overlaps the target window is not
+  in the image the model sees. The residual is the reverse case: the model can propose a click at a
+  point where another window physically sits, and the hit-test guard then finds an element owned by
+  a different app and refuses the action rather than clicking through. Move the overlapping window
+  and continue the run.
 - The first proposal of a run can be rejected as a stale screen when the target window is still
   repainting after activation; the run retries once automatically.
 

@@ -73,6 +73,11 @@ export const AppSettingsSchema = z.object({
     lowRiskAuto: z.boolean().default(false)
   }),
   appearance: z.enum(["system", "light", "dark"]).default("system"),
+  /**
+   * Diagnostic override: try the helper's own window capture before the
+   * Electron window source. Off by default; there is no UI for it, it is set by
+   * editing settings.json when the default rung misbehaves (see ADR 0002).
+   */
   captureViaHelper: z.boolean().default(false)
 });
 export type AppSettings = z.infer<typeof AppSettingsSchema>;

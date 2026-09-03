@@ -20,6 +20,7 @@ import { MODEL_MANIFEST } from "./model/manifest.js";
 import { ModelManager, type PowerProbe } from "./model/model-manager.js";
 import { RuntimeManager } from "./model/runtime-manager.js";
 import { CaptureService } from "./observation/capture-service.js";
+import { createContextClassifier } from "./observation/context-classifier.js";
 import { ObservationPipeline } from "./observation/pipeline.js";
 import type { ScreenSource } from "./observation/screen-source.js";
 import { buildOverview } from "./overview.js";
@@ -43,7 +44,8 @@ export const noopShell: ShellAdapter = { openExternal: async () => undefined, op
 export interface CompositionAdapters {
   readonly protector: KeyProtector;
   readonly helper: HelperClient;
-  readonly screenSource: ScreenSource;
+  /** A source, or a factory taking the built context (settings and logger) for adapters that need them. */
+  readonly screenSource: ScreenSource | ((context: AppContext) => ScreenSource);
   readonly permissionSystem: PermissionSystem;
   readonly power: PowerProbe;
   readonly resizer: PngResizer;
@@ -108,7 +110,8 @@ export function composeServices(adapters: CompositionAdapters): Services {
   const runExecutionListeners: Array<(action: ExecutableAction, phase: "before" | "after") => Promise<void> | void> = [];
   const runAttentionListeners: Array<(runId: string) => void> = [];
 
-  const screenSource = new Switchable<ScreenSource>(adapters.screenSource);
+  const realScreenSource = typeof adapters.screenSource === "function" ? adapters.screenSource(context) : adapters.screenSource;
+  const screenSource = new Switchable<ScreenSource>(realScreenSource);
   const actuator = new Switchable<Actuator>({ perform: (action, token) => helper.performAction(action, token) });
   const appActivator = new Switchable<AppActivator>({ activate: (bundleId) => helper.activateApp(bundleId) });
   const ocr = new Switchable<OcrSource>({ ocr: async (png) => (await helper.ocrImage(png.toString("base64"))).blocks });
@@ -125,7 +128,7 @@ export function composeServices(adapters: CompositionAdapters): Services {
   });
 
   const permissions = new PermissionsService({ helper, system: adapters.permissionSystem, analytics, logger: logger.child("permissions") });
-  const capture = new CaptureService({ storage, screenSource: { captureFrontmost: () => screenSource.current.captureFrontmost() }, ocr: (png) => helper.ocrImage(png), resizer: adapters.resizer, metrics, clock, logger: logger.child("capture"), sessionId: context.sessionId });
+  const capture = new CaptureService({ storage, screenSource: { captureFrontmost: () => screenSource.current.captureFrontmost() }, ocr: (png) => helper.ocrImage(png), resizer: adapters.resizer, metrics, clock, logger: logger.child("capture"), sessionId: context.sessionId, classify: createContextClassifier(settings, () => learning.isCapturing()) });
 
   const pipeline: ObservationPipeline = new ObservationPipeline({ storage, settings, helper, capture, sessionId: context.sessionId, emit, clock, logger: logger.child("pipeline"), isCapturing: () => learning.isCapturing(), fixturePath: adapters.helperFixturePath });
   const learning: LearningStateService = new LearningStateService({
@@ -215,7 +218,7 @@ export function composeServices(adapters: CompositionAdapters): Services {
     ax,
     dom,
     setProviderOverride: (provider) => model.setOverride(provider),
-    realSources: { screen: adapters.screenSource, actuator: actuator.current, appActivator: appActivator.current, context: runContext.current, ocr: ocr.current, ax: ax.current, dom: dom.current }
+    realSources: { screen: realScreenSource, actuator: actuator.current, appActivator: appActivator.current, context: runContext.current, ocr: ocr.current, ax: ax.current, dom: dom.current }
   });
   const privacy = new PrivacyService({
     context,
