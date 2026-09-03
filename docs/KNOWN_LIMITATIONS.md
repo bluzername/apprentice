@@ -33,7 +33,17 @@ during the build; items marked "by design" are intentional alpha scope.
 - Similarity is deterministic and structural. Workflows that look alike but differ in intent can be
   grouped together; use "Wrong boundaries" or "Not useful" to correct.
 - Variable detection is heuristic (route ids, differing labels). Free-text variables typed into
-  fields are never captured, so they cannot be inferred.
+  fields are never captured, so they cannot be inferred. Differing file names between occurrences
+  are listed as alternatives in the candidate steps, and the derived skill keeps the last
+  occurrence's literal name; the variable is not bound into the skill automatically.
+- Occurrences are split by a 4-minute idle gap or by an outcome event (save, submit, close).
+  Repeating a routine with shorter pauses and without an outcome event (for example pasting into
+  Notes, which autosaves) produces one long episode and no candidate.
+- Pauses of up to 2 minutes inside a routine count as active time; longer pauses are cut from the
+  active duration used by the 90-second gate.
+- Skills derived from discovered candidates need a human pass before they are executable: the
+  subtask text is built from accessibility labels and omits the intent of the routine (see
+  `docs/VALIDATION_REPORT.md`).
 
 ## Observation without the browser extension
 
@@ -57,6 +67,13 @@ during the build; items marked "by design" are intentional alpha scope.
   re-activates the target application before each capture and action.
 - Verification is deterministic-first (predicates, before/after screen and OCR diff); the model's
   own verification is only supporting evidence. Some subtasks end with a user confirmation.
+  Actions that do not change the window (Command+S on an unchanged view) are reported as
+  unverified even when they succeeded on disk.
+- Wall-clock time of a guided run is dominated by approval waits and model latency, not by
+  execution: in the measured runs the helper spent under 0.3 s executing per run, the model
+  110-125 s, and approvals 120-145 s.
+- The credential-shape check on typed text can flag ordinary pipe-delimited data lines as a
+  high-entropy token; approval is still possible, the card just shows the warning.
 - Coordinates from the model are mapped through the resize transform and checked against OCR and
   accessibility context; ambiguous or moved targets are refused rather than guessed.
 - UI-Mate was trained on Ubuntu screenshots. The provider remaps ctrl to command, swaps the two
@@ -71,9 +88,15 @@ during the build; items marked "by design" are intentional alpha scope.
   11.5 GB of GPU memory at the 32768-token context (measured on an M3 Max, see
   `docs/MODEL_PERFORMANCE.md`). 32 GB of unified memory is recommended, 24 GB is the minimum,
   and 16 GB machines need a smaller quantization or an external endpoint.
-- Real inference is slow compared with the demo provider: 10-12 s per proposed action for a
-  normal window on an M3 Max, dominated by prompt processing of the screenshot. Smaller Apple
-  Silicon chips will be proportionally slower; nothing below an M3 Max was measured.
+- Real inference is slow compared with the demo provider: 8-10 s per proposed action for a
+  normal window on an M3 Max at the start of a run, growing to 20-30 s once several screenshots
+  are kept in the prompt; dominated by prompt processing. Smaller Apple Silicon chips will be
+  proportionally slower; nothing below an M3 Max was measured.
+- Grounding accuracy on real macOS windows is 47-59 % within 6 px on a 32-target benchmark (four passes):
+  labelled text targets (list rows, labelled buttons, text lines) are reliable, icon-only
+  controls (window traffic lights, toolbar glyphs, markup checkboxes) are mostly missed, and
+  misses are far rather than near. Sampling temperature and the thinking mode do not change
+  this. Details in `docs/VALIDATION_REPORT.md`.
 - The official `-c 8192` context is not used because one full-screen Retina capture is about
   7,600 image tokens; the app pins 32768 and caps the model image at 1920 px on the long edge.
 - Replies are capped at 2048 tokens for the managed runtime; a proposal that needs more thinking

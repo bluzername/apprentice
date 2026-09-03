@@ -1,0 +1,879 @@
+{
+ "generatedAt": "2026-09-03T22:52:07.257Z",
+ "baseUrl": "http://127.0.0.1:49633/v1",
+ "model": "UI_Mate",
+ "provider": "uimate",
+ "label": "Q6_K ctx32k thinking off temp 0.2",
+ "casesPath": "grounding-cases (32 real-window targets, not included)",
+ "tolerancePx": 6,
+ "thinking": "0",
+ "temperature": 0.2,
+ "summary": {
+  "total": 32,
+  "hits": 17,
+  "hitRate": 0.53125,
+  "parseFailures": 0,
+  "errors": 0,
+  "actionTypeMatches": 31,
+  "medianLatencyMs": 13919.234938000009,
+  "medianPromptTokens": 3781,
+  "medianCompletionTokens": 71,
+  "byApp": [
+   {
+    "key": "Apprentice",
+    "total": 3,
+    "hits": 0,
+    "hitRate": 0
+   },
+   {
+    "key": "Finder",
+    "total": 12,
+    "hits": 9,
+    "hitRate": 0.75
+   },
+   {
+    "key": "Preview",
+    "total": 12,
+    "hits": 8,
+    "hitRate": 0.6666666666666666
+   },
+   {
+    "key": "TextEdit",
+    "total": 5,
+    "hits": 0,
+    "hitRate": 0
+   }
+  ],
+  "byRole": [
+   {
+    "key": "AXButton",
+    "total": 14,
+    "hits": 7,
+    "hitRate": 0.5
+   },
+   {
+    "key": "AXCell",
+    "total": 3,
+    "hits": 3,
+    "hitRate": 1
+   },
+   {
+    "key": "AXCheckBox",
+    "total": 3,
+    "hits": 1,
+    "hitRate": 0.3333333333333333
+   },
+   {
+    "key": "AXMenuButton",
+    "total": 2,
+    "hits": 0,
+    "hitRate": 0
+   },
+   {
+    "key": "AXPopUpButton",
+    "total": 3,
+    "hits": 2,
+    "hitRate": 0.6666666666666666
+   },
+   {
+    "key": "AXRadioButton",
+    "total": 1,
+    "hits": 0,
+    "hitRate": 0
+   },
+   {
+    "key": "AXStaticText",
+    "total": 6,
+    "hits": 4,
+    "hitRate": 0.6666666666666666
+   }
+  ],
+  "actionCounts": [
+   {
+    "key": "click",
+    "total": 28
+   },
+   {
+    "key": "double_click",
+    "total": 3
+   },
+   {
+    "key": "move",
+    "total": 1
+   }
+  ]
+ },
+ "outcomes": [
+  {
+   "id": "finder-1",
+   "app": "Finder",
+   "role": "AXButton",
+   "label": "back",
+   "instruction": "Click the \"back\" button",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 392,
+    "y": 58
+   },
+   "mappedPoint": {
+    "x": 392,
+    "y": 58
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 15060.066499999999,
+   "promptTokens": 3760,
+   "completionTokens": 70
+  },
+  {
+   "id": "finder-2",
+   "app": "Finder",
+   "role": "AXCell",
+   "label": "Recents",
+   "instruction": "Double-click \"Recents\" in the list",
+   "expectedAction": "double_click",
+   "hit": true,
+   "actionType": "double_click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 151,
+    "y": 134
+   },
+   "mappedPoint": {
+    "x": 151,
+    "y": 134
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 12098.492042000002,
+   "promptTokens": 3778,
+   "completionTokens": 72
+  },
+  {
+   "id": "finder-3",
+   "app": "Finder",
+   "role": "AXPopUpButton",
+   "label": "list view",
+   "instruction": "Click the \"list view\" pop-up button",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 877,
+    "y": 62
+   },
+   "mappedPoint": {
+    "x": 877,
+    "y": 62
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 18569.961291999996,
+   "promptTokens": 3778,
+   "completionTokens": 72
+  },
+  {
+   "id": "finder-4",
+   "app": "Finder",
+   "role": "AXStaticText",
+   "label": "Favourites",
+   "instruction": "Click \"Favourites\"",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 156,
+    "y": 269
+   },
+   "mappedPoint": {
+    "x": 156,
+    "y": 269
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 12508.534667,
+   "promptTokens": 3753,
+   "completionTokens": 71
+  },
+  {
+   "id": "finder-5",
+   "app": "Finder",
+   "role": "AXButton",
+   "label": "forward",
+   "instruction": "Click the \"forward\" button",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 1251,
+    "y": 62
+   },
+   "mappedPoint": {
+    "x": 1251,
+    "y": 62
+   },
+   "distancePx": 773,
+   "parsed": true,
+   "latencyMs": 19227.858500000002,
+   "promptTokens": 3760,
+   "completionTokens": 72
+  },
+  {
+   "id": "finder-6",
+   "app": "Finder",
+   "role": "AXCell",
+   "label": "Shared",
+   "instruction": "Double-click \"Shared\" in the list",
+   "expectedAction": "double_click",
+   "hit": true,
+   "actionType": "double_click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 142,
+    "y": 193
+   },
+   "mappedPoint": {
+    "x": 142,
+    "y": 193
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 12090.891583999997,
+   "promptTokens": 3772,
+   "completionTokens": 70
+  },
+  {
+   "id": "finder-7",
+   "app": "Finder",
+   "role": "AXPopUpButton",
+   "label": "more toolbar items",
+   "instruction": "Click the \"more toolbar items\" pop-up button",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 1321,
+    "y": 62
+   },
+   "mappedPoint": {
+    "x": 1321,
+    "y": 62
+   },
+   "distancePx": 25,
+   "parsed": true,
+   "latencyMs": 18871.687833999997,
+   "promptTokens": 3784,
+   "completionTokens": 82
+  },
+  {
+   "id": "finder-8",
+   "app": "Finder",
+   "role": "AXStaticText",
+   "label": "Locations",
+   "instruction": "Click \"Locations\"",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 166,
+    "y": 653
+   },
+   "mappedPoint": {
+    "x": 166,
+    "y": 653
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 11587.014958,
+   "promptTokens": 3747,
+   "completionTokens": 70
+  },
+  {
+   "id": "finder-9",
+   "app": "Finder",
+   "role": "AXButton",
+   "label": "Share",
+   "instruction": "Click the \"Share\" button",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 1107,
+    "y": 62
+   },
+   "mappedPoint": {
+    "x": 1107,
+    "y": 62
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 18658.955834000008,
+   "promptTokens": 3760,
+   "completionTokens": 71
+  },
+  {
+   "id": "finder-10",
+   "app": "Finder",
+   "role": "AXCell",
+   "label": "Applications",
+   "instruction": "Double-click \"Applications\" in the list",
+   "expectedAction": "double_click",
+   "hit": true,
+   "actionType": "double_click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 173,
+    "y": 317
+   },
+   "mappedPoint": {
+    "x": 173,
+    "y": 317
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 12293.245790999994,
+   "promptTokens": 3772,
+   "completionTokens": 70
+  },
+  {
+   "id": "finder-11",
+   "app": "Finder",
+   "role": "AXStaticText",
+   "label": "Name",
+   "instruction": "Click \"Name\"",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 557,
+    "y": 133
+   },
+   "mappedPoint": {
+    "x": 557,
+    "y": 133
+   },
+   "distancePx": 81,
+   "parsed": true,
+   "latencyMs": 12381.994791999983,
+   "promptTokens": 3747,
+   "completionTokens": 71
+  },
+  {
+   "id": "finder-12",
+   "app": "Finder",
+   "role": "AXButton",
+   "label": "Search",
+   "instruction": "Click the \"Search\" button",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 1342,
+    "y": 62
+   },
+   "mappedPoint": {
+    "x": 1342,
+    "y": 62
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 19059.057875,
+   "promptTokens": 3760,
+   "completionTokens": 76
+  },
+  {
+   "id": "textedit-1",
+   "app": "TextEdit",
+   "role": "AXButton",
+   "label": "close button",
+   "instruction": "Click the \"close button\"",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 447,
+    "y": 42
+   },
+   "mappedPoint": {
+    "x": 447,
+    "y": 42
+   },
+   "distancePx": 399,
+   "parsed": true,
+   "latencyMs": 11740.210125000012,
+   "promptTokens": 3759,
+   "completionTokens": 71
+  },
+  {
+   "id": "textedit-2",
+   "app": "TextEdit",
+   "role": "AXMenuButton",
+   "label": "document actions",
+   "instruction": "Click the \"document actions\" menu button",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 854,
+    "y": 93
+   },
+   "mappedPoint": {
+    "x": 854,
+    "y": 93
+   },
+   "distancePx": 499.85297838464464,
+   "parsed": true,
+   "latencyMs": 11912.074500000017,
+   "promptTokens": 3772,
+   "completionTokens": 72
+  },
+  {
+   "id": "textedit-3",
+   "app": "TextEdit",
+   "role": "AXStaticText",
+   "label": "ledger.txt",
+   "instruction": "Click \"ledger.txt\"",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 375,
+    "y": 40
+   },
+   "mappedPoint": {
+    "x": 375,
+    "y": 40
+   },
+   "distancePx": 41,
+   "parsed": true,
+   "latencyMs": 20353.818792000005,
+   "promptTokens": 3753,
+   "completionTokens": 73
+  },
+  {
+   "id": "textedit-4",
+   "app": "TextEdit",
+   "role": "AXButton",
+   "label": "full screen button",
+   "instruction": "Click the \"full screen button\"",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 480,
+    "y": 10
+   },
+   "mappedPoint": {
+    "x": 480,
+    "y": 10
+   },
+   "distancePx": 340.0529370553944,
+   "parsed": true,
+   "latencyMs": 12185.300166,
+   "promptTokens": 3765,
+   "completionTokens": 73
+  },
+  {
+   "id": "textedit-5",
+   "app": "TextEdit",
+   "role": "AXButton",
+   "label": "minimise button",
+   "instruction": "Click the \"minimise button\"",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 25,
+    "y": 18
+   },
+   "mappedPoint": {
+    "x": 25,
+    "y": 18
+   },
+   "distancePx": 37,
+   "parsed": true,
+   "latencyMs": 20093.44733299999,
+   "promptTokens": 3771,
+   "completionTokens": 77
+  },
+  {
+   "id": "preview-1",
+   "app": "Preview",
+   "role": "AXButton",
+   "label": "zoom out",
+   "instruction": "Click the \"zoom out\" button",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 697,
+    "y": 60
+   },
+   "mappedPoint": {
+    "x": 697,
+    "y": 60
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 13210.981749999977,
+   "promptTokens": 3942,
+   "completionTokens": 70
+  },
+  {
+   "id": "preview-2",
+   "app": "Preview",
+   "role": "AXCheckBox",
+   "label": "Text Selection",
+   "instruction": "Click the \"Text Selection\" checkbox",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 100,
+    "y": 148
+   },
+   "mappedPoint": {
+    "x": 100,
+    "y": 148
+   },
+   "distancePx": 22,
+   "parsed": true,
+   "latencyMs": 12316.131582999951,
+   "promptTokens": 3942,
+   "completionTokens": 68
+  },
+  {
+   "id": "preview-3",
+   "app": "Preview",
+   "role": "AXMenuButton",
+   "label": "View",
+   "instruction": "Click the \"View\" menu button",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 273,
+    "y": 158
+   },
+   "mappedPoint": {
+    "x": 273,
+    "y": 158
+   },
+   "distancePx": 54,
+   "parsed": true,
+   "latencyMs": 20540.134290999966,
+   "promptTokens": 3942,
+   "completionTokens": 71
+  },
+  {
+   "id": "preview-4",
+   "app": "Preview",
+   "role": "AXPopUpButton",
+   "label": "more toolbar items",
+   "instruction": "Click the \"more toolbar items\" pop-up button",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 1250,
+    "y": 60
+   },
+   "mappedPoint": {
+    "x": 1250,
+    "y": 60
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 14296.177084000024,
+   "promptTokens": 3960,
+   "completionTokens": 83
+  },
+  {
+   "id": "preview-5",
+   "app": "Preview",
+   "role": "AXRadioButton",
+   "label": "highlight",
+   "instruction": "Click the \"highlight\" tab",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 321,
+    "y": 150
+   },
+   "mappedPoint": {
+    "x": 321,
+    "y": 150
+   },
+   "distancePx": 580.3214626394582,
+   "parsed": true,
+   "latencyMs": 13213.554583999969,
+   "promptTokens": 3936,
+   "completionTokens": 68
+  },
+  {
+   "id": "preview-6",
+   "app": "Preview",
+   "role": "AXStaticText",
+   "label": "invoice-INV-1101.pdf",
+   "instruction": "Click \"invoice-INV-1101.pdf\"",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 445,
+    "y": 47
+   },
+   "mappedPoint": {
+    "x": 445,
+    "y": 47
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 13083.896583000023,
+   "promptTokens": 3971,
+   "completionTokens": 78
+  },
+  {
+   "id": "preview-7",
+   "app": "Preview",
+   "role": "AXButton",
+   "label": "zoom to actual size",
+   "instruction": "Click the \"zoom to actual size\" button",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 773,
+    "y": 60
+   },
+   "mappedPoint": {
+    "x": 773,
+    "y": 60
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 19484.567458000034,
+   "promptTokens": 3954,
+   "completionTokens": 70
+  },
+  {
+   "id": "preview-8",
+   "app": "Preview",
+   "role": "AXCheckBox",
+   "label": "Rectangular Selection",
+   "instruction": "Click the \"Rectangular Selection\" checkbox",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 102,
+    "y": 148
+   },
+   "mappedPoint": {
+    "x": 102,
+    "y": 148
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 12871.088624999975,
+   "promptTokens": 3948,
+   "completionTokens": 70
+  },
+  {
+   "id": "preview-9",
+   "app": "Preview",
+   "role": "AXStaticText",
+   "label": "1 page",
+   "instruction": "Click \"1 page\"",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 379,
+    "y": 77
+   },
+   "mappedPoint": {
+    "x": 379,
+    "y": 77
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 13542.292791999993,
+   "promptTokens": 3929,
+   "completionTokens": 70
+  },
+  {
+   "id": "preview-10",
+   "app": "Preview",
+   "role": "AXButton",
+   "label": "zoom in",
+   "instruction": "Click the \"zoom in\" button",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 829,
+    "y": 60
+   },
+   "mappedPoint": {
+    "x": 829,
+    "y": 60
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 21272.008042,
+   "promptTokens": 3942,
+   "completionTokens": 75
+  },
+  {
+   "id": "preview-11",
+   "app": "Preview",
+   "role": "AXCheckBox",
+   "label": "Redact",
+   "instruction": "Click the \"Redact\" checkbox",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "move",
+   "actionTypeMatches": false,
+   "point": {
+    "x": 708,
+    "y": 600
+   },
+   "mappedPoint": {
+    "x": 708,
+    "y": 600
+   },
+   "distancePx": 666.2191831522116,
+   "parsed": true,
+   "latencyMs": 15695.92533399997,
+   "promptTokens": 3942,
+   "completionTokens": 111,
+   "parseErrors": [
+    "1 additional tool call(s) ignored; Apprentice executes one action per step"
+   ]
+  },
+  {
+   "id": "preview-12",
+   "app": "Preview",
+   "role": "AXButton",
+   "label": "Remove Background",
+   "instruction": "Click the \"Remove Background\" button",
+   "expectedAction": "click",
+   "hit": true,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 1124,
+    "y": 60
+   },
+   "mappedPoint": {
+    "x": 1124,
+    "y": 60
+   },
+   "distancePx": 0,
+   "parsed": true,
+   "latencyMs": 12665.824334000004,
+   "promptTokens": 3942,
+   "completionTokens": 69
+  },
+  {
+   "id": "apprentice-1",
+   "app": "Apprentice",
+   "role": "AXButton",
+   "label": "close button",
+   "instruction": "Click the \"close button\"",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 1296,
+    "y": 771
+   },
+   "mappedPoint": {
+    "x": 1296,
+    "y": 771
+   },
+   "distancePx": 1426.6481696620228,
+   "parsed": true,
+   "latencyMs": 29536.657790999976,
+   "promptTokens": 6065,
+   "completionTokens": 72
+  },
+  {
+   "id": "apprentice-2",
+   "app": "Apprentice",
+   "role": "AXButton",
+   "label": "full screen button",
+   "instruction": "Click the \"full screen button\"",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 1294,
+    "y": 771
+   },
+   "mappedPoint": {
+    "x": 1294,
+    "y": 771
+   },
+   "distancePx": 1345.8889255804136,
+   "parsed": true,
+   "latencyMs": 37998.35725,
+   "promptTokens": 6071,
+   "completionTokens": 85
+  },
+  {
+   "id": "apprentice-3",
+   "app": "Apprentice",
+   "role": "AXButton",
+   "label": "minimise button",
+   "instruction": "Click the \"minimise button\"",
+   "expectedAction": "click",
+   "hit": false,
+   "actionType": "click",
+   "actionTypeMatches": true,
+   "point": {
+    "x": 129,
+    "y": 53
+   },
+   "mappedPoint": {
+    "x": 129,
+    "y": 53
+   },
+   "distancePx": 25,
+   "parsed": true,
+   "latencyMs": 28019.485707999964,
+   "promptTokens": 6077,
+   "completionTokens": 64
+  }
+ ]
+}

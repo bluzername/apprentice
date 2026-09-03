@@ -237,3 +237,50 @@ Observed but not changed:
   and the second proposal goes through.
 - Per-step latency with a real model is 10-18 s of inference plus the time the user takes to
   approve; the mock provider hid this entirely.
+
+## Overnight validation with the real model (2026-09-04)
+
+A 12-hour unattended validation on the same M3 Max (36 GB) with the packaged app, the managed
+llama.cpp b10752 runtime and UI-Mate-9B Q6_K. Realistic office routines (filing invoices into a
+ledger, renaming downloads, meeting notes, a weekly roll-up) were demonstrated by an automation
+driver in real Finder, Preview, TextEdit and Notes windows, then the agent's learning and guided
+execution were measured. The full report with method and every number is
+`docs/VALIDATION_REPORT.md`; the benchmark JSON is in `docs/benchmarks/`; the helper scripts
+are in `scripts/validation/`.
+
+Verified:
+- Passive discovery found the invoice routine after 4 demonstrations (similarity 0.73,
+  confidence 0.73) and the weekly roll-up after 2 (similarity 0.79, confidence 0.65), with the
+  step lists matching the demonstrated routines.
+- Two guided runs of the three-subtask invoice skill completed end to end (runs of 5 m 11 s and
+  4 m 04 s, 6 approved actions each, every action executed by the helper and verified), each
+  leaving the exact expected line in ledger.txt on disk. The typed line was shown verbatim on
+  the approval card before it was typed.
+- Engine-owned subtask completion from evidence (app_frontmost predicate) closed subtasks
+  without a model signal; "Subtask complete, continue" advances a run from an open question.
+- Window-scoped capture is the default: the model sees only the target window, and a proposal
+  whose point lands on another app's window is refused by the hit-test guard.
+- Grounding benchmark on 32 real-window targets (Finder, TextEdit, Preview, Apprentice): 47-59 %
+  within 6 px across four passes (thinking on and off, temperature 0.2 and 1.0); labelled text
+  targets reliable, icon-only controls mostly missed; 0-1 parse failures per pass; median
+  latency 9.9 s per target on an otherwise idle server.
+
+Not achieved, recorded as limitations:
+- Routines repeated with pauses under 4 minutes and without an outcome event (paste into Notes,
+  move without save) were merged into one episode and not discovered.
+- A skill created from a discovered candidate without editing is not executable as-is: the model
+  follows the literal accessibility-label wording and the last occurrence's file name.
+- The rename routine run did not type the new name (the model found Finder's context-menu
+  Rename path, then drifted); typed values are never recorded during observation, so the naming
+  convention itself cannot be learned.
+
+Engineering changes the validation motivated (all with regression tests, in this build):
+1. Active-time accounting counts pauses of up to 2 minutes as active work (previously 60 s), so
+   deliberate routines with reading pauses pass the 90-second gate.
+2. "Subtask complete, continue" pressed while a run waits on a question advances the subtask
+   instead of interrupting the run.
+3. The managed llama-server runs one slot (`-np 1`) so a concurrent request cannot evict the
+   app's prompt cache; the manifest disables model thinking (no accuracy difference on the
+   grounding benchmark, shorter replies).
+4. The grounding benchmark accepts temperature and thinking settings from the environment and
+   records them in the report.

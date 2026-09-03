@@ -131,44 +131,63 @@ Decisions taken from this data (all in `scripts/model-manifest.json` and
 
 ## Guided runs in the packaged app
 
-Six guided runs were driven end to end in the packaged app with the managed
-runtime (provider `uimate`, context 32768, replies capped at 2048 tokens for the
-last three), against real Finder, Preview and TextEdit windows. Timings come from
-the persisted run steps (`timing` on each step).
+Two rounds of guided runs were driven end to end in the packaged app with the
+managed runtime (provider `uimate`, context 32768, replies capped at 2048
+tokens), against real Finder, Preview and TextEdit windows. The first round
+(six runs, thinking on) established the per-phase costs; the second round (seven
+runs on 2026-09-04, thinking off, temperature 0.2, one server slot) was part of
+the validation described in `docs/VALIDATION_REPORT.md`. Timings come from the
+persisted run steps (`timing` on each step).
 
 | Phase | Measured range | Notes |
 |---|---|---|
-| Capture (window capture + resize + OCR) | 185-870 ms | first capture of a run is the slowest |
-| Proposal (real model) | 8.7-20.8 s typical, one outlier of 70.2 s | the outlier was a 1,300-token thinking reply before the 2048 cap |
-| Approval wait | 9-60 s | human (or the test driver) reading the card |
-| Execution through the helper | 14-162 ms | click 55-58 ms, double-click 145-162 ms, hotkey 25 ms, key 14 ms |
-| Verification (after capture + OCR diff) | 416-644 ms | plus a 600 ms settle before it |
-| Whole step, model + machine only | about 10-22 s | approval wait excluded |
+| Capture (window capture + resize + OCR) | 185-1,240 ms | first capture of a run is the slowest |
+| Proposal (real model, thinking on) | 8.7-20.8 s typical, one outlier of 70.2 s | the outlier was a 1,300-token thinking reply before the 2048 cap |
+| Proposal (real model, thinking off) | 8-10 s for the first four steps, 20-30 s once 5-7 screenshots are in the window | prefill-bound (3.8k prompt tokens per single-screenshot request take 9.9 s median on an idle server) |
+| Approval wait | 8-73 s | human (or the test driver) reading the card |
+| Execution through the helper | 12-162 ms | click 39-66 ms, double-click 127-162 ms, hotkey 25-53 ms, key 12-14 ms |
+| Verification (after capture + OCR diff) | 366-1,627 ms | plus a 600 ms settle before it |
+| Whole step, model + machine only | about 9-32 s | approval wait excluded |
 
 What the runs proved:
 
-- Seven approved actions executed through the helper with HMAC approval tokens
-  and were verified by screen and OCR diff: a Finder toolbar click, an Escape
-  key, a click on the "Today at 12:52" cell the subtask named, three
-  double-clicks on download-3.pdf (each really opened it in Preview), and a
-  Command+W that really closed the PDF window.
+- Two runs of a three-subtask skill ("open the new invoice PDF in Preview, close
+  it, append a line to ledger.txt in TextEdit and save") completed end to end,
+  each with 6 approved actions executed through the helper with HMAC approval
+  tokens and verified by screen and OCR diff, and each leaving the exact
+  expected line in the ledger on disk. Wall clock 5 m 11 s and 4 m 04 s, of which
+  the model accounted for 125 s and 109 s, helper execution for under 0.3 s, and
+  approval waits for 143 s and 123 s.
+- Engine-owned subtask completion works: a subtask whose completion predicate is
+  "Preview is frontmost" was closed by the engine from the post-action evidence
+  without a model signal in every run that reached it.
+- Actions the model proposed on its own and that executed correctly: Finder
+  double-clicks, Command+W, a click at the end of the last text line, Return,
+  typed text shown verbatim on the approval card, Command+S, and the context-menu
+  "Rename..." path in Finder.
 - Rejections end the run as `user_rejected`, an action targeting a foreign
-  window (a macOS permission dialog owned by UserNotificationCenter) is refused
-  by the hit-test guard as `invalid_action`, and the run stops after two
-  refusals.
+  window (a macOS permission dialog owned by UserNotificationCenter, or a window
+  of another app covering the target) is refused by the hit-test guard as
+  `invalid_action`, and the run stops after two refusals.
 - Memory during the runs: llama-server RSS 8.9-9.8 GB, GPU memory in use
   11.2-11.7 GB, Apprentice main process 150-170 MB, native helper 26-60 MB;
   system free memory stayed at 25-35 % next to Chrome, Safari and the Claude
   desktop app.
 
-What the runs did not prove: no run completed all three subtasks. The model
-never emitted the official `subtask_complete` signal; after finishing a
-subtask's action it moved straight to the next subtask's action (Command+W
-right after opening the PDF, then Command+W again on an unrelated Preview
-window), so the runs were stopped by rejection. That is model behaviour under
-the skill guidance, not an engine failure, and it is the next thing to work on
-(a completion check the engine can evaluate itself, or a stronger
-subtask-boundary instruction).
+What the runs showed as limits:
+
+- Saving with Command+S does not change the window pixels, so the screen-diff
+  verifier reports it as unverified even when the file on disk changed. A file
+  system predicate is the right check for save steps.
+- Model latency grows with the number of screenshots kept in the prompt. With 8
+  images kept, proposals went from about 9 s (steps 1-4) to 20-30 s (steps 5-7)
+  within one run. Keeping fewer images trades accuracy on long runs for speed.
+- A skill created from a discovered candidate without human editing carries
+  accessibility-label wording ("Open 'summary.txt' on textedit") and the last
+  occurrence's literal file name instead of a bound variable. The engine drives
+  such a skill, but the model follows the literal text and does not perform the
+  intent (copying a value between files), so a human pass over the subtask text
+  is still required before a discovered routine is executable.
 
 ## Realistic hardware requirements
 

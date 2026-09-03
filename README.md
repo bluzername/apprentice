@@ -161,7 +161,9 @@ run's application are refused by the hit-test guard before they reach the approv
 All numbers below were recorded on an Apple M3 Max with 36 GB of unified memory, next to a
 browser and other apps, with the pinned llama.cpp b10752 runtime and UI-Mate-9B Q6_K. Raw
 benchmark reports live in [docs/benchmarks/](docs/benchmarks/); the method and every table are
-in [docs/MODEL_PERFORMANCE.md](docs/MODEL_PERFORMANCE.md).
+in [docs/MODEL_PERFORMANCE.md](docs/MODEL_PERFORMANCE.md). A 12-hour validation of learning and
+guided execution on realistic office routines with the real model is written up in
+[docs/VALIDATION_REPORT.md](docs/VALIDATION_REPORT.md).
 
 | What | Measured |
 |---|---|
