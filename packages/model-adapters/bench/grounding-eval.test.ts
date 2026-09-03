@@ -35,7 +35,7 @@
  * APPRENTICE_GROUNDING_THINKING builds a UIMateProvider directly instead of
  * widening the factory config.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { ProviderTypeSchema, type ProposedAction } from "@apprentice/schemas";
@@ -114,8 +114,24 @@ function buildProvider(sink: Captured[]): VisionAgentProvider {
   return createProvider({ providerType: PROVIDER, ...shared });
 }
 
+/**
+ * The package scripts run from packages/model-adapters, so a relative manifest
+ * path is tried there first and then at the repository root.
+ */
+function resolveManifestPath(): string {
+  if (isAbsolute(CASES_PATH)) {
+    return CASES_PATH;
+  }
+  const fromCwd = resolve(process.cwd(), CASES_PATH);
+  if (existsSync(fromCwd)) {
+    return fromCwd;
+  }
+  const fromRepoRoot = resolve(process.cwd(), "..", "..", CASES_PATH);
+  return existsSync(fromRepoRoot) ? fromRepoRoot : fromCwd;
+}
+
 function loadCases(): readonly GroundingCase[] {
-  const manifestPath = isAbsolute(CASES_PATH) ? CASES_PATH : resolve(process.cwd(), CASES_PATH);
+  const manifestPath = resolveManifestPath();
   const manifest = GroundingManifestSchema.parse(JSON.parse(readFileSync(manifestPath, "utf8")));
   const baseDir = dirname(manifestPath);
   const selected = APPS.length === 0 ? manifest.cases : manifest.cases.filter((entry) => APPS.includes(entry.app));
