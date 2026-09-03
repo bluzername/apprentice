@@ -55,8 +55,9 @@ export function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
 
-export function chatReply(content: string): Response {
-  return jsonResponse({ choices: [{ message: { role: "assistant", content } }] });
+export function chatReply(content: string, finishReason?: string): Response {
+  const choice = finishReason === undefined ? { message: { role: "assistant", content } } : { message: { role: "assistant", content }, finish_reason: finishReason };
+  return jsonResponse({ choices: [choice] });
 }
 
 export function modelsReply(ids: readonly string[]): Response {

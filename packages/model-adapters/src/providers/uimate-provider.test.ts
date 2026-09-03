@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { ProposedActionResultSchema, type NextActionInput } from "@apprentice/schemas";
-import { UIMateProvider, sanitizeForHistory } from "./uimate-provider.js";
+import { TRUNCATED_REPLY_ERROR, UIMateProvider, sanitizeForHistory } from "./uimate-provider.js";
 import { MockVisionAgentProvider } from "./mock-provider.js";
 import { ProviderCapabilityError, ProviderResponseError, ProviderUnavailableError } from "./types.js";
 import { SAFETY_SECTION } from "./safety.js";
 import { chatReply, countImagesInBody, createFakeFetch, hangUntilAbort, jsonResponse, modelsReply, routeByPath, type RecordedRequest } from "../testing/fake-fetch.js";
 import { makeSyntheticPng } from "../testing/png.js";
-import { readGoldenText } from "../testing/golden.js";
+import { buildSystemPrompt } from "../uimate/prompt.js";
+import { SUBTASK_COMPLETE_PATCH, WORKFLOW_SYSTEM_SECTION } from "../uimate/workflow.js";
 
 const BASE_URL = "http://127.0.0.1:8000/v1";
 
@@ -46,11 +47,11 @@ function input(runId: string, subtask: number, overrides: Partial<NextActionInpu
 
 const noSleep = { sleep: () => Promise.resolve() };
 
-function providerWith(replies: readonly string[], options: Partial<ConstructorParameters<typeof UIMateProvider>[0]> = {}) {
+function providerWith(replies: readonly string[], options: Partial<ConstructorParameters<typeof UIMateProvider>[0]> = {}, finishReason?: string) {
   const fake = createFakeFetch(
     routeByPath({
       models: () => modelsReply(["UI_Mate"]),
-      chat: (_request, callIndex) => chatReply(replies[Math.min(callIndex, replies.length - 1)] ?? "")
+      chat: (_request, callIndex) => chatReply(replies[Math.min(callIndex, replies.length - 1)] ?? "", finishReason)
     })
   );
   const provider = new UIMateProvider({ baseUrl: BASE_URL, fetchImpl: fake.fetchImpl, ...noSleep, ...options });
@@ -77,6 +78,50 @@ describe("UIMateProvider.proposeNextAction", () => {
     expect(() => new UIMateProvider({ baseUrl: BASE_URL, maxTokens: 10 })).toThrow(RangeError);
   });
 
+  it("sends the official sampling values by default and the configured ones when given", async () => {
+    const official = providerWith([CLICK]);
+    await official.provider.proposeNextAction(input("run_sampling", 0));
+    expect(chatBodies(official.fake.requests)[0]).toMatchObject({ temperature: 1.0, top_p: 0.95, chat_template_kwargs: { enable_thinking: true } });
+
+    const tuned = providerWith([CLICK], { temperature: 0.2, topP: 0.9, enableThinking: false });
+    await tuned.provider.proposeNextAction(input("run_sampling", 0));
+    expect(chatBodies(tuned.fake.requests)[0]).toMatchObject({ temperature: 0.2, top_p: 0.9, chat_template_kwargs: { enable_thinking: false } });
+
+    expect(() => new UIMateProvider({ baseUrl: BASE_URL, temperature: -1 })).toThrow(RangeError);
+    expect(() => new UIMateProvider({ baseUrl: BASE_URL, temperature: 3 })).toThrow(RangeError);
+    expect(() => new UIMateProvider({ baseUrl: BASE_URL, topP: 0 })).toThrow(RangeError);
+    expect(() => new UIMateProvider({ baseUrl: BASE_URL, topP: 1.5 })).toThrow(RangeError);
+  });
+
+  it("reports a reply truncated at max_tokens as an invalid action, never as DONE or FAIL", async () => {
+    // The reply looks like a completion claim, but generation stopped at the cap.
+    const truncated = `${THINK}<action>\nThe record is saved.\n</action>`;
+    const { provider } = providerWith([truncated], {}, "length");
+    const result = await provider.proposeNextAction(input("run_truncated", 0));
+    expect(result.action).toBeNull();
+    expect(result.controlToken).toBeUndefined();
+    expect(result.parseErrors).toEqual([TRUNCATED_REPLY_ERROR]);
+    expect(result.actionSummary).toBe("");
+    // Nothing from the truncated turn enters session state, so the retry sees the same history.
+    expect(provider.sessionState("run_truncated")).toBeUndefined();
+  });
+
+  it("keeps a complete reply with finish_reason stop on the normal path", async () => {
+    const { provider } = providerWith([CLICK], {}, "stop");
+    const result = await provider.proposeNextAction(input("run_stop", 0));
+    expect(result.action).toMatchObject({ type: "click" });
+    expect(result.parseErrors).toEqual([]);
+  });
+
+  it("does not turn a reply without a tool call into DONE", async () => {
+    const noCall = `${THINK}<action>\nEverything looks finished.\n</action>`;
+    const { provider } = providerWith([noCall]);
+    const result = await provider.proposeNextAction(input("run_nocall", 0));
+    expect(result.action).toBeNull();
+    expect(result.controlToken).toBeUndefined();
+    expect(result.parseErrors.join(" ")).toMatch(/no <tool_call>/);
+  });
+
   it("sends the official request shape and returns a translated click", async () => {
     const { provider, fake } = providerWith([CLICK]);
     const result = await provider.proposeNextAction(input("run_1", 0));
@@ -88,9 +133,13 @@ describe("UIMateProvider.proposeNextAction", () => {
     expect(fake.requests[0]?.headers["authorization"]).toBe("Bearer EMPTY");
 
     const system = systemText(body ?? {});
-    const official = readGoldenText("system_prompt_workflow.txt");
-    expect(system.startsWith(official)).toBe(true);
+    // platform "macos" swaps the two Ubuntu fragments; the rest of the official prompt is unchanged.
+    const official = buildSystemPrompt({ workflowSection: WORKFLOW_SYSTEM_SECTION, actionPatch: SUBTASK_COMPLETE_PATCH, platform: "macos" });
     expect(system).toBe(`${official}\n\n${SAFETY_SECTION}`);
+    expect(system).toContain("This is an interface to a macOS desktop GUI.");
+    expect(system).toContain("The screen's resolution is 1000x1000.");
+    expect(system).not.toContain("LibreOffice");
+    expect(system).not.toContain("click on desktop icons to start applications");
 
     const messages = (body?.["messages"] ?? []) as readonly { role: string; content: readonly { type: string; text?: string; image_url?: { url: string } }[] }[];
     expect(messages.map((m) => m.role)).toEqual(["system", "user"]);

@@ -87,6 +87,41 @@ final class ActionValidatorTests: XCTestCase {
         XCTAssertEqual(result.failureError?.code, .actionRejected)
     }
 
+    /// cmd+q and cmd+opt+esc are refused by the helper itself, even with a valid
+    /// approval token: nothing upstream may authorize quitting or force-quitting.
+    func testDeniedHotkeysRejectedEvenWithAValidToken() {
+        let denied: [[JSONValue]] = [
+            [.string("cmd")],
+            [.string("command")],
+            [.string("cmd"), .string("shift")]
+        ]
+        for modifiers in denied {
+            let action: [String: JSONValue] = ["type": .string("hotkey"), "modifiers": .array(modifiers), "key": .string("q")]
+            let result = validate(action)
+            XCTAssertNil(result.successValue, "cmd+q with \(modifiers) must not be executable")
+            XCTAssertEqual(result.failureError?.code, .actionRejected)
+            XCTAssertEqual(result.failureError?.message, HotkeyDenylist.rejectionMessage)
+        }
+        for key in ["escape", "esc"] {
+            let action: [String: JSONValue] = ["type": .string("hotkey"),
+                                               "modifiers": .array([.string("cmd"), .string("option")]),
+                                               "key": .string(key)]
+            let result = validate(action)
+            XCTAssertNil(result.successValue, "cmd+opt+\(key) must not be executable")
+            XCTAssertEqual(result.failureError?.message, HotkeyDenylist.rejectionMessage)
+        }
+    }
+
+    func testDenylistDoesNotCatchOrdinaryShortcuts() {
+        for (modifiers, key) in [([JSONValue.string("cmd")], "w"), ([JSONValue.string("cmd")], "s"), ([JSONValue.string("cmd"), JSONValue.string("shift")], "w"), ([JSONValue.string("cmd")], "escape")] {
+            let result = validate(["type": .string("hotkey"), "modifiers": .array(modifiers), "key": .string(key)])
+            XCTAssertNotNil(result.successValue, "\(modifiers)+\(key) should still be executable")
+        }
+        // A quit-shaped key without Command is an ordinary keystroke.
+        XCTAssertNotNil(validate(["type": .string("hotkey"), "modifiers": .array([.string("ctrl")]), "key": .string("q")]).successValue)
+        XCTAssertNotNil(validate(["type": .string("press_key"), "key": .string("q")]).successValue)
+    }
+
     func testTextLengthLimit() {
         let ok = validate(["type": .string("type_text"), "text": .string(String(repeating: "a", count: 2000))])
         XCTAssertNotNil(ok.successValue)

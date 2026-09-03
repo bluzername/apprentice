@@ -10,7 +10,7 @@ const base = { purpose: "do the thing", expectedResult: "something visible", con
 const click = (): ProposedAction => ({ ...base, type: "click", x: 10, y: 10, button: "left" });
 const typing = (text: string): ProposedAction => ({ ...base, type: "type_text", text });
 const key = (name: KeyName): ProposedAction => ({ ...base, type: "press_key", key: name });
-const hotkey = (modifiers: Array<"cmd" | "shift" | "ctrl" | "alt" | "command">, name: "enter" | "s" | "c" | "delete" | "t" | "z"): ProposedAction => ({ ...base, type: "hotkey", modifiers, key: name });
+const hotkey = (modifiers: Array<"cmd" | "shift" | "ctrl" | "alt" | "option" | "command">, name: KeyName): ProposedAction => ({ ...base, type: "hotkey", modifiers, key: name });
 
 describe("classifyText and dictionaries", () => {
   it("matches phrases with flexible separators and picks the highest class", () => {
@@ -79,11 +79,44 @@ describe("classifyRisk", () => {
     }
   });
 
-  it("typing is at least internal mutation and escalates on risky text", () => {
+  it("typing is internal mutation and never blocks a run over dictionary words", () => {
     expect(classifyRisk({ action: typing("Follow-up notes") }).riskClass).toBe("internal_mutation");
-    expect(classifyRisk({ action: typing("hello"), targetLabel: "Message body" }).riskClass).toBe("external_communication");
-    expect(classifyRisk({ action: typing("4111 1111"), targetLabel: "Card number" }).riskClass).toBe("financial_or_access");
     expect(classifyRisk({ action: typing("x") }).reasons[0]).toMatch(/exact text must be shown/);
+    // Ordinary words that happen to sit in the label dictionaries must not abort a run.
+    for (const text of ["password reset instructions", "admin", "delete the stale rows", "Pay now button copy"]) {
+      const risk = classifyRisk({ action: typing(text) });
+      expect(risk.riskClass, text).toBe("internal_mutation");
+      expect(risk.decision, text).toBe("approve");
+    }
+    // The destination label no longer escalates typed text either; the text itself is shown for approval.
+    expect(classifyRisk({ action: typing("hello"), targetLabel: "Message body" }).decision).toBe("approve");
+    expect(classifyRisk({ action: typing("hello"), targetLabel: "Card number" }).decision).toBe("approve");
+  });
+
+  it("flags credential-shaped typed text without ever going past approval", () => {
+    const secrets = [
+      "sk-abcdefghijklmnopqrstuvwxyz0123",
+      "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456",
+      "4111111111111111",
+      "4111 1111 1111 1111",
+      "kQ8vZ2mNp7XrT4wLyB6cHs1JdF0gAe5U"
+    ];
+    for (const secret of secrets) {
+      const risk = classifyRisk({ action: typing(secret) });
+      expect(risk.reasons.join(" "), secret).toMatch(/credential/);
+      expect(risk.decision, secret).toBe("approve");
+      // The secret itself is never copied into the risk result.
+      expect(JSON.stringify(risk), secret).not.toContain(secret);
+    }
+    expect(classifyRisk({ action: typing("Follow-up notes for the account manager") }).reasons.join(" ")).not.toMatch(/credential/);
+    // 1234567890123 is a 13-digit number that fails the Luhn check.
+    expect(classifyRisk({ action: typing("order 1234567890123") }).reasons.join(" ")).not.toMatch(/credential/);
+  });
+
+  it("aborts typing only when the context itself is sensitive", () => {
+    const secure = classifyRisk({ action: typing("hunter2"), sensitive: { sensitive: true, reasons: ["secure_field_focused"] } });
+    expect(secure.riskClass).toBe("sensitive_context");
+    expect(secure.decision).toBe("abort");
   });
 
   it("enter and cmd+enter near send terms are external communication", () => {
@@ -102,6 +135,32 @@ describe("classifyRisk", () => {
     expect(classifyRisk({ action: hotkey(["cmd"], "delete") }).riskClass).toBe("destructive");
     expect(classifyRisk({ action: hotkey(["cmd"], "t") }).riskClass).toBe("reversible_navigation");
     expect(classifyRisk({ action: hotkey(["ctrl", "shift"], "z") }).riskClass).toBe("unknown");
+  });
+
+  it("treats quitting, closing all windows and force quit as destructive", () => {
+    for (const action of [hotkey(["cmd"], "q"), hotkey(["command", "shift"], "q"), hotkey(["cmd", "shift"], "w"), hotkey(["cmd", "option"], "escape"), hotkey(["command", "alt"], "esc")]) {
+      const risk = classifyRisk({ action });
+      expect(risk.riskClass, JSON.stringify(action)).toBe("destructive");
+      expect(risk.decision, JSON.stringify(action)).toBe("approve_strong");
+    }
+  });
+
+  it("treats closing a window as an internal mutation, never as navigation", () => {
+    const risk = classifyRisk({ action: hotkey(["cmd"], "w") });
+    expect(risk.riskClass).toBe("internal_mutation");
+    expect(risk.decision).toBe("approve");
+  });
+
+  it("never covers quit or close by a run-scope navigation approval", () => {
+    const policy: ActionPolicy = { mode: "guide", allowLowRiskRunApproval: true, allowNavigationRunApproval: true, requireTypingApproval: true, neverAutoSend: true };
+    const run = { lowRiskRunApproval: true, navigationRunApproval: true };
+    for (const action of [hotkey(["cmd"], "q"), hotkey(["cmd", "shift"], "w"), hotkey(["cmd", "option"], "escape"), hotkey(["cmd"], "w")]) {
+      const decided = applyPolicy(classifyRisk({ action }), "hotkey", policy, run, true);
+      expect(decided.decision, JSON.stringify(action)).not.toBe("auto");
+      expect(decided.coveredByRunApproval, JSON.stringify(action)).toBe(false);
+    }
+    // A real navigation shortcut is still coverable.
+    expect(applyPolicy(classifyRisk({ action: hotkey(["cmd"], "t") }), "hotkey", policy, run, true).decision).toBe("auto");
   });
 
   it("classifies clicks from labels, OCR, roles and browser elements", () => {

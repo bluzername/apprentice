@@ -177,7 +177,7 @@ export function composeServices(adapters: CompositionAdapters): Services {
     ocr: { ocr: (png, w, h) => ocr.current.ocr(png, w, h) },
     ax: { elementAt: (x, y) => ax.current.elementAt(x, y) },
     dom: { query: (marker, timeoutMs) => dom.current.query(marker, timeoutMs) },
-    model: { propose: (input) => model.propose(input), verify: (input) => model.verify(input), resetSession: (id) => model.resetSession(id), providerType: () => settings.get().model.providerType, modelName: () => (settings.get().model.providerType === "mock" ? "mock" : settings.get().model.endpoint?.model) },
+    model: { propose: (input) => model.propose(input), verify: (input) => model.verify(input), resetSession: (id) => model.resetSession(id), providerType: () => settings.get().model.providerType, modelName: () => (settings.get().model.providerType === "mock" ? "mock" : settings.get().model.endpoint?.model), supportsVerification: () => model.supportsVerification() },
     resizer: adapters.resizer,
     emit,
     analytics,

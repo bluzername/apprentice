@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { skillFromDraft, type CoreSkillDraft } from "@apprentice/core";
 import { MockVisionAgentProvider, uimate, type VisionAgentProvider } from "@apprentice/model-adapters";
-import { APP_BUNDLE_ID, type ApprovalRequest, type OcrBlock, type ProposedActionResult, type RunDetail, type RunStatus, type Skill } from "@apprentice/schemas";
+import { APP_BUNDLE_ID, type ApprovalRequest, type NextActionInput, type OcrBlock, type ProposedActionResult, type RunDetail, type RunStatus, type Skill, type VerifyStepInput } from "@apprentice/schemas";
 import { demoSkillTemplates, type ScenarioName } from "@apprentice/test-fixtures";
 import { systemClock } from "../src/main/services/clock.js";
 import { buildDemoScript } from "../src/main/services/demo/script-builder.js";
@@ -40,6 +40,8 @@ interface HarnessOptions {
   readonly onSwitchQuestion?: () => void;
   /** Called before an "Open a window in ... and answer Continue" question is answered. */
   readonly onWindowQuestion?: () => void;
+  /** ModelPort.supportsVerification(); false stands for the deterministic analysis stand-in. */
+  readonly supportsVerification?: boolean;
 }
 
 function harness(options: HarnessOptions = {}) {
@@ -59,6 +61,8 @@ function harness(options: HarnessOptions = {}) {
   const questionStatuses: RunStatus[] = [];
   const raised: string[] = [];
   const executionPhases: string[] = [];
+  const proposalInputs: NextActionInput[] = [];
+  const verifyCalls: VerifyStepInput[] = [];
   const helper = options.helper;
   const helperContext: RunContextSource | undefined = helper
     ? {
@@ -126,7 +130,20 @@ function harness(options: HarnessOptions = {}) {
     ocr: options.ocr ?? { ocr: async (_png, width, height) => simulator.ocrBlocks(width, height) },
     ax: options.ax ?? helperAx ?? { elementAt: async () => ({ element: null }) },
     dom: { query: async (marker) => ({ marker, present: simulator.state().domMarkers.includes(marker) }) },
-    model: { propose: (input) => provider.proposeNextAction(input), verify: (input) => provider.verifyStep(input), resetSession: (id) => provider.resetSession(id), providerType: () => "mock", modelName: () => "mock" },
+    model: {
+      propose: (input) => {
+        proposalInputs.push(input);
+        return provider.proposeNextAction(input);
+      },
+      verify: (input) => {
+        verifyCalls.push(input);
+        return provider.verifyStep(input);
+      },
+      resetSession: (id) => provider.resetSession(id),
+      providerType: () => "mock",
+      modelName: () => "mock",
+      supportsVerification: () => options.supportsVerification ?? true
+    },
     resizer: nodePngResizer,
     emit,
     analytics: context.analytics,
@@ -150,7 +167,7 @@ function harness(options: HarnessOptions = {}) {
     const finished = await engine.waitForCompletion(started.id);
     return { run: finished, steps: storage.current.runs.steps(started.id) };
   };
-  return { engine, simulator, approvals, questions, questionStatuses, raised, storage, skill, context, targets, run, executionPhases };
+  return { engine, simulator, approvals, questions, questionStatuses, raised, storage, skill, context, targets, run, executionPhases, proposalInputs, verifyCalls };
 }
 
 const UNRELATED_APP = "com.example.Unrelated";
@@ -255,6 +272,27 @@ describe("run engine", () => {
     expect(h.storage.current.screenshots.count()).toBeGreaterThan(0);
     expect(h.context.storage.current.productEvents.countByName("run_completed")).toBe(1);
     expect(JSON.stringify(steps)).not.toContain("<think>");
+  }, 30_000);
+
+  it("tells the model it is operating macOS in every proposal instruction", async () => {
+    const h = harness();
+    await h.run();
+    expect(h.proposalInputs.length).toBeGreaterThan(0);
+    for (const input of h.proposalInputs) {
+      expect(input.instruction.startsWith("You are operating macOS.\n")).toBe(true);
+      expect(input.instruction).toContain(h.skill.name);
+      expect(input.instruction.length).toBeLessThanOrEqual(2000);
+    }
+  }, 30_000);
+
+  it("never asks a deterministic analysis provider for supporting verification", async () => {
+    const h = harness({ supportsVerification: false });
+    const { run, steps } = await h.run();
+    expect(run.status).toBe("completed");
+    expect(h.verifyCalls).toHaveLength(0);
+    // The stand-in's canned sentence must never reach user-visible evidence.
+    expect(JSON.stringify(steps)).not.toContain("No analysis provider configured");
+    expect(JSON.stringify(steps)).not.toContain("model (supporting only)");
   }, 30_000);
 
   it("stops with user_rejected when the first proposal is rejected", async () => {

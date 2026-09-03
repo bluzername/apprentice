@@ -59,8 +59,10 @@ during the build; items marked "by design" are intentional alpha scope.
   own verification is only supporting evidence. Some subtasks end with a user confirmation.
 - Coordinates from the model are mapped through the resize transform and checked against OCR and
   accessibility context; ambiguous or moved targets are refused rather than guessed.
-- UI-Mate was trained on Ubuntu screenshots; the provider remaps ctrl to command by default and
-  states macOS in the instruction, but macOS-specific behaviour is not guaranteed.
+- UI-Mate was trained on Ubuntu screenshots. The provider remaps ctrl to command, swaps the two
+  Ubuntu-specific system prompt fragments for macOS ones (menu bar, Dock, Finder, Command
+  shortcuts, no terminal), and the run engine prefixes the instruction with "You are operating
+  macOS." The model's weights are unchanged, so macOS-specific behaviour is still not guaranteed.
 
 ## Model
 

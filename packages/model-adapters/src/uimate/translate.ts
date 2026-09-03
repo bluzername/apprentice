@@ -7,6 +7,13 @@
  * multi-key press) yield `action: null` plus parse errors, never a guessed
  * action. Nothing from `<think>` is read here; the only free text carried into
  * the result is the `<action>` sentence.
+ *
+ * Terminal tokens are explicit only (deviation from `parse_response`): DONE and
+ * FAIL come from a `finished` tool call and SUBTASK_COMPLETE from a
+ * `subtask_complete` call. A reply the parser cannot map - no `<action>` block,
+ * no `<tool_call>`, an unknown action name, a reply cut off at max_tokens -
+ * produces `action: null` plus `parseErrors` and no control token, so the run
+ * engine retries it as an invalid action instead of ending the run.
  */
 import {
   KEY_NAMES,
@@ -282,12 +289,13 @@ function callUser(params: ToolCallParams, actionText: string, infeasible: boolea
   if (question.length === 0) {
     return unsupported("call_user: no question text");
   }
+  // The reference agent turns an infeasible-sounding call_user into FAIL. Here the
+  // question reaches the user instead; only an explicit `finished` call ends a run.
   return {
     fields: { type: "ask_user", question },
     expectedResult: "The user answers before the run continues.",
-    controlToken: infeasible ? "FAIL" : undefined,
     parseErrors: [],
-    rationaleNotes: []
+    rationaleNotes: infeasible ? ["the model's wording suggests it considers the task infeasible"] : []
   };
 }
 
@@ -315,7 +323,7 @@ function subtaskComplete(params: ToolCallParams): Partial {
 function translatePartial(params: ToolCallParams, actionText: string, infeasible: boolean, ctx: TranslateContext): Partial {
   const action = params["action"];
   if (typeof action !== "string" || action.length === 0) {
-    return { ...unsupported("tool call has no action name"), controlToken: "FAIL" };
+    return unsupported("tool call has no action name");
   }
   switch (action) {
     case "left_click":
@@ -348,7 +356,7 @@ function translatePartial(params: ToolCallParams, actionText: string, infeasible
     case SUBTASK_COMPLETE_ACTION:
       return subtaskComplete(params);
     default:
-      return { ...unsupported(`unknown action ${JSON.stringify(action)}`), controlToken: "FAIL" };
+      return unsupported(`unknown action ${JSON.stringify(action)}`);
   }
 }
 
@@ -411,14 +419,13 @@ function buildRationale(actionText: string, notes: readonly string[]): string {
 }
 
 /**
- * Translate a full model response. Mirrors `parse_response` control flow: no
- * `<action>` -> FAIL, no tool call -> DONE/FAIL by the infeasibility heuristic,
- * terminal tokens take precedence over GUI actions.
+ * Translate a full model response. Terminal tokens are explicit only: a missing
+ * `<action>` block or a missing `<tool_call>` is a parse failure, not a claim
+ * that the task is done or infeasible (see the file header).
  */
 export function translateResponse(response: string, ctx: TranslateContext): TranslationResult {
   const text = response ?? "";
   const infeasible = looksInfeasibleResponse(text);
-  const giveUp: ControlToken = infeasible ? "FAIL" : "DONE";
   const actionText = truncate(extractActionText(text), SUMMARY_MAX);
 
   if (actionText.length === 0) {
@@ -426,7 +433,6 @@ export function translateResponse(response: string, ctx: TranslateContext): Tran
       action: null,
       actionSummary: "",
       rationale: "",
-      controlToken: "FAIL",
       parseErrors: ["no <action> block found in response"]
     };
   }
@@ -436,8 +442,7 @@ export function translateResponse(response: string, ctx: TranslateContext): Tran
     return {
       action: null,
       actionSummary: actionText,
-      rationale: buildRationale(actionText, []),
-      controlToken: giveUp,
+      rationale: buildRationale(actionText, infeasible ? ["the model's wording suggests it considers the task infeasible"] : []),
       parseErrors: ["no <tool_call> blocks found in response"]
     };
   }

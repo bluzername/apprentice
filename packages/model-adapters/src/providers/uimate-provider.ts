@@ -15,6 +15,13 @@
  * 4. Analysis calls (analyzeEpisode/draftSkill/verifyStep) fail over to a
  *    configured fallback or throw ProviderCapabilityError; UI-Mate is a GUI
  *    action policy, not a JSON chat model.
+ * 5. A reply cut off at max_tokens (finish_reason "length") is reported as a
+ *    parse error with no action and no control token, so the run engine retries
+ *    the step instead of reading the truncated text as DONE or FAIL.
+ * 6. Sampling (temperature, top_p, enable_thinking) is configurable; the
+ *    defaults stay the official evaluation values when no option is given.
+ * 7. When `platform` is "macos" the two Ubuntu-specific system prompt fragments
+ *    are replaced by macOS text (see uimate/constants.ts).
  */
 import {
   NextActionInputSchema,
@@ -42,7 +49,8 @@ import {
   DEFAULT_REQUEST_TIMEOUT_MS,
   DEFAULT_TEMPERATURE,
   DEFAULT_TOP_P,
-  type CoordinateType
+  type CoordinateType,
+  type PromptPlatform
 } from "../uimate/constants.js";
 import { buildMessages, collapseMessages, releaseOutOfWindowScreenshots } from "../uimate/history.js";
 import { UIMateParseError, compactResponseForHistory, parseResponse, type ParsedResponse } from "../uimate/parser.js";
@@ -58,7 +66,7 @@ import {
   type WorkflowPointerResult,
   type WorkflowPointerState
 } from "../uimate/workflow.js";
-import { chatCompletion, probeHealth, type HttpOptions } from "./http.js";
+import { chatCompletion, probeHealth, type ChatCompletionResult, type HttpOptions } from "./http.js";
 import { identityResizer, prepareModelImage, type ImageResizer, type PreparedImage } from "./image.js";
 import { stripThinkBlocks } from "./json-extract.js";
 import { SAFETY_SECTION } from "./safety.js";
@@ -74,7 +82,12 @@ export interface UIMateProviderOptions {
   readonly timeoutMs?: number;
   readonly imagesToKeep?: number;
   readonly coordinateType?: CoordinateType;
+  /** chat_template_kwargs.enable_thinking; official default true. */
   readonly enableThinking?: boolean;
+  /** Sampling temperature; official evaluation default 1.0. */
+  readonly temperature?: number;
+  /** Nucleus sampling cutoff; official evaluation default 0.95. */
+  readonly topP?: number;
   readonly remapControlToCommand?: boolean;
   readonly fallback?: VisionAgentProvider;
   readonly resizeImage?: ImageResizer;
@@ -109,6 +122,13 @@ const EMPTY_SESSION = (sessionId: string): UIMateSession => ({
 export const UIMATE_WORKFLOW_SECTION_WITH_SAFETY = `${WORKFLOW_SYSTEM_SECTION}\n\n${SAFETY_SECTION}`;
 
 const CAPABILITY_MESSAGE = "UI-Mate is a GUI action policy; configure a generic multimodal provider for analysis";
+
+/** Reported as a parse error when the server stopped generation at max_tokens. */
+export const TRUNCATED_REPLY_ERROR = "reply truncated at max_tokens";
+
+function promptPlatform(input: NextActionInput): PromptPlatform {
+  return input.platform === "macos" ? "macos" : "ubuntu";
+}
 
 /**
  * History replay text for one past response: from `<action>` onwards, with any
@@ -169,6 +189,8 @@ export class UIMateProvider implements VisionAgentProvider {
   private readonly imagesToKeep: number;
   private readonly coordinateType: CoordinateType;
   private readonly enableThinking: boolean;
+  private readonly temperature: number;
+  private readonly topP: number;
   private readonly remapControlToCommand: boolean;
   private readonly fallback: VisionAgentProvider | undefined;
   private readonly resizeImage: ImageResizer;
@@ -198,6 +220,14 @@ export class UIMateProvider implements VisionAgentProvider {
     this.imagesToKeep = imagesToKeep;
     this.coordinateType = options.coordinateType ?? "relative";
     this.enableThinking = options.enableThinking ?? true;
+    if (options.temperature !== undefined && (!Number.isFinite(options.temperature) || options.temperature < 0 || options.temperature > 2)) {
+      throw new RangeError("temperature must be between 0 and 2");
+    }
+    this.temperature = options.temperature ?? DEFAULT_TEMPERATURE;
+    if (options.topP !== undefined && (!Number.isFinite(options.topP) || options.topP <= 0 || options.topP > 1)) {
+      throw new RangeError("topP must be greater than 0 and at most 1");
+    }
+    this.topP = options.topP ?? DEFAULT_TOP_P;
     this.remapControlToCommand = options.remapControlToCommand ?? true;
     this.fallback = options.fallback;
     this.resizeImage = options.resizeImage ?? identityResizer;
@@ -252,7 +282,7 @@ export class UIMateProvider implements VisionAgentProvider {
     return { plan, index: input.currentSubtaskIndex };
   }
 
-  private async callModel(session: UIMateSession, plan: WorkflowPlan, index: number, input: NextActionInput, shot: PreparedImage): Promise<string> {
+  private async callModel(session: UIMateSession, plan: WorkflowPlan, index: number, input: NextActionInput, shot: PreparedImage): Promise<ChatCompletionResult> {
     const screenshots = releaseOutOfWindowScreenshots([...session.screenshots, shot.base64], this.historyN);
     const messages = buildMessages({
       instruction: input.instruction,
@@ -265,15 +295,16 @@ export class UIMateProvider implements VisionAgentProvider {
       collapseText: COLLAPSED_SCREENSHOT_TEXT,
       guidance: buildGuidance(plan, index),
       workflowSection: UIMATE_WORKFLOW_SECTION_WITH_SAFETY,
-      actionPatch: SUBTASK_COMPLETE_PATCH
+      actionPatch: SUBTASK_COMPLETE_PATCH,
+      platform: promptPlatform(input)
     });
     const { messages: collapsed } = collapseMessages(messages, this.imagesToKeep, 1, COLLAPSED_SCREENSHOT_TEXT);
     return chatCompletion(this.http, {
       model: this.model,
       messages: collapsed,
       max_tokens: this.maxTokens,
-      temperature: DEFAULT_TEMPERATURE,
-      top_p: DEFAULT_TOP_P,
+      temperature: this.temperature,
+      top_p: this.topP,
       chat_template_kwargs: { enable_thinking: this.enableThinking }
     });
   }
@@ -301,11 +332,24 @@ export class UIMateProvider implements VisionAgentProvider {
 
     const started = this.now();
     const shot = await prepareModelImage(input.screenshot, this.resizeImage);
-    const response = await this.callModel(session, plan, index, input, shot);
+    const { content: response, finishReason } = await this.callModel(session, plan, index, input, shot);
     const latencyMs = Math.max(0, this.now() - started);
 
+    if (finishReason === "length") {
+      // The reply is incomplete: its `<action>` sentence and tool call cannot be
+      // trusted, and a missing tool call must never read as DONE or FAIL. The
+      // session is left untouched so the retry sees the same history.
+      return ProposedActionResultSchema.parse({
+        action: null,
+        actionSummary: "",
+        rationale: "",
+        parseErrors: [TRUNCATED_REPLY_ERROR],
+        latencyMs,
+        provider: PROVIDER
+      });
+    }
+
     const { parsed, errors } = this.parse(response, shot);
-    const workflow = workflowAfterPredict(plan, pointer, response, parsed.codes);
     const translation = translateResponse(response, {
       width: shot.width,
       height: shot.height,
@@ -315,6 +359,11 @@ export class UIMateProvider implements VisionAgentProvider {
       remapControlToCommand: this.remapControlToCommand,
       pointer: session.lastPointer
     });
+    // The workflow pointer follows explicit tool calls only. The official parser
+    // scores a reply that has no tool call as DONE, which the early-done rule
+    // would then read as a completion claim; the translation's token does not.
+    const codes = translation.controlToken === "DONE" ? ["DONE"] : [];
+    const workflow = workflowAfterPredict(plan, pointer, response, codes);
     const composed = composeResult(translation, workflow, errors);
 
     const nextSession: UIMateSession = {

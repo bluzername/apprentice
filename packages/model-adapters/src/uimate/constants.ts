@@ -50,6 +50,12 @@ export const PROMPT_ADDITIONS = `<IMPORTANT_NOTES>
 * After completing a task, verify the visible or functional result. If your actions had no real effect, reconsider whether the task is feasible.
 </IMPORTANT_NOTES>`;
 
+/** Platform the assembled prompt targets; "ubuntu" reproduces the official text. */
+export type PromptPlatform = "ubuntu" | "macos";
+
+/** Index of the "no terminal, click desktop icons" line inside DESCRIPTION_PROMPT_LINES. */
+export const MACOS_ENVIRONMENT_LINE_INDEX = 1;
+
 /** Lines of build_description_prompt(), joined with "\n". */
 export const DESCRIPTION_PROMPT_LINES: readonly string[] = [
   "Use a mouse and keyboard to interact with a computer, and take screenshots.",
@@ -69,6 +75,30 @@ export const DESCRIPTION_PROMPT_LINES: readonly string[] = [
   "* Make sure to click any buttons, links, icons, etc with the cursor tip in the" +
     " center of the element. Don't click boxes on their edges unless asked."
 ];
+
+/**
+ * Apprentice deviation (documented in README.md): the official notes above are
+ * written for the OSWorld Ubuntu environment. Apprentice only ever drives
+ * macOS, so a macOS variant is used whenever `platform` is "macos"; the Ubuntu
+ * text stays byte-identical for the golden prompt tests.
+ */
+export const PROMPT_ADDITIONS_MACOS = `<IMPORTANT_NOTES>
+* Always drive the application's GUI directly with mouse and keyboard actions. Do NOT use AppleScript, Automator, shell commands or application macros to complete tasks. Scripting causes reliability issues and task failures.
+* The target application is already open and frontmost. Do not switch to another application, and do not open a new one, unless the instruction explicitly asks for it.
+* macOS shortcuts use Command, not Control: cmd+c, cmd+v, cmd+s, cmd+f. The menu bar at the top of the screen belongs to the frontmost application, and the Dock sits at the edge of the screen.
+* Before starting a task, consider whether it is achievable with the designated application's native GUI features. If the app fundamentally lacks the requested capability, declare it infeasible (finish with status=failure) instead of using Terminal, scripts, or other applications as workarounds.
+* After completing a task, verify the visible or functional result. If your actions had no real effect, reconsider whether the task is feasible.
+</IMPORTANT_NOTES>`;
+
+/** macOS variant of DESCRIPTION_PROMPT_LINES: only the environment line differs. */
+export const DESCRIPTION_PROMPT_LINES_MACOS: readonly string[] = DESCRIPTION_PROMPT_LINES.map((line, index) =>
+  index === MACOS_ENVIRONMENT_LINE_INDEX
+    ? "* This is an interface to a macOS desktop GUI. You do not have access to a" +
+      " terminal. The application you must work in is already open and frontmost;" +
+      " use its windows, the menu bar at the top of the screen, the Dock and Finder," +
+      " and do not switch to another application unless the instruction says so."
+    : line
+);
 
 export const ACTION_DESCRIPTION = `* \`left_click\`: Click the left mouse button at the specified (x, y) coordinate.
 * \`right_click\`: Click the right mouse button at the specified (x, y) coordinate.

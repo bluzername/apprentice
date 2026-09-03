@@ -22,6 +22,12 @@ export interface ProviderFactoryConfig {
   readonly fallback?: VisionAgentProvider;
   /** UI-Mate reply token cap (max_tokens). */
   readonly maxTokens?: number;
+  /** UI-Mate sampling temperature; the provider default is the official 1.0. */
+  readonly temperature?: number;
+  /** UI-Mate nucleus sampling cutoff; the provider default is the official 0.95. */
+  readonly topP?: number;
+  /** UI-Mate chat_template_kwargs.enable_thinking; the provider default is true. */
+  readonly enableThinking?: boolean;
   readonly mock?: MockProviderOptions;
 }
 
@@ -58,7 +64,10 @@ export function createProvider(config: ProviderFactoryConfig): VisionAgentProvid
         resizeImage: config.resizeImage,
         sleep: config.sleep,
         fallback: config.fallback,
-        maxTokens: config.maxTokens
+        maxTokens: config.maxTokens,
+        temperature: config.temperature,
+        topP: config.topP,
+        enableThinking: config.enableThinking
       });
     }
     default: {

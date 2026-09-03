@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { CompositeVisionAgentProvider } from "./composite-provider.js";
 import { createProvider } from "./factory.js";
-import { backoffMs, extractContentText, isRetryable, joinUrl, HttpStatusError } from "./http.js";
+import { backoffMs, chatCompletion, extractContentText, isRetryable, joinUrl, HttpStatusError } from "./http.js";
 import { identityResizer, prepareModelImage, readPngDimensions, ImagePrepareError } from "./image.js";
 import { extractFirstJsonObject, stripThinkBlocks } from "./json-extract.js";
 import { MockVisionAgentProvider } from "./mock-provider.js";
 import { OpenAICompatibleVisionProvider } from "./openai-compatible-provider.js";
 import { UIMateProvider } from "./uimate-provider.js";
 import { ProviderCapabilityError } from "./types.js";
+import { chatReply, createFakeFetch, jsonResponse } from "../testing/fake-fetch.js";
 import { makeSyntheticPng } from "../testing/png.js";
 
 describe("CompositeVisionAgentProvider", () => {
@@ -43,11 +44,36 @@ describe("http helpers", () => {
     expect(isRetryable(new TypeError("fetch failed"))).toBe(true);
     expect(isRetryable(new HttpStatusError(500, "x"))).toBe(true);
     expect(isRetryable(new HttpStatusError(429, "x"))).toBe(true);
-    expect(isRetryable(new HttpStatusError(400, "x"))).toBe(true);
+    // A 400 is a request-shaped failure (context overflow, bad payload): retrying it only burns the back-off.
+    expect(isRetryable(new HttpStatusError(400, "x"))).toBe(false);
     expect(isRetryable(new HttpStatusError(401, "x"))).toBe(false);
     expect(isRetryable(new HttpStatusError(404, "x"))).toBe(false);
     expect(backoffMs(1)).toBe(5000);
     expect(backoffMs(9)).toBe(30000);
+  });
+
+  it("returns the assistant text together with the choice finish_reason", async () => {
+    const http = {
+      provider: "uimate" as const,
+      baseUrl: "http://127.0.0.1:8000/v1",
+      fetchImpl: createFakeFetch(() => jsonResponse({ choices: [{ message: { content: "hi" }, finish_reason: "length" }] })).fetchImpl,
+      timeoutMs: 1000,
+      maxAttempts: 1,
+      sleep: () => Promise.resolve()
+    };
+    expect(await chatCompletion(http, { model: "m" })).toEqual({ content: "hi", finishReason: "length" });
+  });
+
+  it("reports an absent finish_reason as undefined", async () => {
+    const http = {
+      provider: "uimate" as const,
+      baseUrl: "http://127.0.0.1:8000/v1",
+      fetchImpl: createFakeFetch(() => chatReply("hi")).fetchImpl,
+      timeoutMs: 1000,
+      maxAttempts: 1,
+      sleep: () => Promise.resolve()
+    };
+    expect(await chatCompletion(http, { model: "m" })).toEqual({ content: "hi", finishReason: undefined });
   });
 
   it("extracts content text from strings and part arrays", () => {

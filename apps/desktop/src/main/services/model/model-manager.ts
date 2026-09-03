@@ -53,6 +53,12 @@ export interface EndpointRequest {
   readonly imagesToKeep?: number;
 }
 
+interface BuiltProvider {
+  readonly provider: VisionAgentProvider;
+  /** Analysis-shaped calls land on DeterministicAnalysisProvider, not on a model. */
+  readonly deterministicAnalysis: boolean;
+}
+
 function isLoopback(baseUrl: string): boolean {
   try {
     const host = new URL(baseUrl).hostname;
@@ -68,7 +74,8 @@ function isLoopback(baseUrl: string): boolean {
  */
 export class ModelManager {
   private readonly queue: InferenceQueue;
-  private built: { key: string; provider: VisionAgentProvider } | null = null;
+  /** `deterministicAnalysis` records that analysis calls fall to DeterministicAnalysisProvider, not to a model. */
+  private built: { key: string; provider: VisionAgentProvider; deterministicAnalysis: boolean } | null = null;
   private override: VisionAgentProvider | null = null;
   private lastHealth: ModelHealth | null = null;
   private healthTimer: NodeJS.Timeout | null = null;
@@ -174,8 +181,10 @@ export class ModelManager {
     return model.endpoint?.baseUrl;
   }
 
-  private build(providerType: ProviderType, endpoint: EndpointRequest | undefined, apiKey: string | undefined): VisionAgentProvider {
-    if (providerType === "mock") return this.deps.mockProvider ?? createProvider({ providerType: "mock" });
+  private build(providerType: ProviderType, endpoint: EndpointRequest | undefined, apiKey: string | undefined): BuiltProvider {
+    if (providerType === "mock") {
+      return { provider: this.deps.mockProvider ?? createProvider({ providerType: "mock" }), deterministicAnalysis: false };
+    }
     if (!endpoint?.baseUrl) throw new ServiceError("model_not_configured", `${providerType} needs an endpoint base URL`);
     const common = {
       baseUrl: endpoint.baseUrl,
@@ -186,24 +195,60 @@ export class ModelManager {
       timeoutMs: endpoint.requestTimeoutMs,
       resizeImage: this.deps.resizer
     };
-    if (providerType === "openai_compatible") return createProvider({ providerType, ...common });
+    if (providerType === "openai_compatible") return { provider: createProvider({ providerType, ...common }), deterministicAnalysis: false };
     const analysis = new DeterministicAnalysisProvider(() => this.deps.clock.now());
-    const action = createProvider({ providerType: "uimate", ...common, model: endpoint.model || this.deps.manifest.model.alias, fallback: analysis, maxTokens: this.deps.manifest.model.maxTokens });
-    return new CompositeVisionAgentProvider({ action, analysis });
+    const sampling = this.deps.manifest.model.sampling;
+    const action = createProvider({
+      providerType: "uimate",
+      ...common,
+      model: endpoint.model || this.deps.manifest.model.alias,
+      fallback: analysis,
+      maxTokens: this.deps.manifest.model.maxTokens,
+      temperature: sampling.temperature,
+      topP: sampling.topP,
+      enableThinking: sampling.enableThinking
+    });
+    // UI-Mate cannot do analysis; the composite's analysis half is the deterministic stand-in.
+    return { provider: new CompositeVisionAgentProvider({ action, analysis }), deterministicAnalysis: true };
   }
 
   provider(): VisionAgentProvider {
-    if (this.override) return this.override;
+    return this.ensureBuilt().provider;
+  }
+
+  /**
+   * True when analysis-shaped calls (draftSkill, verifyStep) would land on
+   * DeterministicAnalysisProvider rather than on a model. Callers use it to skip
+   * the round trip entirely instead of discarding its canned answer.
+   */
+  analysisIsDeterministic(): boolean {
+    if (this.override) return false;
+    return this.ensureBuilt().deterministicAnalysis;
+  }
+
+  /**
+   * Whether a `verify` call can return real supporting evidence. False for the
+   * deterministic stand-in and for any provider whose last health check reported
+   * no structured output; the run engine skips the call rather than folding a
+   * canned "no analysis provider" string into user-visible evidence.
+   */
+  supportsVerification(): boolean {
+    if (this.analysisIsDeterministic()) return false;
+    return this.lastHealth === null || this.lastHealth.capabilities.structuredOutput;
+  }
+
+  private ensureBuilt(): BuiltProvider {
+    if (this.override) return { provider: this.override, deterministicAnalysis: false };
     const key = this.buildKey();
-    if (this.built && this.built.key === key) return this.built.provider;
+    if (this.built && this.built.key === key) return { provider: this.built.provider, deterministicAnalysis: this.built.deterministicAnalysis };
     const model = this.deps.settings.get().model;
     const baseUrl = this.resolveBaseUrl();
     // The manifest's imagesToKeep (2) is the verified history limit for the local runtime; the provider default (5) is only for external endpoints that set it explicitly.
     const endpoint: EndpointRequest | undefined = baseUrl ? { baseUrl, model: model.endpoint?.model ?? this.deps.manifest.model.alias, imagesToKeep: model.endpoint?.imagesToKeep ?? this.deps.manifest.model.imagesToKeep } : undefined;
     const apiKey = model.endpoint?.hasApiKey ? (this.deps.secrets.get(API_KEY_SECRET_NAME) ?? undefined) : undefined;
-    const provider = this.build(model.providerType, endpoint, apiKey);
-    this.built = { key, provider };
-    return provider;
+    const built = this.build(model.providerType, endpoint, apiKey);
+    this.built = { key, ...built };
+    return built;
   }
 
   private async run<T>(label: string, job: (provider: VisionAgentProvider) => Promise<T>): Promise<T> {
@@ -238,6 +283,9 @@ export class ModelManager {
       refine: async (input) => {
         if (this.override) return null;
         if (this.deps.settings.get().model.providerType === "mock") return null;
+        // The deterministic provider echoes the draft back unchanged; asking it costs a
+        // queue slot and a health probe to produce a result that is always discarded.
+        if (this.analysisIsDeterministic()) return null;
         const health = this.lastHealth ?? (await this.checkHealth());
         if (!health.ok || !health.capabilities.structuredOutput) return null;
         const refined = await this.draftSkill(input);
@@ -305,7 +353,7 @@ export class ModelManager {
   }
 
   async testConnection(config: { providerType: ProviderType } & EndpointRequest): Promise<ModelHealth> {
-    const provider = this.build(config.providerType, config, config.apiKey);
+    const { provider } = this.build(config.providerType, config, config.apiKey);
     return provider.health();
   }
 

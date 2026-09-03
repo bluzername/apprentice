@@ -9,12 +9,15 @@ import {
   ACTION_DESCRIPTION,
   ACTION_ENUM,
   DESCRIPTION_PROMPT_LINES,
+  DESCRIPTION_PROMPT_LINES_MACOS,
   PROMPT_ADDITIONS,
+  PROMPT_ADDITIONS_MACOS,
   RESPONSE_FORMAT,
   RESPONSE_FORMAT_HEADER,
   SYSTEM_PROMPT_PREAMBLE,
   TOOLS_BLOCK_FOOTER,
-  TOOLS_BLOCK_HEADER
+  TOOLS_BLOCK_HEADER,
+  type PromptPlatform
 } from "./constants.js";
 import { pyJsonDumps, type PyJsonValue } from "./pyjson.js";
 import { pyStrip, pyStripChars } from "./python-compat.js";
@@ -57,11 +60,19 @@ export interface SystemPromptOptions {
   readonly workflowSection?: string | null;
   /** obs["workflow_action_patch"]: folded into the computer_use schema. */
   readonly actionPatch?: ToolsSchemaPatch | null;
+  /** Apprentice deviation: "macos" swaps the two Ubuntu-specific fragments. Defaults to the official text. */
+  readonly platform?: PromptPlatform;
 }
 
 /** Environment description shared by L1/L2/L3. */
-export function buildDescriptionPrompt(): string {
-  return DESCRIPTION_PROMPT_LINES.join("\n");
+export function buildDescriptionPrompt(platform: PromptPlatform = "ubuntu"): string {
+  const lines = platform === "macos" ? DESCRIPTION_PROMPT_LINES_MACOS : DESCRIPTION_PROMPT_LINES;
+  return lines.join("\n");
+}
+
+/** The `<IMPORTANT_NOTES>` block for one platform. */
+export function buildPromptAdditions(platform: PromptPlatform = "ubuntu"): string {
+  return platform === "macos" ? PROMPT_ADDITIONS_MACOS : PROMPT_ADDITIONS;
 }
 
 export function buildActionDescription(): string {
@@ -169,12 +180,13 @@ export function patchToolsSchema(toolsDef: ToolsDef, patch: ToolsSchemaPatch | n
 
 /** Assemble the system prompt, folding in the workflow parts obs may carry. */
 export function buildSystemPrompt(options: SystemPromptOptions = {}): string {
-  const toolsDef = patchToolsSchema(buildToolsDef(buildDescriptionPrompt()), options.actionPatch);
+  const platform = options.platform ?? "ubuntu";
+  const toolsDef = patchToolsSchema(buildToolsDef(buildDescriptionPrompt(platform)), options.actionPatch);
   const prompt = pyStrip(
     SYSTEM_PROMPT_PREAMBLE +
       buildToolsAndFormatBlock(toolsDef) +
       "\n\n" +
-      PROMPT_ADDITIONS +
+      buildPromptAdditions(platform) +
       "\n\n" +
       RESPONSE_FORMAT_HEADER +
       RESPONSE_FORMAT
