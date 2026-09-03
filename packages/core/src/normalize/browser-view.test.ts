@@ -80,3 +80,11 @@ describe("browserViewFromTitle with a Chrome profile suffix", () => {
     expect(sheet?.view).toBe("document");
   });
 });
+
+describe("browserViewFromTitle with Chrome performance annotations", () => {
+  it("ignores memory-usage annotations and the profile suffix", () => {
+    const view = browserViewFromTitle("Q3 expenses - Shared Drive - Google Drive - High memory usage - 880 MB - Google Chrome \u2013 Alex (example.com)", CHROME);
+    expect(view?.site).toBe("google-drive");
+    expect(view?.view).toBe("page");
+  });
+});

@@ -45,6 +45,8 @@ const MAX_SITE_LENGTH = 32;
 const MAX_SITE_WORDS = 3;
 const SENSITIVE_VIEWS: ReadonlySet<BrowserViewClass> = new Set(["login", "checkout"]);
 const DOCUMENT_SITES: ReadonlySet<string> = new Set(["google-sheets", "google-docs", "google-slides", "google-forms", "notion"]);
+/** Chrome appends performance annotations such as "High memory usage - 880 MB" to titles. */
+const CHROME_ANNOTATION_RE = /^(high memory usage|\d+(\.\d+)? ?[kmg]b)$/i;
 const BROWSER_NAMES: ReadonlySet<string> = new Set(["google chrome", "chrome", "chromium", "brave", "microsoft edge", "safari", "arc", "firefox", "vivaldi"]);
 
 /** " - ", " | ", " middle dot ", en dash and em dash surrounded by spaces. */
@@ -86,7 +88,7 @@ function splitSegments(title: string): readonly string[] {
   const segments = title
     .split(SEGMENT_SEPARATOR_RE)
     .map((segment) => cleanSegment(segment))
-    .filter((segment) => segment.length > 0 && !EMAIL_RE.test(segment));
+    .filter((segment) => segment.length > 0 && !EMAIL_RE.test(segment) && !CHROME_ANNOTATION_RE.test(segment));
   // Browsers append their own name and, in Chrome, the profile name after it
   // ("Inbox - Gmail - Google Chrome - Alex"). Keep only the page-side segments.
   const browserIndex = segments.findIndex((segment, index) => index > 0 && BROWSER_NAMES.has(segment.toLowerCase()));
