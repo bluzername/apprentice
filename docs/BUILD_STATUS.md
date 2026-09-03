@@ -35,7 +35,7 @@ the build machine described in `docs/BUILD_ENVIRONMENT.md` and produced the stat
 | `pnpm install` | ok (pnpm 10.33.0, 8 workspace projects) |
 | `pnpm lint` | ok: eslint 0 problems, typography lint passed |
 | `pnpm typecheck` | ok: all 7 packages |
-| `pnpm test` | ok (final run after all fixes): schemas 12, extension 101, core 128, worker 35, adapters 115, fixtures 282, desktop 127 (67 main-process integration incl. real helper and packaged smoke, 60 renderer), scripts 39, Swift 79. Total 918 automated tests, 0 failures, 0 skipped (the only intentional skip is the opt-in real-model test under its own config) |
+| `pnpm test` | ok (after the live-test fixes, 2026-09-03): schemas 14, extension 101, core 163, worker 35, adapters 115, fixtures 282, desktop 166, scripts 39, Swift 97. Total 1012 automated tests, 0 failures, 0 skipped (the only intentional skip is the opt-in real-model test under its own config) |
 | `pnpm audit --audit-level=high` | No known vulnerabilities found |
 | `pnpm test:e2e` | ok: 1 passed (demo journey) |
 | `pnpm build` | ok: schemas, core, adapters typecheck; fixtures rendered; extension dist + zip; worker dry-run bundle (833 KiB); electron-vite main/preload/renderer |
@@ -158,6 +158,12 @@ window; it was rejected by the user and the engine now refuses that case (see th
 guard change). Run feedback and the Runs trace (validation, approval, execution, verification,
 timing) were verified. Diagnostics preview truncation bug (4002 characters) found and fixed.
 
-Not verified live: the browser extension (needs a manual unpacked install), real UI-Mate
-inference (weights not downloaded), and a guided run reaching "completed" on a real skill (the
-third subtask needs an open target window; re-test pending the guard change).
+Final guided run after the guard change, with a TextEdit window open: status "completed",
+6 steps, 3 approved clicks executed through the helper (Finder 956,513; Preview 618,567;
+TextEdit 513,295; 42 to 60 ms each), each verified via screen and OCR diff, 3 subtask
+completions confirmed by the user, summary "All subtasks verified". Teach draft re-check on the
+new build: the shortcut artifact is gone ("Work in finder, preview, textedit" fallback name).
+Activity and teach lists render blurred screenshot thumbnails.
+
+Not verified live: the browser extension (needs a manual unpacked install) and real UI-Mate
+inference (weights not downloaded).

@@ -25,6 +25,15 @@ First shareable alpha. Apple Silicon, macOS 14+, arm64 only.
 - Privacy controls: retention sliders, Delete today, Delete selected workflow, Delete all.
 - Demo mode with three synthetic workflows and SVG-rendered screens.
 
+## Verified on a real Mac (2026-09-03)
+
+The alpha was exercised end to end on the build machine with real Finder, Preview, TextEdit,
+Safari, and Chrome activity: onboarding, real observation with encrypted screenshots and OCR,
+passive discovery of a repeated invoice-filing routine (observed twice, confidence 0.70),
+candidate to skill, teaching from a selected range, pause and private mode, feedback export and
+aggregation, and a guided run that completed with three approved real clicks. Fixes made from
+that session are included in this build (see docs/BUILD_STATUS.md, "Live alpha test").
+
 ## Signing and notarization
 
 See `docs/BUILD_STATUS.md` for the exact signing state of this build. Unless it says notarized,
