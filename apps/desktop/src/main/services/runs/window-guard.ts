@@ -33,7 +33,7 @@ export function windowQuestion(active: ActiveRun): string {
   return `Open a window in ${targetName(active)} and answer Continue`.slice(0, 500);
 }
 
-export type WindowRecovery = { readonly snapshot: ScreenSnapshot } | { readonly outcome: FocusOutcome };
+export type WindowRecovery = { readonly snapshot: ScreenSnapshot } | { readonly outcome: FocusOutcome } | { readonly advance: true };
 
 /**
  * Asks the user to open a window in the target app, brings the target back to
@@ -43,6 +43,8 @@ export type WindowRecovery = { readonly snapshot: ScreenSnapshot } | { readonly 
 export async function recoverTargetWindow(host: RunnerHost, active: ActiveRun, step: RunStep): Promise<WindowRecovery> {
   const deps = host.deps;
   const answer = await host.awaitQuestion(active, step, windowQuestion(active));
+  // The user marked the subtask complete while the question was open: the caller advances instead of recovering.
+  if (answer === null && active.advanceRequested) return { advance: true };
   if (answer === null) {
     const by = active.stopRequested?.kind === "user" ? active.stopRequested.by : "ui_stop";
     return { outcome: { kind: "finish", status: "interrupted", failureCategory: "user_interrupted", summary: "Stopped while waiting for the user to open a window", interruptedBy: by } };

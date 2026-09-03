@@ -220,6 +220,7 @@ type PrepareResult = { readonly ok: true; readonly prepared: Prepared } | { read
 async function prepare(host: RunnerHost, active: ActiveRun, step: RunStep, action: ProposedAction, snapshot: ScreenSnapshot): Promise<PrepareResult> {
   const deps = host.deps;
   const focus = await ensureTargetFrontmost(host, active, step);
+  if (active.advanceRequested) return { ok: false, outcome: await completeSubtaskByUser(host, active, step), category: "none" };
   if (focus) return { ok: false, outcome: focus, category: focus.failureCategory ?? "unknown" };
   const now = deps.clock.now();
   const fresh = await takeSnapshot(deps, { previous: snapshot, now });
@@ -295,6 +296,7 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
   const deps = host.deps;
   syncTargetWithSubtask(active);
   const focus = await ensureTargetFrontmost(host, active, step);
+  if (active.advanceRequested) return completeSubtaskByUser(host, active, step);
   if (focus) {
     host.persistStep(active, failStep(step, focus.failureCategory ?? "unknown"));
     return focus;
@@ -313,6 +315,7 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
   if (mismatch !== null) {
     deps.logger.warn("capture is not a target window; asking the user to open one", { runId: active.run.id, target: active.targetBundleId, reason: mismatch });
     const recovery = await recoverTargetWindow(host, active, current);
+    if ("advance" in recovery || active.advanceRequested) return completeSubtaskByUser(host, active, current);
     if ("outcome" in recovery) {
       host.persistStep(active, failStep(current, recovery.outcome.failureCategory ?? "unknown"));
       return recovery.outcome;

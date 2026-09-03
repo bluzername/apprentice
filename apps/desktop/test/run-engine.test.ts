@@ -406,6 +406,25 @@ describe("run engine", () => {
 });
 
 describe("run engine user-driven subtask advance", () => {
+  it("advances instead of interrupting when the subtask is marked complete while an open-a-window question is pending", async () => {
+    const state = { noWindow: true };
+    let engineRef: RunEngine | null = null;
+    let runId = "";
+    const h = harness({
+      screen: fallbackScreen(state),
+      onWindowQuestion: () => {
+        engineRef?.advanceSubtask(runId);
+      }
+    });
+    engineRef = h.engine;
+    const started = await h.engine.start(h.skill.id, "guide");
+    runId = started.id;
+    const run = await h.engine.waitForCompletion(runId);
+    const steps = h.storage.current.runs.steps(runId);
+    expect(run.status).not.toBe("interrupted");
+    expect(steps.some((step) => step.verification?.method === "user_confirmation")).toBe(true);
+  }, 30_000);
+
   it("ends every subtask from the run page and completes the run without executing the pending action", async () => {
     const h = harness({ onApproval: () => "advance" });
     const { run, steps } = await h.run();

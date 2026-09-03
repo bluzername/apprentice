@@ -135,7 +135,8 @@ export async function ensureTargetFrontmost(host: RunnerHost, active: ActiveRun,
     if (active.stopRequested !== null) return interrupted(active);
     // The user went somewhere outside the allowlist: ask instead of stealing focus or aborting.
     const answer = await host.awaitQuestion(active, step, switchQuestion(active));
-    if (answer === null) return interrupted(active);
+    // A null answer while the user marked the subtask complete is not a stop: let the caller honour the advance.
+    if (answer === null) return active.advanceRequested ? null : interrupted(active);
     frontmost = await frontmostBundleId(host);
     if (!onTarget(active, frontmost)) frontmost = await bringTargetForward(host, active, frontmost);
     if (settle(active, frontmost)) {
