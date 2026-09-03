@@ -37,6 +37,8 @@ function commonArgs(args: CommonArgs): string[] {
     String(args.contextSize ?? DEFAULT_CONTEXT_SIZE),
     "--alias",
     args.alias ?? DEFAULT_ALIAS,
+    "-np",
+    "1",
     "--log-file",
     args.logPath
   ];

@@ -151,7 +151,7 @@ describe("model manager", () => {
     });
     expect(MODEL_MANIFEST.model.sampling.temperature).toBe(0.2);
     expect(MODEL_MANIFEST.model.sampling.topP).toBe(0.95);
-    expect(MODEL_MANIFEST.model.sampling.enableThinking).toBe(true);
+    expect(MODEL_MANIFEST.model.sampling.enableThinking).toBe(false);
   });
 
   it("skips the analysis round trip when only the deterministic stand-in is configured", async () => {

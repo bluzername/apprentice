@@ -82,9 +82,11 @@
     "sampling": {
       "temperature": 0.2,
       "topP": 0.95,
-      "enableThinking": true,
-      "note": "The official UI-Mate evaluation defaults are temperature 1.0 / top_p 0.95 / enable_thinking true. Apprentice lowers the temperature to 0.2: a GUI action policy that must hit a specific control benefits from near-greedy decoding, and observed runs at 1.0 produced coordinate and tool-call variance across otherwise identical screens. enableThinking stays on and is A/B tested against the benchmark (pnpm bench:local-model)."
-    }
+      "enableThinking": false,
+      "note": "The official UI-Mate evaluation defaults are temperature 1.0 / top_p 0.95 / enable_thinking true. Apprentice lowers the temperature to 0.2 (near-greedy decoding for a policy that must hit a specific control) and turns thinking off: measured 2026-09-04 on 32 real-window grounding cases, thinking off scored 17/32 and thinking on 16/32 at temperature 0.2, with 71 vs 150 median completion tokens. Re-check with pnpm bench:grounding when the model changes."
+    },
+    "parallelSlots": 1,
+    "parallelSlotsNote": "llama-server slots (-np). One client (the app) means one slot; with the default 4 slots a request can land on a cold slot and re-prefill the whole prompt (observed 8,900-token re-prefill, 40 s, while a benchmark shared the server)."
   },
   "mlx": {
     "hfPath": "tencent/UI-Mate-9B",

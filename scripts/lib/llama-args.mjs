@@ -36,6 +36,8 @@ function commonArgs({ port, logPath, contextSize, gpuLayers, alias }) {
     String(contextSize),
     "--alias",
     alias,
+    "-np",
+    "1",
     "--log-file",
     logPath
   ];

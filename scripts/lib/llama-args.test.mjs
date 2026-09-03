@@ -24,6 +24,8 @@ describe("llama-server argument arrays", () => {
       "32768",
       "--alias",
       "UI_Mate",
+      "-np",
+      "1",
       "--log-file",
       "/data/logs/llama-server.log"
     ]);
@@ -53,6 +55,8 @@ describe("llama-server argument arrays", () => {
       "32768",
       "--alias",
       "UI_Mate",
+      "-np",
+      "1",
       "--log-file",
       "/x.log"
     ]);
