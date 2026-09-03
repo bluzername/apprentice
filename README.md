@@ -152,11 +152,9 @@ sequenceDiagram
     Note over App,Model: next proposal, 9 to 13 s later
 ```
 
-That sequence is not a mock-up. It is the run recorded on 2026-09-03 in
-[docs/BUILD_STATUS.md](docs/BUILD_STATUS.md): the double-click really opened the PDF in Preview,
-the following Command+W really closed it, and a proposal aimed at a macOS permission dialog from
-another app was refused by the hit-test guard because the element under the point did not belong
-to the target app.
+The sequence above is taken from a recorded run against the real model and real applications
+(see [docs/BUILD_STATUS.md](docs/BUILD_STATUS.md)). Proposals that target a window outside the
+run's application are refused by the hit-test guard before they reach the approval card.
 
 ## Measured on a real Mac
 
@@ -176,12 +174,11 @@ in [docs/MODEL_PERFORMANCE.md](docs/MODEL_PERFORMANCE.md).
 | Verify a step (capture, OCR, diffs) | about 0.5 s plus a 600 ms settle |
 | Apprentice main process / native helper memory | 150 to 170 MB / 26 to 60 MB |
 
-Running the real model changed the product. Ten defects that the mock provider could never show
-up were found and fixed in one evening: the official 8k context overflowing on Retina
-screenshots, the prompt cache being invalidated by the screenshot history policy, a 5 s
-staleness rule that rejected every 10 s proposal, the Escape emergency stop swallowing the
-helper's own Escape, and more. The list, with the fix for each, is in
-[docs/BUILD_STATUS.md](docs/BUILD_STATUS.md#real-model-on-the-build-machine-2026-09-03-evening).
+Real-model validation is part of the release process: every build is exercised end to end with
+the local model against real applications before it is published. The context window, screenshot
+history policy, image sizing, staleness rules and prompt caching are all set from these
+measurements rather than from upstream defaults, and the validation record for each build is
+kept in [docs/BUILD_STATUS.md](docs/BUILD_STATUS.md).
 
 ## Privacy invariants
 
@@ -215,8 +212,8 @@ slower than the 30-core M3 Max measured here.
 
 ## Status and roadmap
 
-Apprentice is an **alpha**. It has been exercised end to end on one machine, with a real model,
-against real applications, and it is honest about what it cannot do yet.
+Apprentice is an **alpha**, validated end to end on Apple Silicon hardware with the real model
+against real applications. The scope below is deliberate.
 
 **Works today**
 
@@ -228,11 +225,11 @@ against real applications, and it is honest about what it cannot do yet.
 
 **Next**
 
-- Subtask completion the engine can evaluate itself (the model does not reliably emit the
-  completion signal under skill guidance, so multi-subtask runs still need the user to stop them)
-- Window-only capture (ScreenCaptureKit by window) so dialogs from other apps never enter the frame
-- The browser extension exercised end to end in a real Chrome profile
-- Notarization and a public alpha download
+- Window-scoped capture through ScreenCaptureKit, so only the target window ever enters the frame
+- Engine-evaluated subtask completion (window title, application, OCR and file-system
+  predicates) so multi-subtask runs advance without depending on the model's completion signal
+- Browser extension validation in a real Chrome profile
+- Notarized builds, automatic updates and a public alpha download
 
 Known limitations are tracked in [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md),
 release notes in [docs/RELEASE_NOTES.md](docs/RELEASE_NOTES.md), and every tested fact in

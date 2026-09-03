@@ -35,7 +35,7 @@ the build machine described in `docs/BUILD_ENVIRONMENT.md` and produced the stat
 | `pnpm install` | ok (pnpm 10.33.0, 8 workspace projects) |
 | `pnpm lint` | ok: eslint 0 problems, typography lint passed |
 | `pnpm typecheck` | ok: all 7 packages |
-| `pnpm test` | ok (after the real-model fixes, 2026-09-03 evening): schemas 14, extension 101, core 164, worker 35, adapters 116, fixtures 282, desktop 181, scripts 40, Swift 97. Total 1030 automated tests, 0 failures, 0 skipped (the only intentional skips are the opt-in real-model test and benchmark under their own configs) |
+| `pnpm test` | ok (2026-09-03, after real-model validation): schemas 14, extension 101, core 164, worker 35, adapters 116, fixtures 282, desktop 181, scripts 40, Swift 97. Total 1030 automated tests, 0 failures, 0 skipped (the only intentional skips are the opt-in real-model test and benchmark under their own configs) |
 | `pnpm test:local-model` | ok against the real managed llama-server (UI-Mate-9B Q6_K): one parsed action, 12 s |
 | `pnpm bench:local-model` | ok: latency, token and memory benchmark against the real server (`packages/model-adapters/bench`, see docs/MODEL_PERFORMANCE.md) |
 | `pnpm audit --audit-level=high` | No known vulnerabilities found |
@@ -52,7 +52,7 @@ the build machine described in `docs/BUILD_ENVIRONMENT.md` and produced the stat
 | Notarization | No APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID in the environment | Export the three variables and run `pnpm package:mac`; evidence: `spctl -a -vv Apprentice.app` prints "accepted" and `xcrun stapler validate` succeeds |
 | Cloudflare deployment | No CLOUDFLARE_API_TOKEN / account | Follow services/feedback-worker/README.md; evidence: `GET https://<worker>/health` returns `{ ok: true }` and a test upload appears in the admin summary |
 | Screen Recording and Accessibility grants | Interactive TCC prompts cannot be answered in a non-interactive build session | Launch the packaged app, complete onboarding step 4, confirm both badges show "granted" and the Activity view shows a real screenshot thumbnail |
-| Real UI-Mate inference | Done on 2026-09-03 (see "Real model on the build machine" below); the row is kept for other machines | Run `node scripts/install-uimate-model.mjs --yes`, `node scripts/start-local-model.mjs`, then `RUN_LOCAL_MODEL_TEST=1 pnpm test:local-model`; evidence: the test prints a parsed UI-Mate action |
+| Real UI-Mate inference | Verified on 2026-09-03 (see "Real model on the build machine" below); the row is kept for other machines | Run `node scripts/install-uimate-model.mjs --yes`, `node scripts/start-local-model.mjs`, then `RUN_LOCAL_MODEL_TEST=1 pnpm test:local-model`; evidence: the test prints a parsed UI-Mate action |
 
 ## Signing state of this build
 
@@ -170,7 +170,7 @@ Activity and teach lists render blurred screenshot thumbnails.
 Not verified live at that point: the browser extension (needs a manual unpacked install). Real
 UI-Mate inference followed the same afternoon (next section).
 
-## Real model on the build machine (2026-09-03, evening)
+## Real model on the build machine (2026-09-03)
 
 Everything in this section ran on the same M3 Max (36 GB) with the packaged app from
 /Applications, the pinned llama.cpp b10752 runtime and UI-Mate-9B Q6_K weights, both installed
@@ -198,7 +198,7 @@ Verified:
   subtask_complete and moved on to the next subtask's action instead (documented in
   docs/MODEL_PERFORMANCE.md as the next thing to fix).
 
-Bugs found only because a real model was in the loop, all fixed with tests the same evening:
+Defects found by real-model validation and fixed in this build, each with a regression test:
 1. The pinned 8192-token context overflowed on the second full-screen Retina screenshot of a
    subtask (HTTP 400 from llama-server). Context is now 32768.
 2. The managed runtime sent up to 5 screenshots per request instead of the manifest's limit
