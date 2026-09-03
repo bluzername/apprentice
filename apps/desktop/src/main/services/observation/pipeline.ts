@@ -1,5 +1,5 @@
-import { classifyContext, isDomainAllowed, newId } from "@apprentice/core";
-import type { ActivityEvent, AppRef, ExtensionEvent, HelperEvent, PrivacyClassification, ScreenshotReason } from "@apprentice/schemas";
+import { classifyContext, isDomainAllowed, newId, type MetricsRecorder } from "@apprentice/core";
+import type { ActivityEvent, AppRef, ExtensionEvent, HelperEvent, PrivacyClassification, ScreenshotReason, SemanticElement } from "@apprentice/schemas";
 import type { StorageRef } from "../app-context.js";
 import type { Clock } from "../clock.js";
 import type { Emit } from "../events.js";
@@ -7,7 +7,8 @@ import type { HelperClient } from "../helper/types.js";
 import type { Logger } from "../logger.js";
 import type { SettingsStore } from "../settings-store.js";
 import type { CaptureService } from "./capture-service.js";
-import { mapExtensionEvent, mapHelperEvent, withoutUndefined, type ActivityEventDraft } from "./event-mapping.js";
+import { DEFAULT_CLICK_AX_TIMEOUT_MS, elementFromAxContext, withTimeout } from "./click-enrichment.js";
+import { mapExtensionEvent, mapHelperEvent, roundTimestamp, withoutUndefined, type ActivityEventDraft, type MappedHelperEvent } from "./event-mapping.js";
 
 export interface FocusContext {
   readonly app?: AppRef;
@@ -26,16 +27,25 @@ export interface ObservationPipelineDeps {
   readonly clock: Clock;
   readonly logger: Logger;
   readonly isCapturing: () => boolean;
+  readonly metrics?: MetricsRecorder;
   readonly fixturePath?: string;
   readonly flushIntervalMs?: number;
   readonly batchSize?: number;
   readonly clickSettleMs?: number;
   readonly intervalMs?: number;
+  /** Upper bound for the accessibility lookup that enriches native clicks. */
+  readonly clickAxTimeoutMs?: number;
 }
 
 export interface IngestResult {
   readonly accepted: number;
   readonly dropped: number;
+}
+
+/** A buffered event; `pending` entries wait for click enrichment and block the batch behind them so seq order is kept. */
+interface BufferEntry {
+  readonly event: ActivityEvent;
+  readonly pending: boolean;
 }
 
 const DEFAULT_FLUSH_MS = 500;
@@ -53,7 +63,8 @@ export class ObservationPipeline {
   private capturePaused = false;
   private idle = false;
   private seq: number;
-  private buffer: ActivityEvent[] = [];
+  private buffer: readonly BufferEntry[] = [];
+  private enrichments: ReadonlySet<Promise<void>> = new Set();
   private flushTimer: NodeJS.Timeout | null = null;
   private intervalTimer: NodeJS.Timeout | null = null;
   private clickTimer: NodeJS.Timeout | null = null;
@@ -76,6 +87,11 @@ export class ObservationPipeline {
 
   latestNavigation(): { domain: string; path: string; ts: number } | null {
     return this.lastNavigation;
+  }
+
+  /** Number of clicks whose accessibility enrichment has not settled yet. */
+  get pendingEnrichments(): number {
+    return this.enrichments.size;
   }
 
   onStored(listener: (events: readonly ActivityEvent[]) => void): () => void {
@@ -119,26 +135,34 @@ export class ObservationPipeline {
     await this.stop();
     this.unsubscribeHelper?.();
     this.unsubscribeHelper = null;
+    await this.settleEnrichments();
     this.flush();
     await this.deps.capture.idle();
   }
 
-  /** Writes buffered events now and notifies listeners. */
+  /** Resolves once every in-flight click enrichment has settled (each is bounded by the AX timeout). */
+  async settleEnrichments(): Promise<void> {
+    while (this.enrichments.size > 0) await Promise.all([...this.enrichments]);
+  }
+
+  /** Writes the ready prefix of the buffer now and notifies listeners. Events behind a pending click wait. */
   flush(): readonly ActivityEvent[] {
     if (this.flushTimer) clearTimeout(this.flushTimer);
     this.flushTimer = null;
-    if (this.buffer.length === 0) return [];
-    const batch = this.buffer;
-    this.buffer = [];
-    try {
-      this.deps.storage.current.events.insertMany(batch);
-    } catch (error) {
-      this.deps.logger.error("event batch write failed", { count: batch.length, error: error instanceof Error ? error.message : String(error) });
-      return [];
+    const firstPending = this.buffer.findIndex((entry) => entry.pending);
+    const ready = firstPending === -1 ? this.buffer : this.buffer.slice(0, firstPending);
+    if (ready.length === 0) return [];
+    this.buffer = this.buffer.slice(ready.length);
+    const batch = ready.map((entry) => entry.event);
+    const result = this.deps.storage.current.events.insertValidated(batch);
+    for (const rejected of result.rejected) {
+      this.deps.metrics?.increment("events.invalid");
+      this.deps.logger.error("event rejected by schema", { id: rejected.id, type: rejected.type, error: rejected.error });
     }
-    this.deps.emit("event:activity", { events: batch });
-    for (const listener of this.storedListeners) listener(batch);
-    return batch;
+    if (result.inserted.length === 0) return [];
+    this.deps.emit("event:activity", { events: [...result.inserted] });
+    for (const listener of this.storedListeners) listener(result.inserted);
+    return result.inserted;
   }
 
   /** Explicit teach marker (global shortcut). Always stored; bypasses the capture interval. */
@@ -192,13 +216,14 @@ export class ObservationPipeline {
       this.capturePaused = false;
       return true;
     }
+    const ts = roundTimestamp(raw.ts);
     if (raw.type === "navigation") {
-      this.lastNavigation = { domain, path: raw.path ?? "/", ts: raw.ts };
+      this.lastNavigation = { domain, path: raw.path ?? "/", ts };
       this.context = { ...this.context, domain, path: raw.path ?? "/" };
     }
     const event = this.pushEvent(
       withoutUndefined({
-        ts: raw.ts,
+        ts,
         source: "extension",
         type: mapped.type,
         app: this.context.app,
@@ -228,9 +253,10 @@ export class ObservationPipeline {
       return;
     }
     if (mapped === null) return;
+    const ts = roundTimestamp(raw.ts);
     if (mapped.type === "idle_changed") {
       this.idle = mapped.payload?.["idle"] === true;
-      this.pushEvent({ ts: raw.ts, source: "native_helper", type: "idle_changed", app: this.context.app, privacy: "allowed", redaction: "none_needed", payload: mapped.payload });
+      this.pushEvent({ ts, source: "native_helper", type: "idle_changed", app: this.context.app, privacy: "allowed", redaction: "none_needed", payload: mapped.payload });
       return;
     }
     if (mapped.contextChange) this.applyContextChange(mapped.app, mapped.windowTitle);
@@ -244,11 +270,68 @@ export class ObservationPipeline {
     }
     if (classification === "sensitive" || mapped.sensitive) {
       this.capturePaused = true;
-      this.pushEvent({ ts: raw.ts, source: "native_helper", type: mapped.sensitive ? "secure_field_focused" : "privacy_gap", app, privacy: "sensitive", redaction: "none_needed", payload: mapped.sensitive ? mapped.payload : { reason: "denied_app" } });
+      this.pushEvent({ ts, source: "native_helper", type: mapped.sensitive ? "secure_field_focused" : "privacy_gap", app, privacy: "sensitive", redaction: "none_needed", payload: mapped.sensitive ? mapped.payload : { reason: "denied_app" } });
       return;
     }
-    const event = this.pushEvent(withoutUndefined({ ts: raw.ts, source: "native_helper", type: mapped.type, app, privacy: "allowed", redaction: mapped.type === "window_title_changed" ? "redacted" : "none_needed", payload: mapped.payload }));
+    this.storeAllowedHelperEvent(mapped, ts, app);
+  }
+
+  /** Stores an allowed helper event; clicks wait for accessibility enrichment, sensitive views pause capture. */
+  private storeAllowedHelperEvent(mapped: MappedHelperEvent, ts: number, app: AppRef | undefined): void {
+    const sensitiveView = mapped.sensitiveView === true;
+    const draft: ActivityEventDraft = withoutUndefined({
+      ts,
+      source: "native_helper",
+      type: mapped.type,
+      app,
+      privacy: sensitiveView ? "sensitive" : "allowed",
+      redaction: mapped.type === "window_title_changed" ? "redacted" : "none_needed",
+      payload: sensitiveView ? { ...mapped.payload, sensitive: true } : mapped.payload
+    });
+    const click = mapped.type === "mouse_down" ? this.clickPoint(mapped) : null;
+    const event = this.pushEvent(draft, { pending: click !== null });
+    if (click !== null) this.trackEnrichment(this.enrichClick(event.id, click.x, click.y));
+    if (sensitiveView) {
+      this.capturePaused = true;
+      return;
+    }
     if (mapped.captureReason !== undefined) this.scheduleCapture(mapped.captureReason, event.id);
+  }
+
+  private clickPoint(mapped: MappedHelperEvent): { x: number; y: number } | null {
+    if (!this.deps.helper.connected) return null;
+    const x = mapped.payload?.["x"];
+    const y = mapped.payload?.["y"];
+    return typeof x === "number" && typeof y === "number" ? { x, y } : null;
+  }
+
+  private trackEnrichment(promise: Promise<void>): void {
+    const tracked: Promise<void> = promise.finally(() => {
+      this.enrichments = new Set([...this.enrichments].filter((entry) => entry !== tracked));
+    });
+    this.enrichments = new Set([...this.enrichments, tracked]);
+  }
+
+  /** Asks the helper what sits under the click; on failure or timeout the event is stored as a plain click. */
+  private async enrichClick(eventId: string, x: number, y: number): Promise<void> {
+    const timeoutMs = this.deps.clickAxTimeoutMs ?? DEFAULT_CLICK_AX_TIMEOUT_MS;
+    let element: SemanticElement | undefined;
+    try {
+      element = elementFromAxContext(await withTimeout(this.deps.helper.accessibilityContextAtPoint(x, y), timeoutMs));
+      this.deps.metrics?.increment(element !== undefined ? "click.enriched" : "click.unresolved");
+    } catch (error) {
+      this.deps.metrics?.increment("click.enrichmentFailed");
+      this.deps.logger.debug("click enrichment skipped", { error: error instanceof Error ? error.message : String(error) });
+    }
+    this.resolvePending(eventId, element);
+  }
+
+  private resolvePending(eventId: string, element: SemanticElement | undefined): void {
+    this.buffer = this.buffer.map((entry) => {
+      if (entry.event.id !== eventId) return entry;
+      return { event: element !== undefined ? { ...entry.event, element } : entry.event, pending: false };
+    });
+    this.scheduleFlush();
   }
 
   private applyContextChange(app: AppRef | undefined, windowTitle: string | undefined): void {
@@ -294,17 +377,20 @@ export class ObservationPipeline {
     this.deps.capture.request("interval", withoutUndefined({ app: this.context.app, domain: this.context.domain }));
   }
 
-  private pushEvent(draft: ActivityEventDraft): ActivityEvent {
-    const event: ActivityEvent = withoutUndefined({ ...draft, id: newId("evt"), seq: this.seq, sessionId: this.deps.sessionId });
-    this.seq += 1;
-    this.lastGapKey = event.type === "privacy_gap" ? this.lastGapKey : this.lastGapKey;
-    this.buffer = [...this.buffer, event];
+  private scheduleFlush(): void {
     if (this.buffer.length >= (this.deps.batchSize ?? DEFAULT_BATCH)) {
       this.flush();
     } else if (!this.flushTimer) {
       this.flushTimer = setTimeout(() => this.flush(), this.deps.flushIntervalMs ?? DEFAULT_FLUSH_MS);
       this.flushTimer.unref?.();
     }
+  }
+
+  private pushEvent(draft: ActivityEventDraft, options: { pending?: boolean } = {}): ActivityEvent {
+    const event: ActivityEvent = withoutUndefined({ ...draft, ts: roundTimestamp(draft.ts), id: newId("evt"), seq: this.seq, sessionId: this.deps.sessionId });
+    this.seq += 1;
+    this.buffer = [...this.buffer, { event, pending: options.pending === true }];
+    this.scheduleFlush();
     return event;
   }
 }

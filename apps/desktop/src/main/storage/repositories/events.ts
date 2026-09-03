@@ -37,26 +37,63 @@ function splitSensitive(event: ActivityEvent): { indexable: ActivityEvent; sensi
   };
 }
 
+export interface RejectedEvent {
+  readonly id: string;
+  readonly type: string;
+  readonly error: string;
+}
+
+export interface InsertValidatedResult {
+  readonly inserted: readonly ActivityEvent[];
+  readonly rejected: readonly RejectedEvent[];
+}
+
+function describeRejection(raw: unknown): RejectedEvent {
+  const record = typeof raw === "object" && raw !== null ? (raw as Record<string, unknown>) : {};
+  const parsed = ActivityEventSchema.safeParse(raw);
+  const error = parsed.success ? "unknown" : parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ");
+  return { id: typeof record["id"] === "string" ? record["id"] : "unknown", type: typeof record["type"] === "string" ? record["type"] : "unknown", error: error.slice(0, 500) };
+}
+
 export class EventsRepository {
   constructor(private readonly db: Database, private readonly cipher: PayloadCipher) {}
 
+  /** Strict insert: the whole batch fails when any event is invalid. */
   insertMany(events: readonly ActivityEvent[]): number {
     if (events.length === 0) return 0;
+    const parsed = events.map((raw) => ActivityEventSchema.parse(raw));
     return this.db.transaction(() => {
-      let count = 0;
-      for (const raw of events) {
-        const event = ActivityEventSchema.parse(raw);
-        const { indexable, sensitive } = splitSensitive(event);
-        const enc = sensitive ? this.cipher.encryptJson(sensitive) : null;
-        this.db.run(
-          "INSERT OR REPLACE INTO events (id, ts, seq, session_id, type, source, app_bundle_id, domain, privacy, json, sensitive_enc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          event.id, event.ts, event.seq, event.sessionId, event.type, event.source,
-          event.app?.bundleId ?? null, event.domain ?? null, event.privacy, JSON.stringify(indexable), enc
-        );
-        count += 1;
-      }
-      return count;
+      for (const event of parsed) this.insertParsed(event);
+      return parsed.length;
     });
+  }
+
+  /** Lenient insert: validates each event on its own, writes the valid ones, reports the rest. */
+  insertValidated(events: readonly ActivityEvent[]): InsertValidatedResult {
+    const inserted: ActivityEvent[] = [];
+    const rejected: RejectedEvent[] = [];
+    for (const raw of events) {
+      const result = ActivityEventSchema.safeParse(raw);
+      if (result.success) inserted.push(result.data);
+      else rejected.push(describeRejection(raw));
+    }
+    if (inserted.length > 0) {
+      this.db.transaction(() => {
+        for (const event of inserted) this.insertParsed(event);
+        return inserted.length;
+      });
+    }
+    return { inserted, rejected };
+  }
+
+  private insertParsed(event: ActivityEvent): void {
+    const { indexable, sensitive } = splitSensitive(event);
+    const enc = sensitive ? this.cipher.encryptJson(sensitive) : null;
+    this.db.run(
+      "INSERT OR REPLACE INTO events (id, ts, seq, session_id, type, source, app_bundle_id, domain, privacy, json, sensitive_enc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      event.id, event.ts, event.seq, event.sessionId, event.type, event.source,
+      event.app?.bundleId ?? null, event.domain ?? null, event.privacy, JSON.stringify(indexable), enc
+    );
   }
 
   private rowToEvent(row: EventRow, revealSensitive: boolean): ActivityEvent {

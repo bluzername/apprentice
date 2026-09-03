@@ -75,6 +75,17 @@ describe("eventToToken", () => {
     expect(eventToToken(download)).toBe("domain:files.example|action:download|ext:pdf");
   });
 
+  it("produces coarse view tokens for browser window titles only", () => {
+    const gmail = makeEvent({ ts: 6, type: "window_title_changed", app: { bundleId: "com.google.Chrome" }, payload: { title: "Inbox (843) - user@example.com - Gmail" } });
+    expect(eventToToken(gmail)).toBe("app:chrome|site:gmail|view:inbox|action:view");
+    const ingested = makeEvent({ ts: 7, type: "window_title_changed", app: { bundleId: "com.apple.Safari" }, payload: { site: "google-sheets", view: "document" } });
+    expect(eventToToken(ingested)).toBe("app:safari|site:google-sheets|view:document|action:view");
+    const native = makeEvent({ ts: 8, type: "window_title_changed", app: { bundleId: "com.apple.mail" }, payload: { title: "Inbox - Mail" } });
+    expect(eventToToken(native)).toBeNull();
+    const encrypted = makeEvent({ ts: 9, type: "window_title_changed", app: { bundleId: "com.google.Chrome" } });
+    expect(eventToToken(encrypted)).toBeNull();
+  });
+
   it("returns null for non-action events", () => {
     for (const type of ["idle_changed", "clipboard_changed", "privacy_gap", "screenshot_captured", "window_title_changed", "page_title", "teach_marker", "session_start", "learning_state_changed", "secure_field_focused"] as const) {
       expect(eventToToken(makeEvent({ ts: 1, type }))).toBeNull();
@@ -96,6 +107,8 @@ describe("eventToToken", () => {
     expect(isMeaningfulToken("app:chrome|action:download")).toBe(true);
     expect(isMeaningfulToken("app:chrome|action:copy")).toBe(true);
     expect(isMeaningfulToken("app:chrome|action:paste")).toBe(true);
+    expect(isMeaningfulToken("app:chrome|site:gmail|view:inbox|action:view")).toBe(true);
+    expect(isMeaningfulToken("app:chrome|site:web|view:page|action:view")).toBe(true);
     expect(isMeaningfulToken("app:chrome|action:scroll")).toBe(false);
     expect(isMeaningfulToken("app:chrome|action:move")).toBe(false);
     expect(isMeaningfulToken("app:chrome|action:activate")).toBe(false);

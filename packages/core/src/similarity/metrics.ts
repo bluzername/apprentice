@@ -15,6 +15,7 @@ export function tokenWeight(token: string): number {
   if (action === "shortcut") return 1.2;
   if (action === "click") return 1.0;
   if (action === "copy" || action === "paste") return 0.8;
+  if (action === "view") return 0.6;
   if (action === "scroll" || action === "move") return 0.2;
   return 0.5;
 }

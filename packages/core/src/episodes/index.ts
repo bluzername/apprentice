@@ -8,5 +8,5 @@ export {
   isOutcomeEvent,
   isUserCorrection
 } from "./boundaries.js";
-export { ACTIVE_GAP_MAX_MS, activeDuration, buildEpisode, episodeId, type BuildEpisodeInput } from "./build.js";
+export { ACTIVE_GAP_MAX_MS, activeDuration, buildEpisode, dedupeConsecutiveViews, episodeId, type BuildEpisodeInput } from "./build.js";
 export { DEFAULT_IDLE_GAP_MS, describeBoundaries, segmentEpisodes, type BoundaryDescription, type SegmentOptions } from "./segment.js";

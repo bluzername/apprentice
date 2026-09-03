@@ -8,6 +8,59 @@ function capitalize(text: string): string {
   return text.length === 0 ? text : text[0]!.toUpperCase() + text.slice(1);
 }
 
+const SITE_LABELS: Readonly<Record<string, string>> = {
+  gmail: "Gmail",
+  "google-sheets": "Google Sheets",
+  "google-docs": "Google Docs",
+  "google-slides": "Google Slides",
+  "google-forms": "Google Forms",
+  "google-drive": "Google Drive",
+  "google-calendar": "Google Calendar",
+  github: "GitHub",
+  gitlab: "GitLab",
+  notion: "Notion",
+  linkedin: "LinkedIn",
+  youtube: "YouTube",
+  web: "web"
+};
+
+/** Mail-like sites show messages rather than pages. */
+const PAGE_NOUNS: Readonly<Record<string, string>> = { gmail: "message", outlook: "message", "yahoo-mail": "message" };
+
+function siteLabel(site: string | undefined): string {
+  if (site === undefined) return "the site";
+  return SITE_LABELS[site] ?? capitalize(words(site));
+}
+
+/** "Open Gmail inbox", "Open a Google Sheets document", "Open a Gmail message". */
+export function humanizeView(site: string | undefined, view: string | undefined): string {
+  const label = siteLabel(site);
+  switch (view) {
+    case "inbox":
+      return `Open ${label} inbox`;
+    case "search":
+      return `Open ${label} search results`;
+    case "compose":
+      return `Start a new message in ${label}`;
+    case "starred":
+      return `Open ${label} starred items`;
+    case "sent":
+      return `Open ${label} sent mail`;
+    case "drafts":
+      return `Open ${label} drafts`;
+    case "document":
+      return `Open a ${label} document`;
+    case "settings":
+      return `Open ${label} settings`;
+    case "login":
+      return `Sign in to ${label}`;
+    case "checkout":
+      return `Open ${label} checkout`;
+    default:
+      return `Open a ${label} ${PAGE_NOUNS[site ?? ""] ?? "page"}`;
+  }
+}
+
 export function humanizeKeys(keys: string): string {
   const names: Readonly<Record<string, string>> = { cmd: "Cmd", ctrl: "Ctrl", alt: "Option", shift: "Shift" };
   return keys
@@ -46,6 +99,8 @@ export function humanizeToken(token: string): string {
       return parts["field"] !== undefined ? `Fill in '${capitalize(words(parts["field"]))}'` : "Fill in a field";
     case "activate":
       return parts["app"] !== undefined ? `Switch to ${capitalize(parts["app"])}` : "Switch app";
+    case "view":
+      return humanizeView(parts["site"], parts["view"]);
     default:
       return action !== undefined ? capitalize(words(action)) : "Unknown action";
   }

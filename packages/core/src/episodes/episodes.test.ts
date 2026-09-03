@@ -25,6 +25,26 @@ describe("segmentEpisodes", () => {
     expect(segmentEpisodes([...events], session)[0]!.id).toBe(episodes[0]!.id);
   });
 
+  it("collapses consecutive identical browser view tokens into one", () => {
+    const chrome = { bundleId: "com.google.Chrome" };
+    const events = [
+      makeEvent({ ts: 0, type: "window_title_changed", app: chrome, payload: { site: "gmail", view: "inbox" } }),
+      makeEvent({ ts: 1000, type: "window_title_changed", app: chrome, payload: { site: "gmail", view: "inbox" } }),
+      makeEvent({ ts: 2000, type: "window_title_changed", app: chrome, payload: { site: "gmail", view: "search" } }),
+      makeEvent({ ts: 3000, type: "window_title_changed", app: chrome, payload: { site: "gmail", view: "inbox" } }),
+      makeClick({ ts: 4000, name: "Archive" })
+    ];
+    const [episode] = segmentEpisodes(events, session);
+    expect(episode!.actionTokens).toEqual([
+      "app:chrome|site:gmail|view:inbox|action:view",
+      "app:chrome|site:gmail|view:search|action:view",
+      "app:chrome|site:gmail|view:inbox|action:view",
+      "app:chrome|action:click|role:button|name:archive"
+    ]);
+    expect(episode!.meaningfulActionCount).toBe(4);
+    expect(episode!.eventIds).toHaveLength(5);
+  });
+
   it("uses a custom idle gap", () => {
     const events = [makeClick({ ts: 0, domain: "a.example", name: "x" }), makeClick({ ts: 90_000, domain: "a.example", name: "y" })];
     expect(segmentEpisodes(events, session)).toHaveLength(1);

@@ -1,4 +1,4 @@
-import { normalizeRoute } from "@apprentice/core";
+import { browserViewFromTitle, normalizeRoute } from "@apprentice/core";
 import {
   ClipboardChangedDataSchema,
   FrontmostAppChangedDataSchema,
@@ -28,9 +28,16 @@ export interface MappedHelperEvent {
   readonly sensitive: boolean;
   readonly captureReason?: ScreenshotReason;
   readonly windowTitle?: string;
+  /** Browser login or checkout view: stored as sensitive, capture pauses until the next context change. */
+  readonly sensitiveView?: boolean;
 }
 
 const MAX_TITLE = 160;
+
+/** Helper timestamps arrive as doubles with fractional milliseconds; ActivityEvent.ts is an integer. */
+export function roundTimestamp(ts: number): number {
+  return Math.round(ts);
+}
 
 export function mapHelperEvent(event: HelperEvent): MappedHelperEvent | null {
   switch (event.event) {
@@ -40,8 +47,13 @@ export function mapHelperEvent(event: HelperEvent): MappedHelperEvent | null {
     }
     case "windowTitleChanged": {
       const data = WindowTitleChangedDataSchema.parse(event.data);
-      const payload: EventPayload = { title: data.title.slice(0, MAX_TITLE), ...(data.windowId !== undefined ? { windowId: data.windowId } : {}) };
-      return { type: "window_title_changed", app: { bundleId: data.bundleId }, payload, contextChange: true, sensitive: false, captureReason: "window_change", windowTitle: data.title };
+      const view = browserViewFromTitle(data.title, data.bundleId);
+      const payload: EventPayload = {
+        title: data.title.slice(0, MAX_TITLE),
+        ...(data.windowId !== undefined ? { windowId: data.windowId } : {}),
+        ...(view !== null ? { site: view.site, view: view.view } : {})
+      };
+      return { type: "window_title_changed", app: { bundleId: data.bundleId }, payload, contextChange: true, sensitive: false, captureReason: "window_change", windowTitle: data.title, sensitiveView: view?.sensitive === true };
     }
     case "mouseDown": {
       const data = MouseDownDataSchema.parse(event.data);

@@ -2,7 +2,7 @@ import type { ActivityEvent, Episode, EpisodeBoundaryReason } from "@apprentice/
 import { sha256Hex } from "../ids.js";
 import { humanizeTokenWithContext } from "../humanize.js";
 import { normalizeAppName } from "../normalize/app-name.js";
-import { eventToToken, isMeaningfulToken } from "../normalize/token.js";
+import { eventToToken, isMeaningfulToken, tokenAction } from "../normalize/token.js";
 import { isSensitiveEvent } from "../sensitive/index.js";
 import { isOutcomeEvent } from "./boundaries.js";
 import { consumptionScore } from "./consumption.js";
@@ -22,6 +22,11 @@ export function activeDuration(events: readonly ActivityEvent[]): number {
   return total;
 }
 
+/** Consecutive identical browser view tokens (title flicker, tab refresh) count as one transition. */
+export function dedupeConsecutiveViews(tokens: readonly string[]): string[] {
+  return tokens.filter((token, index) => !(index > 0 && tokens[index - 1] === token && tokenAction(token) === "view"));
+}
+
 export function episodeId(sessionId: string, events: readonly ActivityEvent[]): string {
   const first = events[0];
   const seed = `${sessionId}:${first?.ts ?? 0}:${first?.id ?? ""}:${events.length}`;
@@ -38,7 +43,7 @@ export interface BuildEpisodeInput {
 export function buildEpisode(input: BuildEpisodeInput): Episode {
   const { events } = input;
   if (events.length === 0) throw new Error("buildEpisode: an episode needs at least one event");
-  const tokens = events.map((event) => eventToToken(event)).filter((token): token is string => token !== null);
+  const tokens = dedupeConsecutiveViews(events.map((event) => eventToToken(event)).filter((token): token is string => token !== null));
   const meaningful = tokens.filter((token) => isMeaningfulToken(token));
   const outcomeTokens = events
     .filter((event) => isOutcomeEvent(event))

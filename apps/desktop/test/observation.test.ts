@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { eventToToken } from "@apprentice/core";
+import type { AccessibilityContextAtPointResult } from "@apprentice/schemas";
 import { createRecordingEmitter } from "../src/main/services/events.js";
-import { FakeHelperClient } from "../src/main/services/helper/fake-helper-client.js";
+import { FakeHelperClient, type FakeResponder } from "../src/main/services/helper/fake-helper-client.js";
 import { nodePngResizer } from "../src/main/services/images/png-resize.js";
 import { silentLogger } from "../src/main/services/logger.js";
 import { systemClock } from "../src/main/services/clock.js";
@@ -9,16 +11,24 @@ import { ObservationPipeline } from "../src/main/services/observation/pipeline.j
 import { FixtureScreenSource } from "../src/main/services/observation/screen-source.js";
 import { fixtures, makeContext, sleep } from "./helpers.js";
 
-async function setup() {
+interface SetupOptions {
+  readonly ax?: FakeResponder;
+  readonly clickAxTimeoutMs?: number;
+}
+
+async function setup(options: SetupOptions = {}) {
   const context = makeContext();
   context.settings.update({ allowlist: { apps: [{ bundleId: "com.google.Chrome", name: "Google Chrome" }], domains: ["crm.example"] } });
-  const helper = new FakeHelperClient({ ocr: () => ({ width: 100, height: 60, blocks: [{ text: "Log activity", x: 1, y: 1, width: 50, height: 10, confidence: 0.9 }] }) });
+  const helper = new FakeHelperClient({
+    ocr: () => ({ width: 100, height: 60, blocks: [{ text: "Log activity", x: 1, y: 1, width: 50, height: 10, confidence: 0.9 }] }),
+    responses: options.ax ? { accessibilityContextAtPoint: options.ax } : {}
+  });
   await helper.start();
   const screen = new FixtureScreenSource({ readPng: (name) => fixtures.readScreenshotPng(name), initial: "crmContact" });
   const capture = new CaptureService({ storage: context.storage, screenSource: screen, ocr: (png) => helper.ocrImage(png), resizer: nodePngResizer, metrics: context.metrics, clock: systemClock, logger: silentLogger, sessionId: context.sessionId });
   const recorder = createRecordingEmitter();
   const state = { capturing: true };
-  const pipeline = new ObservationPipeline({ storage: context.storage, settings: context.settings, helper, capture, sessionId: context.sessionId, emit: recorder.emit, clock: systemClock, logger: silentLogger, isCapturing: () => state.capturing, flushIntervalMs: 10, clickSettleMs: 5, intervalMs: 60_000 });
+  const pipeline = new ObservationPipeline({ storage: context.storage, settings: context.settings, helper, capture, sessionId: context.sessionId, emit: recorder.emit, clock: systemClock, logger: silentLogger, metrics: context.metrics, isCapturing: () => state.capturing, flushIntervalMs: 10, clickSettleMs: 5, intervalMs: 60_000, clickAxTimeoutMs: options.clickAxTimeoutMs ?? 100 });
   await pipeline.start();
   pipeline.flush();
   return { context, helper, screen, capture, pipeline, recorder, state };
@@ -129,6 +139,136 @@ describe("observation pipeline", () => {
     expect(pipeline.ingestExtensionBatch([{ id: "y", ts: Date.now(), type: "navigation", domain: "crm.example", path: "/" }])).toEqual({ accepted: 0, dropped: 1 });
     pipeline.flush();
     expect(context.storage.current.events.count()).toBe(before);
+    await pipeline.shutdown();
+  });
+});
+
+const CHROME = "com.google.Chrome";
+
+/** Raw helper reply as the process client would see it before schema parsing. */
+function axResult(partial: { element?: Record<string, unknown> | null; ancestors?: AccessibilityContextAtPointResult["ancestors"] }): Record<string, unknown> {
+  return { element: null, ancestors: [], bundleId: CHROME, ...partial };
+}
+
+describe("native click enrichment", () => {
+  it("attaches the role and redacted name from the accessibility element under the click", async () => {
+    const { helper, pipeline, context } = await setup({ ax: () => axResult({ element: { role: "AXButton", title: "Save jane@example.com", identifier: "save-btn" } }) });
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    helper.emit("mouseDown", { x: 120.4, y: 40.6, button: "left", bundleId: CHROME });
+    await pipeline.settleEnrichments();
+    pipeline.flush();
+    const click = context.storage.current.events.query({ types: ["mouse_down"] })[0]!;
+    expect(click.element).toEqual({ role: "button", name: "Save [email]", identifier: "save-btn" });
+    expect(eventToToken(click)).toBe("app:chrome|action:click|role:button|name:save-email");
+    expect(helper.requests.find((request) => request.cmd === "accessibilityContextAtPoint")?.params).toEqual({ x: 120, y: 41 });
+    await pipeline.shutdown();
+  });
+
+  it("falls back to the nearest titled ancestor when the element has no title", async () => {
+    const { helper, pipeline, context } = await setup({
+      ax: () => axResult({ element: { role: "AXButton" }, ancestors: [{ role: "AXGroup" }, { role: "AXToolbar", title: "Formatting" }, { role: "AXWindow", title: "Doc - Google Docs" }] })
+    });
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    helper.emit("mouseDown", { x: 5, y: 5, button: "left", bundleId: CHROME });
+    await pipeline.settleEnrichments();
+    pipeline.flush();
+    const click = context.storage.current.events.query({ types: ["mouse_down"] })[0]!;
+    expect(click.element).toEqual({ role: "button", name: "Formatting" });
+    expect(eventToToken(click)).toBe("app:chrome|action:click|role:button|name:formatting");
+    await pipeline.shutdown();
+  });
+
+  it("stores a plain click when the lookup times out and keeps later events behind it in order", async () => {
+    const { helper, pipeline, context } = await setup({ ax: () => new Promise(() => undefined), clickAxTimeoutMs: 30 });
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    helper.emit("mouseDown", { x: 5, y: 5, button: "left", bundleId: CHROME });
+    helper.emit("shortcut", { keys: ["cmd", "c"], bundleId: CHROME });
+    expect(pipeline.pendingEnrichments).toBe(1);
+    const early = pipeline.flush();
+    expect(early.map((event) => event.type)).not.toContain("shortcut");
+    expect(context.storage.current.events.query({ types: ["shortcut"] })).toHaveLength(0);
+    await pipeline.settleEnrichments();
+    pipeline.flush();
+    const stored = context.storage.current.events.query({ types: ["mouse_down", "shortcut"] });
+    expect(stored.map((event) => event.type)).toEqual(["mouse_down", "shortcut"]);
+    expect(stored[0]!.seq).toBeLessThan(stored[1]!.seq);
+    expect(stored[0]!.element).toBeUndefined();
+    expect(eventToToken(stored[0]!)).toBe("app:chrome|action:click");
+    expect(context.metrics.counters()["click.enrichmentFailed"]).toBe(1);
+    await pipeline.shutdown();
+  });
+
+  it("never leaks secure field contents, even when the helper misbehaves", async () => {
+    const secure = { role: "AXSecureTextField", title: "Password", isSecure: true, valueLength: 7 };
+    const { helper, pipeline, context } = await setup({ ax: () => axResult({ element: secure }) });
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    helper.emit("mouseDown", { x: 5, y: 5, button: "left", bundleId: CHROME });
+    await pipeline.settleEnrichments();
+    pipeline.flush();
+    const click = context.storage.current.events.query({ types: ["mouse_down"] })[0]!;
+    expect(click.element).toEqual({ role: "secure-text-field" });
+    const leaky = new FakeHelperClient({ responses: { accessibilityContextAtPoint: () => axResult({ element: { role: "AXTextField", title: "Card", value: "4111 1111 1111 1111" } }) } });
+    await leaky.start();
+    await expect(leaky.accessibilityContextAtPoint(1, 1)).rejects.toThrow();
+    expect(JSON.stringify(context.storage.current.events.query({ limit: 100 }, { revealSensitive: true }))).not.toContain("4111");
+    await pipeline.shutdown();
+  });
+});
+
+describe("browser view titles", () => {
+  it("stores coarse site and view in plain text while the title stays encrypted, and tokens the view", async () => {
+    const { helper, pipeline, context } = await setup();
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    helper.emit("windowTitleChanged", { bundleId: CHROME, title: "Inbox (843) - jordan.rivera@example.com - Gmail" });
+    helper.emit("windowTitleChanged", { bundleId: CHROME, title: "Pipeline Q3 - Google Sheets" });
+    pipeline.flush();
+    const events = context.storage.current.events.query({ types: ["window_title_changed"] });
+    expect(events.map((event) => event.payload?.["site"])).toEqual(["gmail", "google-sheets"]);
+    expect(events.map((event) => event.payload?.["view"])).toEqual(["inbox", "document"]);
+    expect(events.map((event) => eventToToken(event))).toEqual(["app:chrome|site:gmail|view:inbox|action:view", "app:chrome|site:google-sheets|view:document|action:view"]);
+    const raw = context.storage.current.db.get<{ json: string }>("SELECT json FROM events WHERE id = ?", events[0]!.id)!;
+    expect(raw.json).not.toMatch(/jordan|843|Inbox/);
+    await pipeline.shutdown();
+  });
+
+  it("marks login views sensitive and pauses capture until the next context change", async () => {
+    const { helper, pipeline, capture, context } = await setup();
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    await capture.idle();
+    expect(capture.stats().captured).toBe(1);
+    helper.emit("windowTitleChanged", { bundleId: CHROME, title: "Sign in - Google Accounts" });
+    pipeline.insertTeachMarker();
+    await capture.idle();
+    expect(capture.stats().captured).toBe(1);
+    pipeline.flush();
+    const login = context.storage.current.events.query({ types: ["window_title_changed"] })[0]!;
+    expect(login.privacy).toBe("sensitive");
+    expect(login.payload?.["view"]).toBe("login");
+    expect(login.payload?.["sensitive"]).toBe(true);
+    await pipeline.shutdown();
+  });
+});
+
+describe("helper timestamps", () => {
+  it("rounds fractional helper timestamps so the whole batch is stored", async () => {
+    const helper = new FakeHelperClient({ now: () => 1_700_000_000_000.75 });
+    const context = makeContext();
+    context.settings.update({ allowlist: { apps: [{ bundleId: CHROME, name: "Google Chrome" }], domains: [] } });
+    await helper.start();
+    const capture = new CaptureService({ storage: context.storage, screenSource: new FixtureScreenSource({ readPng: (name) => fixtures.readScreenshotPng(name), initial: "crmContact" }), ocr: (png) => helper.ocrImage(png), resizer: nodePngResizer, metrics: context.metrics, clock: systemClock, logger: silentLogger, sessionId: context.sessionId });
+    const pipeline = new ObservationPipeline({ storage: context.storage, settings: context.settings, helper, capture, sessionId: context.sessionId, emit: createRecordingEmitter().emit, clock: systemClock, logger: silentLogger, metrics: context.metrics, isCapturing: () => true, flushIntervalMs: 10, intervalMs: 60_000 });
+    await pipeline.start();
+    pipeline.flush();
+    helper.emit("frontmostAppChanged", { bundleId: CHROME, name: "Google Chrome", pid: 2 });
+    helper.emit("shortcut", { keys: ["cmd", "s"], bundleId: CHROME });
+    helper.emit("windowTitleChanged", { bundleId: CHROME, title: "Doc - Google Docs" });
+    await pipeline.settleEnrichments();
+    const written = pipeline.flush();
+    expect(written).toHaveLength(3);
+    const stored = context.storage.current.events.query({ types: ["app_activated", "shortcut", "window_title_changed"] });
+    expect(stored).toHaveLength(3);
+    for (const event of stored) expect(event.ts).toBe(1_700_000_000_001);
+    expect(context.metrics.counters()["events.invalid"]).toBeUndefined();
     await pipeline.shutdown();
   });
 });

@@ -1,7 +1,7 @@
 import type { CandidateStep, Episode, WorkflowCandidate } from "@apprentice/schemas";
 import { humanizeToken } from "../humanize.js";
 import { stableHash } from "../ids.js";
-import { isMeaningfulToken, tokenContext } from "../normalize/token.js";
+import { isMeaningfulToken, tokenAction, tokenContext } from "../normalize/token.js";
 import { candidateRiskClass } from "../risk/token-risk.js";
 import { episodeSimilarity, similarityMatrix } from "../similarity/episode.js";
 import { clusterBySimilarity, median } from "./cluster.js";
@@ -31,11 +31,17 @@ export const DISCOVER_DEFAULTS = {
 const DAY_MS = 86_400_000;
 const WEEK_MS = 7 * DAY_MS;
 
+/** Browser view transitions count as meaningful, but pure browsing (views only) is never a workflow. */
+function hasInteraction(tokens: readonly string[]): boolean {
+  return tokens.some((token) => isMeaningfulToken(token) && tokenAction(token) !== "view");
+}
+
 function eligible(episode: Episode, minMeaningful: number): boolean {
   return (
     episode.privacyStatus !== "contains_sensitive" &&
     episode.actionTokens.length > 0 &&
-    episode.meaningfulActionCount >= minMeaningful
+    episode.meaningfulActionCount >= minMeaningful &&
+    hasInteraction(episode.actionTokens)
   );
 }
 

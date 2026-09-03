@@ -74,6 +74,8 @@ export class ModelManager {
   private healthTimer: NodeJS.Timeout | null = null;
   private screenshotsUsed = 0;
   private lastLatencyMs: number | undefined;
+  /** Set by stop(): no events leave the manager afterwards (the tray and windows are gone by then). */
+  private stopped = false;
 
   constructor(private readonly deps: ModelManagerDeps) {
     this.queue = new InferenceQueue({ pauseReason: () => this.pauseReason(), sleep: (ms) => deps.clock.sleep(ms) });
@@ -87,6 +89,7 @@ export class ModelManager {
   }
 
   start(): void {
+    this.stopped = false;
     const interval = this.deps.healthIntervalMs ?? 60_000;
     this.healthTimer = setInterval(() => void this.checkHealth().catch(() => undefined), interval);
     this.healthTimer.unref?.();
@@ -94,9 +97,20 @@ export class ModelManager {
   }
 
   stop(): void {
+    this.stopped = true;
     if (this.healthTimer) clearInterval(this.healthTimer);
     this.healthTimer = null;
   }
+
+  get isStopped(): boolean {
+    return this.stopped;
+  }
+
+  /** Emits only while running; late health checks and runtime changes during quit stay silent. */
+  private emitIfRunning: Emit = (name, payload) => {
+    if (this.stopped) return;
+    this.deps.emit(name, payload);
+  };
 
   setOverride(provider: VisionAgentProvider | null): void {
     this.override = provider;
@@ -235,14 +249,15 @@ export class ModelManager {
     const changed = this.lastHealth === null || this.lastHealth.ok !== health.ok;
     this.lastHealth = health;
     this.deps.analytics.track("model_health_checked", { ok: health.ok, provider: health.provider });
-    this.deps.emit("event:modelHealth", health);
+    this.emitIfRunning("event:modelHealth", health);
     if (changed) this.emitStatus();
     return health;
   }
 
   private emitStatus(): void {
+    if (this.stopped) return;
     void this.status()
-      .then((status) => this.deps.emit("event:model", status))
+      .then((status) => this.emitIfRunning("event:model", status))
       .catch((error: unknown) => this.deps.logger.warn("model status emit failed", { error: error instanceof Error ? error.message : String(error) }));
   }
 

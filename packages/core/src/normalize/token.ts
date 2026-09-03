@@ -1,5 +1,6 @@
 import type { ActivityEvent } from "@apprentice/schemas";
 import { normalizeAppName } from "./app-name.js";
+import { browserViewFromEvent } from "./browser-view.js";
 import { normalizeLabel } from "./label.js";
 import { normalizeRoute } from "./route.js";
 
@@ -14,7 +15,8 @@ const MEANINGFUL_ACTIONS: ReadonlySet<string> = new Set([
   "shortcut",
   "download",
   "copy",
-  "paste"
+  "paste",
+  "view"
 ]);
 
 const MODIFIER_ALIASES: Readonly<Record<string, string>> = {
@@ -120,6 +122,12 @@ function actionParts(event: ActivityEvent): ReadonlyArray<readonly [string, stri
     }
     case "app_activated":
       return [["action", "activate"]];
+    case "window_title_changed": {
+      // Browsers only: native app titles carry no coarse view class and produce no token.
+      const view = browserViewFromEvent(event);
+      if (view === null) return null;
+      return [["site", view.site], ["view", view.view], ["action", "view"]];
+    }
     default:
       return null;
   }

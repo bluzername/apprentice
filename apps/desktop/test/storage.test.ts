@@ -35,6 +35,19 @@ describe("storage", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("insertValidated stores the valid events of a batch and reports the invalid ones", () => {
+    const fractional = makeEvent(2, { ts: 1_700_000_000_000.75 });
+    const result = storage.events.insertValidated([makeEvent(1), fractional, makeEvent(3)]);
+    expect(result.inserted.map((event) => event.id)).toEqual(["evt_1", "evt_3"]);
+    expect(result.rejected).toHaveLength(1);
+    expect(result.rejected[0]!.id).toBe("evt_2");
+    expect(result.rejected[0]!.error).toMatch(/ts/);
+    expect(storage.events.count()).toBe(2);
+    expect(() => storage.events.insertMany([makeEvent(4), fractional])).toThrow();
+    expect(storage.events.count()).toBe(2);
+    expect(storage.events.insertValidated([])).toEqual({ inserted: [], rejected: [] });
+  });
+
   it("applies migrations once and is idempotent", () => {
     const again = storage.db.migrate();
     expect(again.applied).toBe(0);

@@ -5,6 +5,7 @@
  */
 import { app, session } from "electron";
 import { join } from "node:path";
+import { appendFileSync, mkdirSync } from "node:fs";
 import { assertIsolatedDataDir, createFakeProtector, ISOLATED_DATA_DIR_ERROR } from "./security/keys.js";
 import { defaultDataRoot, resolveDataPaths } from "./paths.js";
 import { bootApp, type BootedApp } from "./electron/boot.js";
@@ -16,6 +17,27 @@ import { resolveHelperExecutable } from "./services/helper/helper-client.js";
 const MAIN_DIR = __dirname;
 const RESOURCES_DIR = app.isPackaged ? process.resourcesPath : join(MAIN_DIR, "../../resources");
 const mode = detectLaunchMode(process.argv, process.env);
+
+// Startup errors must never hang the app in a modal dialog nobody can answer
+// (for example a headless or remote session). Log and exit instead.
+function logFatal(kind: string, error: unknown): void {
+  const message = error instanceof Error ? error.stack ?? error.message : String(error);
+  console.error(`[main] ${kind}: ${message}`);
+  try {
+    const dir = process.env.APPRENTICE_DATA_DIR ?? defaultDataRoot();
+    mkdirSync(join(dir, "logs"), { recursive: true, mode: 0o700 });
+    appendFileSync(join(dir, "logs", "fatal.log"), `${new Date().toISOString()} ${kind}: ${message}\n`, { mode: 0o600 });
+  } catch {
+    // logging must not throw
+  }
+}
+process.on("uncaughtException", (error) => {
+  logFatal("uncaughtException", error);
+  app.exit(1);
+});
+process.on("unhandledRejection", (reason) => {
+  logFatal("unhandledRejection", reason);
+});
 
 function hardenWebContents(): void {
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
@@ -77,6 +99,9 @@ if (mode !== "smoke" && !app.requestSingleInstanceLock()) {
     void booted.shutdown().finally(() => app.quit());
   });
   void app.whenReady().then(async () => {
+    // Expose the renderer accessibility tree to assistive technologies unconditionally;
+    // Chromium otherwise waits for an AT probe that some tools never send.
+    app.setAccessibilitySupportEnabled(true);
     hardenWebContents();
     if (mode !== "normal") {
       const isolatedDataDir = requireIsolatedDataDir();

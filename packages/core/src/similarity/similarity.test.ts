@@ -20,6 +20,7 @@ describe("tokenWeight", () => {
     expect(tokenWeight(X)).toBe(1.2);
     expect(tokenWeight(A)).toBe(1);
     expect(tokenWeight(Z)).toBe(0.8);
+    expect(tokenWeight("app:chrome|site:gmail|view:inbox|action:view")).toBe(0.6);
     expect(tokenWeight("app:x|action:scroll")).toBe(0.2);
   });
 });

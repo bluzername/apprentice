@@ -10,6 +10,12 @@ describe("humanize", () => {
     expect(humanizeToken("app:chrome|action:download|ext:pdf")).toBe("Download a .pdf file");
     expect(humanizeToken("app:chrome|action:copy")).toBe("Copy to the clipboard");
     expect(humanizeToken("app:notion|action:activate")).toBe("Switch to Notion");
+    expect(humanizeToken("app:chrome|site:gmail|view:inbox|action:view")).toBe("Open Gmail inbox");
+    expect(humanizeToken("app:chrome|site:google-sheets|view:document|action:view")).toBe("Open a Google Sheets document");
+    expect(humanizeToken("app:chrome|site:gmail|view:page|action:view")).toBe("Open a Gmail message");
+    expect(humanizeToken("app:chrome|site:github|view:page|action:view")).toBe("Open a GitHub page");
+    expect(humanizeToken("app:chrome|site:web|view:login|action:view")).toBe("Sign in to web");
+    expect(humanizeToken("app:chrome|site:acme-store|view:checkout|action:view")).toBe("Open Acme store checkout");
     expect(humanizeTokenWithContext("app:chrome|domain:crm.example|action:click|name:save")).toBe("Click 'Save' on crm.example");
   });
 

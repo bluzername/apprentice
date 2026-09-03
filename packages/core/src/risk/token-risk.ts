@@ -35,6 +35,7 @@ export function tokenRiskClass(token: string): RiskClass {
   switch (action) {
     case "navigate":
     case "activate":
+    case "view":
       return "reversible_navigation";
     case "copy":
     case "download":

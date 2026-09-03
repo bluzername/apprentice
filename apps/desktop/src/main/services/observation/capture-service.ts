@@ -115,7 +115,7 @@ export class CaptureService {
     this.deps.metrics.record("capture.encryptMs", written.encryptMs);
     const record: ScreenshotRecord = {
       id,
-      ts: capture.capturedAt,
+      ts: Math.round(capture.capturedAt),
       sessionId: this.deps.sessionId,
       eventId: job.context.eventId,
       width: capture.width,
