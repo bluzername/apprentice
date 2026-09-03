@@ -54,6 +54,8 @@ pnpm alpha:bundle  # dist/alpha/
 pnpm alpha:smoke   # scripts/smoke-test-alpha.sh
 RUN_LOCAL_MODEL_TEST=1 pnpm test:local-model   # opt-in real endpoint smoke test
 pnpm bench:local-model                         # opt-in latency/token/memory benchmark (docs/MODEL_PERFORMANCE.md)
+pnpm bench:grounding-cases                     # build GUI-grounding cases from the open macOS windows
+pnpm bench:grounding                           # opt-in grounding accuracy benchmark over those cases
 ```
 
 ## Definition of Done

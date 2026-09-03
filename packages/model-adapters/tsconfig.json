@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "noEmit": true, "types": ["node"] },
-  "include": ["src/**/*.ts", "test/**/*.ts", "bench/**/*.ts", "vitest.config.ts", "vitest.local-model.config.ts", "vitest.bench.config.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts", "bench/**/*.ts", "vitest.config.ts", "vitest.local-model.config.ts", "vitest.bench.config.ts", "vitest.grounding.config.ts"]
 }
