@@ -141,18 +141,19 @@ describe("completion predicates", () => {
     expect(evaluateCompletionPredicates([{ kind: "ocr_contains", text: "Activity logged" }], { ocrText: "activity LOGGED successfully" }).method).toBe("screen_diff_ocr");
     expect(evaluateCompletionPredicates([{ kind: "app_frontmost", bundleId: "notion.id" }], { frontmostBundleId: "Notion.id" }).method).toBe("app_metadata");
     expect(evaluateCompletionPredicates([{ kind: "dom_marker", marker: "toast-saved" }], { domMarkers: ["toast-saved"] }).method).toBe("extension_dom");
-    expect(evaluateCompletionPredicates([{ kind: "user_confirm" }], { userConfirmed: true }).method).toBe("user_confirmation");
+    // user_confirm is never satisfied by a screen: only the explicit confirmation path completes it.
     expect(evaluateCompletionPredicates([{ kind: "user_confirm" }], {})).toEqual({ complete: false, satisfied: [], method: "none" });
-    expect(evaluateCompletionPredicates([], { userConfirmed: true }).complete).toBe(false);
+    expect(evaluateCompletionPredicates([{ kind: "user_confirm" }], { windowTitle: "Saved", ocrText: "saved", frontmostBundleId: "a", domMarkers: ["m"] })).toEqual({ complete: false, satisfied: [], method: "none" });
+    expect(evaluateCompletionPredicates([], {}).complete).toBe(false);
   });
 
   it("reports the strongest satisfied method", () => {
     const result = evaluateCompletionPredicates(
       [{ kind: "user_confirm" }, { kind: "title_contains", text: "saved" }, { kind: "dom_marker", marker: "m" }],
-      { userConfirmed: true, windowTitle: "Saved", domMarkers: ["m"] }
+      { windowTitle: "Saved", domMarkers: ["m"] }
     );
     expect(result.method).toBe("extension_dom");
-    expect(result.satisfied).toHaveLength(3);
+    expect(result.satisfied).toEqual(["title_contains:saved", "dom_marker:m"]);
   });
 
   it("hashes state deterministically and ignores whitespace noise", () => {
@@ -171,8 +172,10 @@ describe("verifyStepDeterministic", () => {
       predicates: [{ kind: "title_contains", text: "saved" }]
     });
     expect(verified).toMatchObject({ passed: true, subtaskComplete: true, method: "accessibility", confidence: 0.9 });
-    const confirmed = verifyStepDeterministic({ before: {}, after: { userConfirmed: true }, expectedResult: "x", predicates: [{ kind: "user_confirm" }] });
-    expect(confirmed.confidence).toBe(1);
+    // A user_confirm predicate never completes a subtask on its own: the engine records the
+    // confirmation directly (main/services/runs/verification.ts userConfirmedVerification).
+    const unconfirmed = verifyStepDeterministic({ before: {}, after: {}, expectedResult: "x", predicates: [{ kind: "user_confirm" }] });
+    expect(unconfirmed).toMatchObject({ passed: false, subtaskComplete: false });
   });
 
   it("passes a step on observed OCR change but never completes the subtask", () => {

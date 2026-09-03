@@ -133,6 +133,32 @@ export function buildGuidance(plan: WorkflowPlan, currentIndex: number): string 
   return `${blocks}\n${GUIDANCE_LINE}`;
 }
 
+/** The one sentence that states the only two legal responses on a guided turn. */
+export const TURN_REMINDER_LINE =
+  "Respond with exactly one `computer_use` call: either a single GUI action, or `action=subtask_complete`" +
+  " once the current screenshot already satisfies `subtask_complete_flag`.";
+
+/**
+ * Deviation from UI-Mate: a compact restatement of the current subtask for the
+ * LATEST user turn of a guided request. Upstream renders the workflow only on
+ * the first turn of the window, so on turn 2 and later the model no longer sees
+ * which subtask it is on or how that subtask ends.
+ */
+export function buildTurnReminder(plan: WorkflowPlan, currentIndex: number): string {
+  const subtask = plan.subtasks[currentIndex];
+  if (subtask === undefined) {
+    throw new RangeError(`subtask index ${currentIndex} out of range (${plan.subtasks.length} subtasks)`);
+  }
+  return [
+    "<current_subtask_reminder>",
+    `index: ${currentIndex} of ${plan.subtasks.length}`,
+    ...(subtask.title ? [`intent_summary: ${pyStrip(subtask.title)}`] : []),
+    `subtask_complete_flag: ${pyStrip(subtask.completionFlag ?? "")}`,
+    "</current_subtask_reminder>",
+    TURN_REMINDER_LINE
+  ].join("\n");
+}
+
 const BLOCK_RE = /<tool_call>[\s\S]*?<\/tool_call>/gi;
 
 /** Models mix `.` and `_` in tool names. */

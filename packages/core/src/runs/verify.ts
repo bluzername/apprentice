@@ -52,7 +52,7 @@ export function verifyStepDeterministic(input: VerifyStepInput): StepVerificatio
       subtaskComplete: true,
       method: evaluation.method,
       evidence: `Completion predicate satisfied: ${evaluation.satisfied.join("; ")}`.slice(0, 500),
-      confidence: evaluation.method === "user_confirmation" ? 1 : 0.9
+      confidence: 0.9
     };
   }
   const beforeHash = input.before.stateHash ?? stateHash(input.before);

@@ -151,6 +151,19 @@ explicit; no JSON is ever coaxed out of UI-Mate.
     and every other line stay byte-identical, and `platform: "ubuntu"` (the
     default) reproduces the official prompt exactly - the golden prompt tests
     cover that path.
+12. **The current subtask is restated on every turn.** Upstream renders the
+   workflow blocks only on the first turn of the history window, so from turn 2
+   the model no longer sees which subtask it is on, how that subtask ends, or
+   that `subtask_complete` is a legal response - in practice it walks straight
+   into the next subtask's actions instead of reporting completion.
+   `buildTurnReminder(plan, index)` renders a compact
+   `<current_subtask_reminder>` block (index, `intent_summary`,
+   `subtask_complete_flag`, and one sentence naming the two legal responses)
+   and `buildMessages` appends it to the **latest** user turn through
+   `latestTurnSuffix`. It is never appended to the window's first turn, whose
+   instruction prompt already carries the workflow blocks, so a first-turn
+   request stays byte-identical to `build_messages` and the golden tests keep
+   asserting that.
 
 ### Action mapping
 

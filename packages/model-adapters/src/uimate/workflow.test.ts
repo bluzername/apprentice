@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   INITIAL_WORKFLOW_POINTER,
+  TURN_REMINDER_LINE,
   buildGuidance,
+  buildTurnReminder,
   detectSubtaskComplete,
   planFromSkillSubtasks,
   workflowAfterPredict,
@@ -63,6 +65,34 @@ describe("buildGuidance (byte parity with build_guidance)", () => {
   it("rejects an out-of-range index and an empty plan", () => {
     expect(() => buildGuidance(loadPlan(), 3)).toThrow(RangeError);
     expect(() => planFromSkillSubtasks([])).toThrow(RangeError);
+  });
+});
+
+describe("buildTurnReminder (deviation: subtask context on every turn)", () => {
+  it("names the current subtask, its completion flag and the two legal responses", () => {
+    const plan = planFromSkillSubtasks([
+      { title: "Open the contact", goal: "Open it", completionCriteria: "The contact page is open", keySteps: [] },
+      { title: "Log the activity", goal: "Log it", completionCriteria: "The activity shows in the timeline", keySteps: [] }
+    ]);
+    const reminder = buildTurnReminder(plan, 1);
+    expect(reminder).toBe(
+      [
+        "<current_subtask_reminder>",
+        "index: 1 of 2",
+        "intent_summary: Log the activity",
+        "subtask_complete_flag: The activity shows in the timeline",
+        "</current_subtask_reminder>",
+        TURN_REMINDER_LINE
+      ].join("\n")
+    );
+    expect(TURN_REMINDER_LINE).toContain("subtask_complete");
+    expect(buildTurnReminder(plan, 0)).toContain("index: 0 of 2");
+  });
+
+  it("omits an empty intent summary and rejects an out-of-range index", () => {
+    const plan = planFromSkillSubtasks([{ title: "", goal: "G", completionCriteria: "C", keySteps: [] }]);
+    expect(buildTurnReminder(plan, 0)).not.toContain("intent_summary");
+    expect(() => buildTurnReminder(plan, 1)).toThrow(RangeError);
   });
 
   it("maps skill subtasks onto the demonstration plan", () => {

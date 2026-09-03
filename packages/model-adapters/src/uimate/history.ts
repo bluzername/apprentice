@@ -175,6 +175,13 @@ export interface BuildMessagesOptions {
   readonly actionPatch?: ToolsSchemaPatch | null;
   /** Apprentice deviation: platform-specific system prompt fragments. Defaults to the official Ubuntu text. */
   readonly platform?: PromptPlatform;
+  /**
+   * Deviation from UI-Mate: text appended to the LATEST user turn, so a
+   * multi-turn request restates the current subtask. It is never added to the
+   * window's first turn, whose instruction prompt already carries the workflow
+   * blocks; that turn stays byte-identical to upstream.
+   */
+  readonly latestTurnSuffix?: string | null;
 }
 
 function wrapToolResponse(parts: readonly ContentBlock[]): readonly ContentBlock[] {
@@ -229,15 +236,20 @@ function userTurn(
   screenshot: string | null,
   isFirstTurn: boolean,
   instructionPrompt: string,
-  collapseText: string
+  collapseText: string,
+  suffix?: string
 ): readonly ContentBlock[] {
-  if (screenshot === null) {
-    return isFirstTurn
-      ? [{ type: "text", text: instructionPrompt }]
-      : wrapToolResponse([{ type: "text", text: collapseText }]);
-  }
-  const image: ImageBlock = { type: "image_url", image_url: { url: `data:image/png;base64,${screenshot}` } };
-  return isFirstTurn ? [image, { type: "text", text: instructionPrompt }] : wrapToolResponse([image]);
+  const blocks = ((): readonly ContentBlock[] => {
+    if (screenshot === null) {
+      return isFirstTurn
+        ? [{ type: "text", text: instructionPrompt }]
+        : wrapToolResponse([{ type: "text", text: collapseText }]);
+    }
+    const image: ImageBlock = { type: "image_url", image_url: { url: `data:image/png;base64,${screenshot}` } };
+    return isFirstTurn ? [image, { type: "text", text: instructionPrompt }] : wrapToolResponse([image]);
+  })();
+  if (suffix === undefined || suffix.length === 0) return blocks;
+  return [...blocks, { type: "text", text: `\n${suffix}` }];
 }
 
 /** Build the chat messages for the current step (`UIMateAgent.build_messages`). */
@@ -257,11 +269,14 @@ export function buildMessages(options: BuildMessagesOptions): readonly ChatMessa
     ]
   };
 
+  const suffix = options.latestTurnSuffix ?? undefined;
   const turns: ChatMessage[] = [];
   for (let stepNum = startStep; stepNum <= totalSteps; stepNum += 1) {
     const isFirstTurn = stepNum === startStep;
+    // The first turn already carries the workflow blocks; only later turns need the reminder.
+    const turnSuffix = stepNum === totalSteps && !isFirstTurn ? suffix : undefined;
     const screenshot = options.screenshots[stepNum - 1] ?? null;
-    turns.push({ role: "user", content: userTurn(screenshot, isFirstTurn, instructionPrompt, collapseText) });
+    turns.push({ role: "user", content: userTurn(screenshot, isFirstTurn, instructionPrompt, collapseText, turnSuffix) });
     if (stepNum <= totalSteps - 1 && stepNum - 1 < options.responses.length) {
       turns.push({
         role: "assistant",

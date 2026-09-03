@@ -1,9 +1,9 @@
-import { evaluateCompletionPredicates, stateHash, verifyStepDeterministic, type ScreenState, type VerificationState } from "@apprentice/core";
+import { evaluateCompletionPredicates, predicateHolds, predicateKey, stateHash, verifyStepDeterministic, type ScreenState, type VerificationState } from "@apprentice/core";
 import type { CompletionPredicate, StepVerification } from "@apprentice/schemas";
 import type { ScreenSnapshot } from "./snapshot.js";
 import type { DomStateSource } from "./types.js";
 
-export function screenStateOf(snapshot: ScreenSnapshot, extra: { domMarkers?: readonly string[]; userConfirmed?: boolean } = {}): VerificationState {
+export function screenStateOf(snapshot: ScreenSnapshot, extra: { domMarkers?: readonly string[] } = {}): VerificationState {
   const { context } = snapshot;
   const url = context.domain !== undefined ? `${context.domain}${context.path ?? "/"}` : undefined;
   const state: ScreenState = {
@@ -13,8 +13,7 @@ export function screenStateOf(snapshot: ScreenSnapshot, extra: { domMarkers?: re
     windowTitle: context.windowTitle,
     ocrText: snapshot.ocrText,
     frontmostBundleId: context.bundleId,
-    domMarkers: [...(context.domMarkers ?? []), ...(extra.domMarkers ?? [])],
-    userConfirmed: extra.userConfirmed
+    domMarkers: [...(context.domMarkers ?? []), ...(extra.domMarkers ?? [])]
   };
   return { ...state, screenshotHash: snapshot.hash, stateHash: stateHash({ ocrText: snapshot.ocrText, windowTitle: context.windowTitle, url, screenshotHash: snapshot.hash }) };
 }
@@ -76,6 +75,34 @@ export async function subtaskSatisfied(snapshot: ScreenSnapshot, predicates: rea
   return { passed: false, subtaskComplete: false, method: "none", evidence: "No completion predicate holds on the current screen", confidence: 0.2 };
 }
 
-export function userConfirmedVerification(question: string): StepVerification {
-  return { passed: true, subtaskComplete: true, method: "user_confirmation", evidence: `User confirmed: ${question}`.slice(0, 500), confidence: 1 };
+/**
+ * The only way a `user_confirm` predicate is ever satisfied: the user said so.
+ * `evidence` is the sentence recorded on the step, verbatim.
+ */
+export function userConfirmedVerification(evidence: string): StepVerification {
+  return { passed: true, subtaskComplete: true, method: "user_confirmation", evidence: evidence.slice(0, 500), confidence: 1 };
+}
+
+/**
+ * Predicates that already hold before the subtask has done any work. They are
+ * ignored for the rest of that subtask, so a route, title or app that was
+ * already there cannot complete it on the first step.
+ */
+export async function holdingPredicateKeys(snapshot: ScreenSnapshot, predicates: readonly CompletionPredicate[], dom: DomStateSource, domTimeoutMs: number): Promise<string[]> {
+  if (predicates.length === 0) return [];
+  const domain = snapshot.context.domain;
+  const domMarkers = await queryDomMarkers(expandPredicates(predicates, domain), dom, domTimeoutMs);
+  const state = screenStateOf(snapshot, { domMarkers });
+  return predicates.filter((predicate) => expandPredicates([predicate], domain).some((expanded) => predicateHolds(expanded, state))).map(predicateKey);
+}
+
+/** The subtask's predicates minus the ones that already held when it started. */
+export function activePredicates(predicates: readonly CompletionPredicate[], ignoredKeys: readonly string[]): CompletionPredicate[] {
+  return ignoredKeys.length === 0 ? [...predicates] : predicates.filter((predicate) => !ignoredKeys.includes(predicateKey(predicate)));
+}
+
+/** Records the entry-negated predicates on the step, so the trace shows why one did not fire. */
+export function withIgnoredEvidence(verification: StepVerification, ignoredKeys: readonly string[]): StepVerification {
+  if (ignoredKeys.length === 0) return verification;
+  return { ...verification, evidence: `${verification.evidence} | ignored at subtask start: ${ignoredKeys.join("; ")}`.slice(0, 500) };
 }

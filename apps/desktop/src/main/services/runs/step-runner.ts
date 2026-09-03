@@ -1,12 +1,12 @@
 import { applyPolicy, classifyRisk, detectSensitiveContext, geometryMatches, isDomainAllowed, isStaleScreen, resolveTarget, toExecutableAction, validateProposedAction } from "@apprentice/core";
-import type { ApprovalRequest, ApprovalResult, ExecutableAction, FailureCategory, ProposedAction, ProposedActionResult, RiskResult, Run, RunStatus, RunStep, Skill } from "@apprentice/schemas";
+import type { ApprovalRequest, ApprovalResult, CompletionPredicate, ExecutableAction, FailureCategory, ProposedAction, ProposedActionResult, RiskResult, Run, RunStatus, RunStep, Skill } from "@apprentice/schemas";
 import { mintApprovalToken } from "../helper/approval-token.js";
 import { InferenceCancelledError } from "../model/inference-queue.js";
 import { appAllowed } from "./app-focus.js";
 import { ensureTargetFrontmost, syncTargetWithSubtask } from "./focus-guard.js";
 import { addModelLatency, bumpMetrics, failStep, stepWithTiming, usesEscapeKey } from "./run-state.js";
 import { isUsableCapture, takeSnapshot, type ScreenSnapshot } from "./snapshot.js";
-import { subtaskSatisfied, userConfirmedVerification, verifyDeterministic } from "./verification.js";
+import { activePredicates, holdingPredicateKeys, subtaskSatisfied, userConfirmedVerification, verifyDeterministic, withIgnoredEvidence } from "./verification.js";
 import type { AxHit, RunEngineDeps, StopReason } from "./types.js";
 import { recoverTargetWindow, windowMismatch } from "./window-guard.js";
 
@@ -32,11 +32,21 @@ export interface ActiveRun {
   lastEscapeExecutedAt?: number;
   /** Subtask index whose app has been brought forward; within it the target follows the frontmost allowed app. */
   focusPinnedSubtask?: number;
+  /** Completion predicates that already held when the current subtask started; ignored for the rest of it. */
+  subtaskEntry: SubtaskEntry | null;
+  /** The user pressed "Subtask complete, continue"; honoured at the next safe point. */
+  advanceRequested: boolean;
+}
+
+export interface SubtaskEntry {
+  readonly index: number;
+  readonly ignoredKeys: readonly string[];
 }
 
 export type StepOutcome = { readonly kind: "continue" } | { readonly kind: "finish"; readonly status: RunStatus; readonly failureCategory?: FailureCategory; readonly interruptedBy?: Run["interruptedBy"]; readonly summary?: string };
 
-export type ApprovalResolution = { readonly decision: "approved" | "rejected" | "timed_out" | "interrupted"; readonly scope: "once" | "run_low_risk" };
+/** "advanced": the user marked the subtask complete while this step waited for approval. */
+export type ApprovalResolution = { readonly decision: "approved" | "rejected" | "timed_out" | "interrupted" | "advanced"; readonly scope: "once" | "run_low_risk" };
 export type QuestionAnswer = { readonly answer: string; readonly confirmSubtask: boolean } | null;
 
 export interface RunnerHost {
@@ -89,20 +99,65 @@ function proposalInput(active: ActiveRun, snapshot: ScreenSnapshot, sessionId: s
   };
 }
 
+/** Evidence recorded when the user ends a subtask from the run page. */
+export const USER_ADVANCE_EVIDENCE = "User marked the subtask complete";
+
 /** Advances to the next subtask; finishes the run when the last one was just verified. */
-async function advanceSubtask(host: RunnerHost, active: ActiveRun): Promise<StepOutcome> {
+async function advanceSubtask(host: RunnerHost, active: ActiveRun, finalSummary = "All subtasks verified"): Promise<StepOutcome> {
   const next = active.run.currentSubtaskIndex + 1;
   active.subtaskVerified = false;
-  if (next >= active.skill.subtasks.length) return finish("completed", "none", "All subtasks verified");
+  active.subtaskEntry = null;
+  if (next >= active.skill.subtasks.length) return finish("completed", "none", finalSummary);
   active.run = { ...active.run, currentSubtaskIndex: next };
   await host.deps.model.resetSession(active.run.id).catch(() => undefined);
   host.deps.hooks?.onSubtaskAdvance?.(active.run.id, next);
   return { kind: "continue" };
 }
 
+/**
+ * The user ended the current subtask themselves. Recorded exactly like a
+ * question confirmation: a `user_confirmation` step and one more correction.
+ */
+export async function completeSubtaskByUser(host: RunnerHost, active: ActiveRun, step: RunStep): Promise<StepOutcome> {
+  active.advanceRequested = false;
+  host.deps.logger.info("user marked the subtask complete", { runId: active.run.id, subtaskIndex: active.run.currentSubtaskIndex });
+  host.persistStep(active, { ...step, verification: userConfirmedVerification(USER_ADVANCE_EVIDENCE) });
+  active.run = bumpMetrics(active.run, { corrections: active.run.metrics.corrections + 1 });
+  return advanceSubtask(host, active, "The user marked the last subtask complete");
+}
+
+/** Entry-negated keys for the current subtask; an entry noted for another subtask never applies. */
+function ignoredKeys(active: ActiveRun): readonly string[] {
+  return active.subtaskEntry?.index === active.run.currentSubtaskIndex ? active.subtaskEntry.ignoredKeys : [];
+}
+
+/** The subtask's predicates minus the ones that already held when it started. */
+function pendingPredicates(active: ActiveRun): CompletionPredicate[] {
+  const subtask = active.skill.subtasks[active.run.currentSubtaskIndex]!;
+  return activePredicates(subtask.completionPredicates, ignoredKeys(active));
+}
+
+/**
+ * At the start of a subtask, any completion predicate that already holds would
+ * end it before any work happened. Evaluate once and ignore those for the rest
+ * of the subtask.
+ */
+async function noteSubtaskEntry(host: RunnerHost, active: ActiveRun, snapshot: ScreenSnapshot): Promise<void> {
+  const index = active.run.currentSubtaskIndex;
+  if (active.subtaskEntry?.index === index) return;
+  const subtask = active.skill.subtasks[index]!;
+  const holding = await holdingPredicateKeys(snapshot, subtask.completionPredicates, host.deps.dom, host.deps.domQueryTimeoutMs ?? DEFAULT_DOM_TIMEOUT_MS).catch(() => []);
+  active.subtaskEntry = { index, ignoredKeys: holding };
+  if (holding.length > 0) {
+    host.deps.logger.info("ignoring completion predicates that already hold at subtask start", { runId: active.run.id, subtaskIndex: index, ignored: holding.join("; ") });
+  }
+}
+
 async function handleSubtaskComplete(host: RunnerHost, active: ActiveRun, step: RunStep, snapshot: ScreenSnapshot): Promise<StepOutcome> {
   const subtask = active.skill.subtasks[active.run.currentSubtaskIndex]!;
-  const check = await subtaskSatisfied(snapshot, subtask.completionPredicates, host.deps.dom, host.deps.domQueryTimeoutMs ?? DEFAULT_DOM_TIMEOUT_MS);
+  const ignored = ignoredKeys(active);
+  const raw = await subtaskSatisfied(snapshot, pendingPredicates(active), host.deps.dom, host.deps.domQueryTimeoutMs ?? DEFAULT_DOM_TIMEOUT_MS);
+  const check = withIgnoredEvidence(raw, ignored);
   if (check.subtaskComplete || active.subtaskVerified) {
     host.persistStep(active, { ...step, verification: check.subtaskComplete ? check : { ...check, passed: true, subtaskComplete: true, evidence: "Verified by a previous step" } });
     return advanceSubtask(host, active);
@@ -110,9 +165,10 @@ async function handleSubtaskComplete(host: RunnerHost, active: ActiveRun, step: 
   const question = `The model reports subtask "${subtask.title}" as complete, but no completion check passed. Is it complete?`.slice(0, 500);
   host.persistStep(active, { ...step, verification: check });
   const answer = await host.awaitQuestion(active, step, question);
+  if (active.advanceRequested) return completeSubtaskByUser(host, active, step);
   if (answer === null) return finish("interrupted", "user_interrupted", "Stopped while waiting for the user", active.stopRequested?.kind === "user" ? active.stopRequested.by : "ui_stop");
   if (answer.confirmSubtask) {
-    host.persistStep(active, { ...step, verification: userConfirmedVerification(subtask.title) });
+    host.persistStep(active, { ...step, verification: userConfirmedVerification(`User confirmed: ${subtask.title}`) });
     active.run = bumpMetrics(active.run, { corrections: active.run.metrics.corrections + 1 });
     return advanceSubtask(host, active);
   }
@@ -136,10 +192,11 @@ async function handleControl(host: RunnerHost, active: ActiveRun, step: RunStep,
   if (result.action?.type === "ask_user") {
     host.persistStep(active, step);
     const answer = await host.awaitQuestion(active, step, result.action.question);
+    if (active.advanceRequested) return completeSubtaskByUser(host, active, step);
     if (answer === null) return finish("interrupted", "user_interrupted", "Stopped while waiting for the user", active.stopRequested?.kind === "user" ? active.stopRequested.by : "ui_stop");
     active.priorActions = [...active.priorActions, { stepIndex: step.index, summary: `User answered: ${answer.answer}`.slice(0, 300) }];
     if (answer.confirmSubtask) {
-      host.persistStep(active, { ...step, verification: userConfirmedVerification(active.skill.subtasks[active.run.currentSubtaskIndex]!.title) });
+      host.persistStep(active, { ...step, verification: userConfirmedVerification(`User confirmed: ${active.skill.subtasks[active.run.currentSubtaskIndex]!.title}`) });
       return advanceSubtask(host, active);
     }
     return { kind: "continue" };
@@ -271,6 +328,7 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
     host.persistStep(active, failStep(current, "sensitive_context"));
     return finish("aborted_sensitive", "sensitive_context", `Sensitive context: ${contextSensitive.reasons.join(", ")}`.slice(0, 1000));
   }
+  await noteSubtaskEntry(host, active, snapshot);
   const proposeStart = performance.now();
   let result: ProposedActionResult;
   try {
@@ -284,6 +342,8 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
   deps.metrics.record("run.proposeMs", proposeMs);
   active.run = addModelLatency(active.run, result.latencyMs > 0 ? result.latencyMs : proposeMs, 1);
   current = stepWithTiming({ ...current, proposed: result.action, actionSummary: result.actionSummary.slice(0, 300), rationale: result.rationale.slice(0, 500), controlToken: result.controlToken }, { proposeMs });
+  // The user ended the subtask while the model was thinking; the proposal is stale.
+  if (active.advanceRequested) return completeSubtaskByUser(host, active, current);
   const action = result.action;
   if (action === null || action.type === "done" || action.type === "fail" || action.type === "ask_user" || result.controlToken !== undefined) return handleControl(host, active, current, result, snapshot);
   const prepareResult = await prepare(host, active, current, action, snapshot);
@@ -336,6 +396,8 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
     const waitStart = performance.now();
     const resolution = await host.awaitApproval(active, current, request);
     current = stepWithTiming(current, { approvalWaitMs: performance.now() - waitStart });
+    // Ending the subtask supersedes the pending action: it is neither a rejection nor a stop.
+    if (resolution.decision === "advanced") return completeSubtaskByUser(host, active, current);
     approval = { decision: resolution.decision, scope: resolution.scope, ts: deps.clock.now() };
     if (resolution.decision !== "approved") {
       const rejected = resolution.decision === "rejected";
@@ -378,8 +440,9 @@ export async function executeStep(host: RunnerHost, active: ActiveRun, step: Run
   // Always OCR the after-capture: a small typed value can leave the perceptual hash unchanged.
   const after = await takeSnapshot(deps, { now: deps.clock.now() });
   const subtask = active.skill.subtasks[active.run.currentSubtaskIndex]!;
-  const verified = await verifyDeterministic({ before: prepared.fresh, after, expectedResult: action.expectedResult, predicates: subtask.completionPredicates, dom: deps.dom, domTimeoutMs: deps.domQueryTimeoutMs ?? DEFAULT_DOM_TIMEOUT_MS });
-  let verification = verified.verification;
+  const ignored = ignoredKeys(active);
+  const verified = await verifyDeterministic({ before: prepared.fresh, after, expectedResult: action.expectedResult, predicates: pendingPredicates(active), dom: deps.dom, domTimeoutMs: deps.domQueryTimeoutMs ?? DEFAULT_DOM_TIMEOUT_MS });
+  let verification = withIgnoredEvidence(verified.verification, ignored);
   // Supporting model evidence only from real target windows, and only when a model can
   // actually produce it; a display fallback after the action stays with the deterministic result.
   if (!verification.passed && isUsableCapture(after.capture) && deps.model.supportsVerification()) {

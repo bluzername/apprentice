@@ -1,8 +1,8 @@
-import type { ActionPolicyMode, ApprovalRequest, ApprovalScope, Run, RunDetail, RunStep, Skill } from "@apprentice/schemas";
+import type { ActionPolicyMode, ApprovalRequest, ApprovalScope, Run, RunDetail, RunStatus, RunStep, Skill } from "@apprentice/schemas";
 import { ServiceError } from "../errors.js";
 import { initialAppTarget } from "./app-focus.js";
 import { createRun, createStep, isTerminal, withStatus, isSyntheticEscapeEcho } from "./run-state.js";
-import { executeStep, type ActiveRun, type ApprovalResolution, type QuestionAnswer, type RunnerHost, type StepOutcome } from "./step-runner.js";
+import { completeSubtaskByUser, executeStep, type ActiveRun, type ApprovalResolution, type QuestionAnswer, type RunnerHost, type StepOutcome } from "./step-runner.js";
 import type { RunEngineDeps } from "./types.js";
 
 interface PendingApproval {
@@ -23,6 +23,9 @@ interface Session {
   readonly done: Promise<Run>;
   resolveDone: (run: Run) => void;
 }
+
+/** Statuses in which the user can end the current subtask from the run page. */
+const ADVANCEABLE_STATUSES: ReadonlySet<RunStatus> = new Set<RunStatus>(["running", "awaiting_approval", "awaiting_user"]);
 
 /**
  * Assisted-run state machine. One run at a time; every transition is persisted
@@ -71,7 +74,7 @@ export class RunEngine implements RunnerHost {
       throw new ServiceError("policy_blocked", "low_risk_auto is an experimental mode; enable it in Settings first");
     }
     const run = createRun(skill, effectiveMode, this.deps.model.providerType(), this.deps.model.modelName(), this.deps.clock.now());
-    const active: ActiveRun = { run, steps: [], skill, variables, priorActions: [], consecutive: { stale: 0, invalid: 0, verifyFail: 0 }, subtaskVerified: false, stopRequested: null, targetBundleId: undefined };
+    const active: ActiveRun = { run, steps: [], skill, variables, priorActions: [], consecutive: { stale: 0, invalid: 0, verifyFail: 0 }, subtaskVerified: false, stopRequested: null, targetBundleId: undefined, subtaskEntry: null, advanceRequested: false };
     let resolveDone: (value: Run) => void = () => undefined;
     const done = new Promise<Run>((resolve) => {
       resolveDone = resolve;
@@ -105,6 +108,26 @@ export class RunEngine implements RunnerHost {
     if (!pending || pending.stepId !== stepId) throw new ServiceError("no_pending_question", `Step ${stepId} is not waiting for an answer`);
     session.pendingQuestion = null;
     pending.resolve({ answer: answer.slice(0, 500), confirmSubtask });
+    return this.detail(session);
+  }
+
+  /**
+   * The user ends the current subtask instead of waiting for the model to say
+   * so. Any pending approval is released as superseded (not rejected, and the
+   * run keeps going); the step runner records the confirmation and moves on at
+   * the next safe point, which is never in the middle of an execution.
+   */
+  advanceSubtask(runId: string): RunDetail {
+    const session = this.requireSession(runId);
+    const { active } = session;
+    if (active.stopRequested !== null || !ADVANCEABLE_STATUSES.has(active.run.status)) {
+      throw new ServiceError("not_active", `Run ${runId} is ${active.run.status} and cannot advance`);
+    }
+    active.advanceRequested = true;
+    session.pendingApproval?.resolve({ decision: "advanced", scope: "once" });
+    session.pendingApproval = null;
+    session.pendingQuestion?.resolve(null);
+    session.pendingQuestion = null;
     return this.detail(session);
   }
 
@@ -232,7 +255,7 @@ export class RunEngine implements RunnerHost {
           break;
         }
         const step = createStep(active.run, active.steps.length, this.deps.clock.now());
-        outcome = await executeStep(this, active, step);
+        outcome = active.advanceRequested ? await completeSubtaskByUser(this, active, step) : await executeStep(this, active, step);
         if (outcome.kind === "continue" && active.stopRequested) outcome = this.checkStop(active) ?? outcome;
       }
     } catch (error) {

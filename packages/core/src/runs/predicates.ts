@@ -9,7 +9,6 @@ export interface ScreenState {
   readonly ocrText?: string;
   readonly frontmostBundleId?: string;
   readonly domMarkers?: readonly string[];
-  readonly userConfirmed?: boolean;
 }
 
 export interface PredicateEvaluation {
@@ -73,7 +72,10 @@ export function predicateHolds(predicate: CompletionPredicate, state: ScreenStat
     case "dom_marker":
       return (state.domMarkers ?? []).includes(predicate.marker);
     case "user_confirm":
-      return state.userConfirmed === true;
+      // Never satisfied by a screen: only the explicit confirmation path completes it
+      // (main/services/runs/verification.ts userConfirmedVerification). Keeping it in a
+      // subtask means "only the user can say this is done".
+      return false;
   }
 }
 

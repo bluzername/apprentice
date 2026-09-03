@@ -4,6 +4,7 @@ import { TRUNCATED_REPLY_ERROR, UIMateProvider, sanitizeForHistory } from "./uim
 import { MockVisionAgentProvider } from "./mock-provider.js";
 import { ProviderCapabilityError, ProviderResponseError, ProviderUnavailableError } from "./types.js";
 import { SAFETY_SECTION } from "./safety.js";
+import { TURN_REMINDER_LINE } from "../uimate/workflow.js";
 import { chatReply, countImagesInBody, createFakeFetch, hangUntilAbort, jsonResponse, modelsReply, routeByPath, type RecordedRequest } from "../testing/fake-fetch.js";
 import { makeSyntheticPng } from "../testing/png.js";
 import { buildSystemPrompt } from "../uimate/prompt.js";
@@ -177,6 +178,24 @@ describe("UIMateProvider.proposeNextAction", () => {
     expect(fourth[1]?.content[0]?.image_url?.url).toBe("data:image/png;base64,IMG0");
     expect(fourth[3]?.content[0]?.text).toBe("<tool_response>\nThis screenshot has been collapsed.\n</tool_response>");
     expect(fourth[fourth.length - 1]?.content[1]?.image_url?.url).toBe("data:image/png;base64,IMG3");
+  });
+
+  it("restates the current subtask on the latest turn of every follow-up request", async () => {
+    const { provider, fake } = providerWith([CLICK]);
+    await provider.proposeNextAction(input("run_1", 0));
+    await provider.proposeNextAction(input("run_1", 0));
+    const bodies = chatBodies(fake.requests);
+    const textOf = (body: Record<string, unknown> | undefined): string => {
+      const messages = (body?.["messages"] ?? []) as readonly { role: string; content: readonly { type: string; text?: string }[] }[];
+      const last = messages[messages.length - 1];
+      return (last?.content ?? []).map((block) => block.text ?? "").join("");
+    };
+    // The first request keeps the upstream first-turn prompt; nothing is appended.
+    expect(textOf(bodies[0])).not.toContain("<current_subtask_reminder>");
+    const second = textOf(bodies[1]);
+    expect(second).toContain("<current_subtask_reminder>\nindex: 0 of ");
+    expect(second).toContain("subtask_complete_flag: ");
+    expect(second).toContain(TURN_REMINDER_LINE);
   });
 
   it("advances on subtask_complete, awaits finish on the last subtask, then reports DONE", async () => {

@@ -23,11 +23,13 @@ function templateSkill(scenario: ScenarioName, mode: Skill["policy"]["mode"] = "
   return skillFromDraft(template, { source: "demo", evidence: { episodeIds: [] }, mode });
 }
 
-type Verdict = "approve" | "reject" | "stop";
+type Verdict = "approve" | "reject" | "stop" | "advance";
 
 interface HarnessOptions {
   readonly scenario?: ScenarioName;
   readonly mode?: Skill["policy"]["mode"];
+  /** Adjusts the template skill before it is saved (completion predicates, for one). */
+  readonly skill?: (skill: Skill) => Skill;
   readonly provider?: VisionAgentProvider;
   readonly ocr?: OcrSource;
   readonly context?: RunContextSource;
@@ -48,7 +50,8 @@ function harness(options: HarnessOptions = {}) {
   const context = makeContext();
   const storage = context.storage;
   const scenario = options.scenario ?? "postMeetingFollowup";
-  const skill = storage.current.skills.save(templateSkill(scenario, options.mode ?? "guide"));
+  const template = templateSkill(scenario, options.mode ?? "guide");
+  const skill = storage.current.skills.save(options.skill ? options.skill(template) : template);
   const targets = fixtureTargets();
   const simulator = new DemoScreenSimulator({ readPng: (name) => fixtures.readScreenshotPng(name), targets });
   const script = buildDemoScript(skill, { original: ORIGINAL, resized: RESIZED, targets }, scenario);
@@ -89,6 +92,7 @@ function harness(options: HarnessOptions = {}) {
       queueMicrotask(() => {
         try {
           if (verdict === "stop") void engine.stop(request.runId, "ui_stop");
+          else if (verdict === "advance") engine.advanceSubtask(request.runId);
           else engine.approve(request.runId, request.stepId, verdict === "approve" ? "approved" : "rejected");
         } catch {
           // stale
@@ -233,6 +237,11 @@ function fallbackScreen(state: { noWindow: boolean }): (simulator: DemoScreenSim
       return state.noWindow ? { ...capture, windowId: undefined, isDisplayFallback: true } : capture;
     }
   });
+}
+
+/** Questions about app focus or a missing window, as opposed to subtask-completion questions. */
+function focusQuestions(questions: readonly string[]): string[] {
+  return questions.filter((question) => question.startsWith("Switch to ") || question.startsWith("Open a window in "));
 }
 
 function labelOcr(targetTemplate: string, text: string, targets: ReturnType<typeof fixtureTargets>): OcrSource {
@@ -396,6 +405,82 @@ describe("run engine", () => {
   }, 30_000);
 });
 
+describe("run engine user-driven subtask advance", () => {
+  it("ends every subtask from the run page and completes the run without executing the pending action", async () => {
+    const h = harness({ onApproval: () => "advance" });
+    const { run, steps } = await h.run();
+    expect(run.status).toBe("completed");
+    expect(run.failureCategory).toBe("none");
+    expect(run.summary).toBe("The user marked the last subtask complete");
+    expect(run.currentSubtaskIndex).toBe(h.skill.subtasks.length - 1);
+    // One user confirmation per subtask, each counted as a correction, none of them executed.
+    const confirmed = steps.filter((step) => step.verification?.method === "user_confirmation");
+    expect(confirmed).toHaveLength(h.skill.subtasks.length);
+    expect(confirmed.every((step) => step.verification?.evidence === "User marked the subtask complete")).toBe(true);
+    expect(confirmed.every((step) => step.verification?.subtaskComplete === true)).toBe(true);
+    expect(confirmed.every((step) => step.executed === null)).toBe(true);
+    expect(run.metrics.corrections).toBe(h.skill.subtasks.length);
+    // Superseding an approval is not a rejection.
+    expect(run.metrics.rejectedActions).toBe(0);
+    expect(steps.every((step) => step.failureCategory !== "user_rejected")).toBe(true);
+    expect(h.simulator.performed).toHaveLength(0);
+    expect(h.context.storage.current.productEvents.countByName("run_completed")).toBe(1);
+    expect(h.context.storage.current.productEvents.countByName("action_rejected")).toBe(0);
+  }, 30_000);
+
+  it("drops a proposal the user superseded while the model was still thinking", async () => {
+    const inner = centreClickProvider();
+    let engineRef: RunEngine | null = null;
+    const advancing: VisionAgentProvider = {
+      ...inner,
+      proposeNextAction: async (input) => {
+        const result = await inner.proposeNextAction(input);
+        // The click above never reaches approval: the user ends the subtask first.
+        engineRef?.advanceSubtask(input.runId);
+        return result;
+      }
+    };
+    const h = harness({ provider: advancing });
+    engineRef = h.engine;
+    const { run, steps } = await h.run();
+    expect(run.status).toBe("completed");
+    expect(h.approvals).toHaveLength(0);
+    expect(h.simulator.performed).toHaveLength(0);
+    expect(steps).toHaveLength(h.skill.subtasks.length);
+    expect(steps.every((step) => step.verification?.evidence === "User marked the subtask complete")).toBe(true);
+    expect(steps.every((step) => step.proposed !== null)).toBe(true);
+    expect(run.metrics.corrections).toBe(h.skill.subtasks.length);
+  }, 30_000);
+
+  it("refuses to advance a run that is not active", async () => {
+    const h = harness({ onApproval: () => "advance" });
+    const { run } = await h.run();
+    expect(run.status).toBe("completed");
+    expect(() => h.engine.advanceSubtask(run.id)).toThrow(/not active/i);
+    expect(() => h.engine.advanceSubtask("run_missing")).toThrow(/not active/i);
+  }, 30_000);
+});
+
+describe("run engine subtask entry negation", () => {
+  it("ignores a completion predicate that already holds when the subtask starts", async () => {
+    const alreadyTrue = { kind: "app_frontmost" as const, bundleId: CHROME };
+    const h = harness({
+      skill: (skill) => ({
+        ...skill,
+        subtasks: skill.subtasks.map((subtask, index) => (index === 0 ? { ...subtask, completionPredicates: [alreadyTrue] } : subtask))
+      })
+    });
+    const { run, steps } = await h.run();
+    expect(run.status).toBe("completed");
+    const first = steps[0]!;
+    expect(first.subtaskIndex).toBe(0);
+    expect(first.verification?.evidence).toContain(`ignored at subtask start: app_frontmost:${CHROME}`);
+    // Chrome being frontmost is the starting state, so it never completes subtask 0 on its own.
+    const bySubtask0 = steps.filter((step) => step.subtaskIndex === 0);
+    expect(bySubtask0.some((step) => step.verification?.method === "app_metadata")).toBe(false);
+  }, 30_000);
+});
+
 describe("run engine target app focus", () => {
   it("activates the target app when Apprentice is frontmost at start and again after every approval click", async () => {
     const { helper, state } = focusHelper(APP_BUNDLE_ID, true);
@@ -411,7 +496,7 @@ describe("run engine target app focus", () => {
     expect(helper.activations[0]).toBe(CHROME);
     expect(helper.activations.every((bundleId) => bundleId === CHROME)).toBe(true);
     expect(helper.activations.length).toBeGreaterThanOrEqual(h.approvals.length + 1);
-    expect(h.questions).toHaveLength(0);
+    expect(focusQuestions(h.questions)).toHaveLength(0);
     expect(steps.some((step) => step.failureCategory === "policy_blocked")).toBe(false);
     expect(h.simulator.performed.length).toBe(steps.filter((step) => step.executed !== null).length);
   }, 30_000);
@@ -453,7 +538,7 @@ describe("run engine target app focus", () => {
     expect(run.status).toBe("completed");
     const order = [...new Set(helper.activations)];
     expect(order).toEqual([CHROME, "com.apple.Preview", "com.apple.finder"]);
-    expect(h.questions).toHaveLength(0);
+    expect(focusQuestions(h.questions)).toHaveLength(0);
   }, 30_000);
 
   it("raises the Apprentice window for every approval request", async () => {
@@ -497,7 +582,7 @@ describe("run engine target window", () => {
       }
     });
     const { run, steps } = await h.run();
-    expect(h.questions).toEqual(["Open a window in Google Chrome and answer Continue"]);
+    expect(focusQuestions(h.questions)).toEqual(["Open a window in Google Chrome and answer Continue"]);
     expect(run.status).toBe("completed");
     expect(counting.proposals()).toBeGreaterThan(0);
     expect(counting.proposals()).toBe(steps.filter((step) => step.proposed !== null || step.controlToken !== undefined).length);

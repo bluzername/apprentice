@@ -3,6 +3,7 @@ import type { ApprovalRequest, FailureCategory, RunDetail as RunDetailData, RunS
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
+import { ConfirmDialog } from "../../components/Dialog";
 import { TextInput } from "../../components/Field";
 import { CardSkeleton } from "../../components/Skeleton";
 import { ErrorState } from "../../components/States";
@@ -53,6 +54,7 @@ export function RunDetail({ id }: { id: string }): JSX.Element {
   const [busy, setBusy] = useState(false);
   const [answer, setAnswer] = useState("");
   const [confirmSubtask, setConfirmSubtask] = useState(false);
+  const [confirmAdvance, setConfirmAdvance] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
   const [liveStatus, setLiveStatus] = useState("");
 
@@ -93,6 +95,21 @@ export function RunDetail({ id }: { id: string }): JSX.Element {
   const stop = useCallback((): void => {
     void apply(() => invoke("runs:stop", { runId: id }));
   }, [apply, id]);
+
+  const advanceSubtask = useCallback(async (): Promise<void> => {
+    setConfirmAdvance(false);
+    setBusy(true);
+    try {
+      const detail = await invoke("runs:advanceSubtask", { runId: id });
+      setData(() => detail);
+      if (!detail.pendingApproval) dispatch({ type: "approval", approval: null });
+      toast("success", "Subtask marked complete; the run continues with the next one");
+    } catch (err) {
+      toast("error", errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }, [dispatch, id, setData, toast]);
 
   useEffect(() => {
     if (!active) return;
@@ -146,11 +163,27 @@ export function RunDetail({ id }: { id: string }): JSX.Element {
           </div>
         </div>
         {active ? (
-          <Button variant="stop" onClick={stop} busy={busy} aria-keyshortcuts="Escape">
-            Stop run (Esc)
-          </Button>
+          <div className="row">
+            <Button onClick={() => setConfirmAdvance(true)} busy={busy}>
+              Subtask complete, continue
+            </Button>
+            <Button variant="stop" onClick={stop} busy={busy} aria-keyshortcuts="Escape">
+              Stop run (Esc)
+            </Button>
+          </div>
         ) : null}
       </div>
+
+      {/* Unmounts with the run: a finished run has no subtask left to end. */}
+      <ConfirmDialog
+        open={confirmAdvance && active}
+        title="Mark this subtask complete?"
+        message={`Subtask ${currentSubtask} of ${run.subtaskCount}, "${run.skillName}". Any action waiting for approval is dropped and the run continues with the next subtask.`}
+        confirmLabel="Subtask complete, continue"
+        busy={busy}
+        onConfirm={() => void advanceSubtask()}
+        onCancel={() => setConfirmAdvance(false)}
+      />
 
       {approval && active ? <ApprovalPanel request={approval} busy={busy} onDecide={(decision, scope) => void apply(() => invoke("runs:approve", { runId: id, stepId: approval.stepId, decision, scope }))} /> : null}
 
