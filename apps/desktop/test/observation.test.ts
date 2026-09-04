@@ -27,8 +27,8 @@ async function setup(options: SetupOptions = {}) {
   const screen = new FixtureScreenSource({ readPng: (name) => fixtures.readScreenshotPng(name), initial: "crmContact" });
   const capture = new CaptureService({ storage: context.storage, screenSource: screen, ocr: (png) => helper.ocrImage(png), resizer: nodePngResizer, metrics: context.metrics, clock: systemClock, logger: silentLogger, sessionId: context.sessionId });
   const recorder = createRecordingEmitter();
-  const state = { capturing: true };
-  const pipeline = new ObservationPipeline({ storage: context.storage, settings: context.settings, helper, capture, sessionId: context.sessionId, emit: recorder.emit, clock: systemClock, logger: silentLogger, metrics: context.metrics, isCapturing: () => state.capturing, flushIntervalMs: 10, clickSettleMs: 5, intervalMs: 60_000, clickAxTimeoutMs: options.clickAxTimeoutMs ?? 100 });
+  const state = { capturing: true, runActive: false };
+  const pipeline = new ObservationPipeline({ storage: context.storage, settings: context.settings, helper, capture, sessionId: context.sessionId, emit: recorder.emit, clock: systemClock, logger: silentLogger, metrics: context.metrics, isCapturing: () => state.capturing, runActive: () => state.runActive, flushIntervalMs: 10, clickSettleMs: 5, intervalMs: 60_000, clickAxTimeoutMs: options.clickAxTimeoutMs ?? 100 });
   await pipeline.start();
   pipeline.flush();
   return { context, helper, screen, capture, pipeline, recorder, state };
@@ -128,6 +128,28 @@ describe("observation pipeline", () => {
     expect(events.find((event) => event.type === "navigation")?.routePattern).toBe("/contact/:id");
     expect(events.filter((event) => event.type === "privacy_gap")).toHaveLength(1);
     expect(pipeline.latestNavigation()?.domain).toBe("crm.example");
+    await pipeline.shutdown();
+  });
+
+  it("records nothing from the assistant's own actions while a guided run is active", async () => {
+    const { helper, pipeline, context, state } = await setup();
+    const before = context.storage.current.events.count();
+    state.runActive = true;
+    helper.emit("frontmostAppChanged", { bundleId: "com.google.Chrome", name: "Google Chrome", pid: 2 });
+    helper.emit("mouseDown", { x: 10, y: 10, button: "left", bundleId: "com.google.Chrome" });
+    helper.emit("shortcut", { keys: ["cmd", "s"], bundleId: "com.google.Chrome" });
+    expect(pipeline.ingestExtensionBatch([{ id: "z", ts: Date.now(), type: "navigation", domain: "crm.example", path: "/" }])).toEqual({ accepted: 0, dropped: 1 });
+    await sleep(30);
+    pipeline.flush();
+    expect(context.storage.current.events.count()).toBe(before);
+    // The context still followed the activation, so the first event after the run is attributed correctly.
+    state.runActive = false;
+    helper.emit("shortcut", { keys: ["cmd", "s"], bundleId: "com.google.Chrome" });
+    await sleep(30);
+    pipeline.flush();
+    const after = context.storage.current.events.inventory();
+    expect(after.length).toBeGreaterThan(before);
+    expect(after.some((event) => event.type === "shortcut")).toBe(true);
     await pipeline.shutdown();
   });
 

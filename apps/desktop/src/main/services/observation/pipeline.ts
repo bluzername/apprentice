@@ -28,6 +28,11 @@ export interface ObservationPipelineDeps {
   readonly clock: Clock;
   readonly logger: Logger;
   readonly isCapturing: () => boolean;
+  /**
+   * True while a guided run is executing. The helper posts the run's own clicks and keys, and
+   * the observer would otherwise record them as the user's routine and feed them to discovery.
+   */
+  readonly runActive?: () => boolean;
   readonly metrics?: MetricsRecorder;
   readonly fixturePath?: string;
   readonly flushIntervalMs?: number;
@@ -205,7 +210,7 @@ export class ObservationPipeline {
 
   /** Browser events from the paired extension. The allowlist is re-checked per event. */
   ingestExtensionBatch(events: readonly ExtensionEvent[]): IngestResult {
-    if (!this.deps.isCapturing()) return { accepted: 0, dropped: events.length };
+    if (!this.deps.isCapturing() || this.deps.runActive?.() === true) return { accepted: 0, dropped: events.length };
     let accepted = 0;
     let dropped = 0;
     for (const event of events) {
@@ -275,6 +280,11 @@ export class ObservationPipeline {
       return;
     }
     if (mapped.contextChange) this.applyContextChange(mapped.app, mapped.windowTitle);
+    if (this.deps.runActive?.() === true) {
+      // Keep the app context current, but never learn from the assistant's own approved actions.
+      this.deps.metrics?.increment("event.suppressed_during_run");
+      return;
+    }
     const bundleId = mapped.app?.bundleId ?? this.context.app?.bundleId;
     const app = bundleId !== undefined ? { ...this.context.app, bundleId } : undefined;
     const classification = this.classify({ bundleId, isSecureInput: mapped.sensitive });

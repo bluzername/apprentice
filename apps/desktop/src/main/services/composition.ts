@@ -130,7 +130,7 @@ export function composeServices(adapters: CompositionAdapters): Services {
   const permissions = new PermissionsService({ helper, system: adapters.permissionSystem, analytics, logger: logger.child("permissions") });
   const capture = new CaptureService({ storage, screenSource: { captureFrontmost: () => screenSource.current.captureFrontmost() }, ocr: (png) => helper.ocrImage(png), resizer: adapters.resizer, metrics, clock, logger: logger.child("capture"), sessionId: context.sessionId, classify: createContextClassifier(settings, () => learning.isCapturing()) });
 
-  const pipeline: ObservationPipeline = new ObservationPipeline({ storage, settings, helper, capture, sessionId: context.sessionId, emit, clock, logger: logger.child("pipeline"), isCapturing: () => learning.isCapturing(), fixturePath: adapters.helperFixturePath });
+  const pipeline: ObservationPipeline = new ObservationPipeline({ storage, settings, helper, capture, sessionId: context.sessionId, emit, clock, logger: logger.child("pipeline"), isCapturing: () => learning.isCapturing(), runActive: () => runEngine.isActive(), fixturePath: adapters.helperFixturePath });
   const learning: LearningStateService = new LearningStateService({
     settings,
     emit,
