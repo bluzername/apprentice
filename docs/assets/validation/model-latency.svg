@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450" role="img" aria-label="Model latency per proposed action, thinking off vs on">
+<style>text{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;fill:#1c1c1e} .t{font-size:17px;font-weight:600} .s{font-size:12px;fill:#63636e} .ax{font-size:11.5px;fill:#63636e} .lb{font-size:11.5px} .vl{font-size:11px;font-weight:600} .lg{font-size:11.5px}</style>
+<rect width="800" height="450" fill="#ffffff"/>
+<text class="t" x="32" y="34">Model latency per proposed action, thinking off vs on</text>
+<text class="s" x="32" y="54">32 proposals per setting, one window screenshot each (about 3,780 prompt tokens). Box: p25 to p75, line: median.</text>
+<line x1="232.0" y1="102" x2="232.0" y2="266" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="232.0" y="284" text-anchor="middle">0</text>
+<line x1="290.7" y1="102" x2="290.7" y2="266" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="290.7" y="284" text-anchor="middle">10</text>
+<line x1="349.3" y1="102" x2="349.3" y2="266" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="349.3" y="284" text-anchor="middle">20</text>
+<line x1="408.0" y1="102" x2="408.0" y2="266" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="408.0" y="284" text-anchor="middle">30</text>
+<line x1="466.7" y1="102" x2="466.7" y2="266" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="466.7" y="284" text-anchor="middle">40</text>
+<line x1="525.3" y1="102" x2="525.3" y2="266" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="525.3" y="284" text-anchor="middle">50</text>
+<line x1="584.0" y1="102" x2="584.0" y2="266" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="584.0" y="284" text-anchor="middle">60</text>
+<line x1="642.7" y1="102" x2="642.7" y2="266" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="642.7" y="284" text-anchor="middle">70</text>
+<line x1="701.3" y1="102" x2="701.3" y2="266" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="701.3" y="284" text-anchor="middle">80</text>
+<line x1="760.0" y1="102" x2="760.0" y2="266" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="760.0" y="284" text-anchor="middle">90</text>
+<text class="ax" x="496" y="306" text-anchor="middle">seconds per proposal</text>
+<text class="lb" x="216" y="149.0" text-anchor="end">thinking off, temp 0.2 (reference)</text>
+<line x1="282.5" y1="145.0" x2="399.2" y2="145.0" stroke="#63636e" stroke-width="1.2"/><line x1="282.5" y1="138.0" x2="282.5" y2="152.0" stroke="#63636e" stroke-width="1.2"/><line x1="399.2" y1="138.0" x2="399.2" y2="152.0" stroke="#63636e" stroke-width="1.2"/><rect x="286.0" y="132" width="12.9" height="26" fill="#6d4aff" fill-opacity="1.0"/><line x1="290.1" y1="132" x2="290.1" y2="158" stroke="#ffffff" stroke-width="2.5"/><circle cx="300.1" cy="145.0" r="3.2" fill="#63636e"/><text class="vl" x="290.1" y="125.0" text-anchor="middle" fill="#63636e">median 9.9 s</text>
+<text class="ax" x="407.2" y="149.0">max 28.5 s</text>
+<text class="ax" x="216" y="165.0" text-anchor="end">median reply 72 tokens</text>
+<text class="lb" x="216" y="219.0" text-anchor="end">thinking on, temp 1.0</text>
+<line x1="288.9" y1="215.0" x2="711.9" y2="215.0" stroke="#63636e" stroke-width="1.2"/><line x1="288.9" y1="208.0" x2="288.9" y2="222.0" stroke="#63636e" stroke-width="1.2"/><line x1="711.9" y1="208.0" x2="711.9" y2="222.0" stroke="#63636e" stroke-width="1.2"/><rect x="306.5" y="202" width="29.3" height="26" fill="#6d4aff" fill-opacity="0.55"/><line x1="322.9" y1="202" x2="322.9" y2="228" stroke="#ffffff" stroke-width="2.5"/><circle cx="397.4" cy="215.0" r="3.2" fill="#63636e"/><text class="vl" x="322.9" y="195.0" text-anchor="middle" fill="#63636e">median 15.5 s</text>
+<text class="ax" x="719.9" y="219.0">max 81.8 s</text>
+<text class="ax" x="216" y="235.0" text-anchor="end">median reply 173 tokens</text>
+<text class="ax" x="232" y="324">Dot marks p90. The reference pass had the server to itself; the thinking-on pass shared it, which inflates</text><text class="ax" x="232" y="340">its upper tail. Latency is prefill-bound: about 1,800 image tokens at 220-400 tok/s, generation at 32 tok/s.</text>
+<text class="s" x="32" y="434">Source: grounding/report-thinking-off-temp0.2-clean.json and report-thinking-on-temp1.0.json, outcomes[].latencyMs.</text>
+</svg>

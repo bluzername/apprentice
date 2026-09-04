@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450" role="img" aria-label="GUI grounding hit rate by application and sampling setting">
+<style>text{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;fill:#1c1c1e} .t{font-size:17px;font-weight:600} .s{font-size:12px;fill:#63636e} .ax{font-size:11.5px;fill:#63636e} .lb{font-size:11.5px} .vl{font-size:11px;font-weight:600} .lg{font-size:11.5px}</style>
+<rect width="800" height="450" fill="#ffffff"/>
+<text class="t" x="32" y="30">GUI grounding hit rate by application and sampling setting</text>
+<text class="s" x="32" y="50">32 real-window cases, UI-Mate-9B Q6_K. Hit = proposed point inside the accessibility rect, 6 px tolerance.</text>
+<rect x="64" y="66" width="12" height="12" fill="#6d4aff" fill-opacity="1.0"/><text class="lg" x="82" y="76">thinking off, temp 0.2 (reference)</text>
+<rect x="319.0" y="66" width="12" height="12" fill="#6d4aff" fill-opacity="0.55"/><text class="lg" x="337.0" y="76">thinking on, temp 1.0</text>
+<rect x="489.5" y="66" width="12" height="12" fill="#6d4aff" fill-opacity="0.26"/><text class="lg" x="507.5" y="76">thinking on, temp 0.2</text>
+<line x1="64" y1="358.0" x2="768" y2="358.0" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="54" y="362.0" text-anchor="end">0</text>
+<line x1="64" y1="296.0" x2="768" y2="296.0" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="54" y="300.0" text-anchor="end">25</text>
+<line x1="64" y1="234.0" x2="768" y2="234.0" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="54" y="238.0" text-anchor="end">50</text>
+<line x1="64" y1="172.0" x2="768" y2="172.0" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="54" y="176.0" text-anchor="end">75</text>
+<line x1="64" y1="110.0" x2="768" y2="110.0" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="54" y="114.0" text-anchor="end">100</text>
+<text class="ax" x="18" y="234" transform="rotate(-90 18 234)" text-anchor="middle">hit rate (percent)</text>
+<line x1="64" y1="358" x2="768" y2="358" stroke="#63636e" stroke-width="1.2"/>
+<rect x="85.1" y="172.0" width="26.8" height="186.0" fill="#6d4aff" fill-opacity="1.0"/><text class="vl" x="98.5" y="166.0" text-anchor="middle" fill="#63636e">75</text>
+<rect x="115.1" y="172.0" width="26.8" height="186.0" fill="#6d4aff" fill-opacity="0.55"/><text class="vl" x="128.5" y="166.0" text-anchor="middle" fill="#63636e">75</text>
+<rect x="145.0" y="172.0" width="26.8" height="186.0" fill="#6d4aff" fill-opacity="0.26"/><text class="vl" x="158.4" y="166.0" text-anchor="middle" fill="#63636e">75</text>
+<text class="lb" x="134.4" y="378" text-anchor="middle">Finder</text><text class="ax" x="134.4" y="393" text-anchor="middle">n = 12</text>
+<rect x="225.9" y="172.0" width="26.8" height="186.0" fill="#6d4aff" fill-opacity="1.0"/><text class="vl" x="239.3" y="166.0" text-anchor="middle" fill="#63636e">75</text>
+<rect x="255.9" y="234.0" width="26.8" height="124.0" fill="#6d4aff" fill-opacity="0.55"/><text class="vl" x="269.3" y="228.0" text-anchor="middle" fill="#63636e">50</text>
+<rect x="285.8" y="213.4" width="26.8" height="144.6" fill="#6d4aff" fill-opacity="0.26"/><text class="vl" x="299.2" y="207.4" text-anchor="middle" fill="#63636e">58</text>
+<text class="lb" x="275.2" y="378" text-anchor="middle">Preview</text><text class="ax" x="275.2" y="393" text-anchor="middle">n = 12</text>
+<text class="vl" x="380.1" y="352.0" text-anchor="middle" fill="#63636e">0</text>
+<text class="vl" x="410.1" y="352.0" text-anchor="middle" fill="#63636e">0</text>
+<rect x="426.6" y="308.4" width="26.8" height="49.6" fill="#6d4aff" fill-opacity="0.26"/><text class="vl" x="440.0" y="302.4" text-anchor="middle" fill="#63636e">20</text>
+<text class="lb" x="416.0" y="378" text-anchor="middle">TextEdit</text><text class="ax" x="416.0" y="393" text-anchor="middle">n = 5</text>
+<rect x="507.5" y="275.4" width="26.8" height="82.6" fill="#6d4aff" fill-opacity="1.0"/><text class="vl" x="520.9" y="269.4" text-anchor="middle" fill="#63636e">33</text>
+<text class="vl" x="550.9" y="352.0" text-anchor="middle" fill="#63636e">0</text>
+<rect x="567.4" y="275.4" width="26.8" height="82.6" fill="#6d4aff" fill-opacity="0.26"/><text class="vl" x="580.8" y="269.4" text-anchor="middle" fill="#63636e">33</text>
+<text class="lb" x="556.8" y="378" text-anchor="middle">Apprentice</text><text class="ax" x="556.8" y="393" text-anchor="middle">n = 3</text>
+<rect x="648.3" y="210.7" width="26.8" height="147.3" fill="#6d4aff" fill-opacity="1.0"/><text class="vl" x="661.7" y="204.7" text-anchor="middle" fill="#63636e">59</text>
+<rect x="678.3" y="241.7" width="26.8" height="116.3" fill="#6d4aff" fill-opacity="0.55"/><text class="vl" x="691.7" y="235.7" text-anchor="middle" fill="#63636e">47</text>
+<rect x="708.2" y="218.4" width="26.8" height="139.6" fill="#6d4aff" fill-opacity="0.26"/><text class="vl" x="721.6" y="212.4" text-anchor="middle" fill="#63636e">56</text>
+<text class="lb" x="697.6" y="378" text-anchor="middle">All cases</text><text class="ax" x="697.6" y="393" text-anchor="middle">n = 32</text>
+<text class="s" x="32" y="414">A second thinking-off pass at the same settings scored 17 of 32: run-to-run variance at n = 32 is about two cases.</text>
+<text class="s" x="32" y="430">Source: grounding/report-thinking-off-temp0.2-clean.json,</text>
+<text class="s" x="32" y="446">report-thinking-on-temp1.0.json and report-thinking-on-temp0.2.json (summary.byApp).</text>
+</svg>

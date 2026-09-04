@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450" role="img" aria-label="Occurrences demonstrated versus occurrences grouped into a candidate, per scenario">
+<style>text{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;fill:#1c1c1e} .t{font-size:17px;font-weight:600} .s{font-size:12px;fill:#63636e} .ax{font-size:11.5px;fill:#63636e} .lb{font-size:11.5px} .vl{font-size:11px;font-weight:600} .lg{font-size:11.5px}</style>
+<rect width="800" height="450" fill="#ffffff"/>
+<text class="t" x="32" y="30">Routine discovery: occurrences demonstrated vs occurrences grouped into a candidate</text>
+<text class="s" x="32" y="50">Six routines demonstrated on real applications by an automation driver at human pace.</text>
+<line x1="70" y1="326.0" x2="764" y2="326.0" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="60" y="330.0" text-anchor="end">0</text>
+<line x1="70" y1="273.5" x2="764" y2="273.5" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="60" y="277.5" text-anchor="end">1</text>
+<line x1="70" y1="221.0" x2="764" y2="221.0" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="60" y="225.0" text-anchor="end">2</text>
+<line x1="70" y1="168.5" x2="764" y2="168.5" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="60" y="172.5" text-anchor="end">3</text>
+<line x1="70" y1="116.0" x2="764" y2="116.0" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="60" y="120.0" text-anchor="end">4</text>
+<text class="ax" x="20" y="221" transform="rotate(-90 20 221)" text-anchor="middle">occurrences</text>
+<line x1="70" y1="326" x2="764" y2="326" stroke="#63636e" stroke-width="1.2"/>
+<rect x="70" y="66" width="12" height="12" fill="#6d4aff" fill-opacity="0.28"/><text class="lg" x="88" y="76">demonstrated</text>
+<rect x="185.2" y="66" width="12" height="12" fill="#6d4aff" fill-opacity="1.0"/><text class="lg" x="203.2" y="76">grouped into a discovered candidate</text>
+<rect x="97.8" y="116.0" width="27.8" height="210.0" fill="#6d4aff" fill-opacity="0.28"/><text class="vl" x="111.6" y="110.0" text-anchor="middle" fill="#63636e">4</text>
+<rect x="128.3" y="116.0" width="27.8" height="210.0" fill="#6d4aff" fill-opacity="1.0"/><text class="vl" x="142.2" y="110.0" text-anchor="middle" fill="#63636e">4</text>
+<text class="lb" x="127.8" y="346" text-anchor="middle">S1 invoice</text>
+<text class="lb" x="127.8" y="360" text-anchor="middle">filing</text>
+<text class="ax" x="127.8" y="382" text-anchor="middle">sim 0.73</text>
+<text class="ax" x="127.8" y="395" text-anchor="middle">conf 0.73</text>
+<rect x="213.4" y="168.5" width="27.8" height="157.5" fill="#6d4aff" fill-opacity="0.28"/><text class="vl" x="227.3" y="162.5" text-anchor="middle" fill="#63636e">3</text>
+<text class="vl" x="257.8" y="320.0" text-anchor="middle" fill="#63636e">0</text>
+<text class="lb" x="243.5" y="346" text-anchor="middle">S2 receipt</text>
+<text class="lb" x="243.5" y="360" text-anchor="middle">sorting</text>
+<text class="ax" x="243.5" y="382" text-anchor="middle">episodes</text>
+<text class="ax" x="243.5" y="395" text-anchor="middle">merged</text>
+<rect x="329.1" y="116.0" width="27.8" height="210.0" fill="#6d4aff" fill-opacity="0.28"/><text class="vl" x="343.0" y="110.0" text-anchor="middle" fill="#63636e">4</text>
+<text class="vl" x="373.5" y="320.0" text-anchor="middle" fill="#63636e">0</text>
+<text class="lb" x="359.2" y="346" text-anchor="middle">S3 decisions</text>
+<text class="lb" x="359.2" y="360" text-anchor="middle">into Notes</text>
+<text class="ax" x="359.2" y="382" text-anchor="middle">merged, then</text>
+<text class="ax" x="359.2" y="395" text-anchor="middle">under 90 s gate</text>
+<rect x="444.8" y="221.0" width="27.8" height="105.0" fill="#6d4aff" fill-opacity="0.28"/><text class="vl" x="458.6" y="215.0" text-anchor="middle" fill="#63636e">2</text>
+<text class="vl" x="489.2" y="320.0" text-anchor="middle" fill="#63636e">0</text>
+<text class="lb" x="474.8" y="346" text-anchor="middle">S4 rename</text>
+<text class="lb" x="474.8" y="360" text-anchor="middle">downloads</text>
+<text class="ax" x="474.8" y="382" text-anchor="middle">captured</text>
+<text class="ax" x="474.8" y="395" text-anchor="middle">by teach</text>
+<rect x="560.4" y="221.0" width="27.8" height="105.0" fill="#6d4aff" fill-opacity="0.28"/><text class="vl" x="574.3" y="215.0" text-anchor="middle" fill="#63636e">2</text>
+<rect x="591.0" y="221.0" width="27.8" height="105.0" fill="#6d4aff" fill-opacity="1.0"/><text class="vl" x="604.8" y="215.0" text-anchor="middle" fill="#63636e">2</text>
+<text class="lb" x="590.5" y="346" text-anchor="middle">S5 weekly</text>
+<text class="lb" x="590.5" y="360" text-anchor="middle">roll-up</text>
+<text class="ax" x="590.5" y="382" text-anchor="middle">sim 0.79</text>
+<text class="ax" x="590.5" y="395" text-anchor="middle">conf 0.65</text>
+<rect x="676.1" y="168.5" width="27.8" height="157.5" fill="#6d4aff" fill-opacity="0.28"/><text class="vl" x="690.0" y="162.5" text-anchor="middle" fill="#63636e">3</text>
+<rect x="706.6" y="168.5" width="27.8" height="157.5" fill="#6d4aff" fill-opacity="1.0"/><text class="vl" x="720.5" y="162.5" text-anchor="middle" fill="#63636e">3</text>
+<text class="lb" x="706.2" y="346" text-anchor="middle">S6 journal</text>
+<text class="lb" x="706.2" y="360" text-anchor="middle">note</text>
+<text class="ax" x="706.2" y="382" text-anchor="middle">sim 0.76</text>
+<text class="ax" x="706.2" y="395" text-anchor="middle">conf 0.60</text>
+<text class="s" x="32" y="422">S3 was demonstrated twice: 2 occurrences at 60 s interludes (episodes merged), 2 at 270 s gaps (split, under the gate).</text>
+<text class="s" x="32" y="438">Source: logs/S1-S6 driver logs; metrics-final.json, learning.candidates.</text>
+</svg>

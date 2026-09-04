@@ -1,0 +1,246 @@
+{
+ "since": 1788478809000,
+ "runs": [],
+ "learning": {
+  "episodes": 5,
+  "episodeActiveMedianMs": 61316,
+  "candidates": [
+   {
+    "id": "cand_5af37a2da420ef58666aa5fd",
+    "title": "Textedit: press cmd+w after finder",
+    "repeat": 2,
+    "similarity": 0.8624,
+    "confidence": 0.7008,
+    "medianDurationMs": 179608,
+    "steps": 9,
+    "variables": 1,
+    "risk": "internal_mutation",
+    "createdAt": 1788433689402
+   },
+   {
+    "id": "cand_d899bf5ddb3f0f378d167b39",
+    "title": "Save in TextEdit after clicking the 'Apprentice test invoices' textbox in Finder",
+    "repeat": 4,
+    "similarity": 0.7252,
+    "confidence": 0.7288,
+    "medianDurationMs": 169435,
+    "steps": 8,
+    "variables": 0,
+    "risk": "internal_mutation",
+    "createdAt": 1788471349656
+   },
+   {
+    "id": "cand_fd1ac94ef84278bd33ac16ea",
+    "title": "Save in TextEdit after clicking the 'List view' tree in Finder",
+    "repeat": 2,
+    "similarity": 0.624,
+    "confidence": 0.5122,
+    "medianDurationMs": 126487,
+    "steps": 14,
+    "variables": 2,
+    "risk": "internal_mutation",
+    "createdAt": 1788476069039
+   },
+   {
+    "id": "cand_255bda0b7401a0a634e72aa4",
+    "title": "Save in TextEdit after clicking the 'List view' tree in Finder",
+    "repeat": 2,
+    "similarity": 0.7859,
+    "confidence": 0.6474,
+    "medianDurationMs": 135488,
+    "steps": 14,
+    "variables": 2,
+    "risk": "internal_mutation",
+    "createdAt": 1788476083891
+   },
+   {
+    "id": "cand_d6a99350f0d4d551b2e1ea00",
+    "title": "Open 'ledger.txt' in TextEdit after opening 'invoice-inv.pdf' in Finder",
+    "repeat": 2,
+    "similarity": 0.6307,
+    "confidence": 0.4631,
+    "medianDurationMs": 173222,
+    "steps": 8,
+    "variables": 0,
+    "risk": "reversible_navigation",
+    "createdAt": 1788477130147
+   },
+   {
+    "id": "cand_e4c98c67b015cfb6212ee443",
+    "title": "Save in TextEdit after opening 'invoice-inv.pdf' in Finder",
+    "repeat": 2,
+    "similarity": 0.9034,
+    "confidence": 0.8161,
+    "medianDurationMs": 233930,
+    "steps": 7,
+    "variables": 0,
+    "risk": "internal_mutation",
+    "createdAt": 1788477955003
+   },
+   {
+    "id": "cand_c4e8f98ce85b65571cb5ba0e",
+    "title": "Click the 'List view' tree after opening 'img.txt' in Finder",
+    "repeat": 2,
+    "similarity": 0.7117,
+    "confidence": 0.5866,
+    "medianDurationMs": 311822,
+    "steps": 4,
+    "variables": 1,
+    "risk": "reversible_navigation",
+    "createdAt": 1788478761661
+   },
+   {
+    "id": "cand_6ec5b540c8450d233edffec1",
+    "title": "Press Cmd+V in Notes after clicking the 'Back to runs' group in Finder",
+    "repeat": 2,
+    "similarity": 0.6622,
+    "confidence": 0.4642,
+    "medianDurationMs": 110605,
+    "steps": 13,
+    "variables": 1,
+    "risk": "internal_mutation",
+    "createdAt": 1788479984025
+   },
+   {
+    "id": "cand_2bf3e630fa58d5ec63e7052d",
+    "title": "Press Cmd+V in Notes after opening 'template.txt' in Finder",
+    "repeat": 3,
+    "similarity": 0.7568,
+    "confidence": 0.5984,
+    "medianDurationMs": 134601,
+    "steps": 10,
+    "variables": 1,
+    "risk": "internal_mutation",
+    "createdAt": 1788480740763
+   }
+  ],
+  "skills": [
+   {
+    "id": "skill_0mtlfa06od1f87fce88574aad",
+    "name": "File invoice INV-1106 into the ledger",
+    "source": "candidate",
+    "subtasks": [
+     "1. Open invoice-INV-1106.pdf in Preview",
+     "2. Close the invoice in Preview",
+     "3. Record the invoice in ledger.txt"
+    ],
+    "predicates": [
+     [
+      "app_frontmost"
+     ],
+     [
+      "user_confirm"
+     ],
+     [
+      "user_confirm"
+     ]
+    ],
+    "version": 1
+   },
+   {
+    "id": "skill_0mtlff35se697ad1223d471ac",
+    "name": "finder: Press Cmd+Option+L",
+    "source": "taught",
+    "subtasks": [
+     "1. Click the 'Today at 12 50' textbox on finder",
+     "2. Press Cmd+W on preview",
+     "3. Switch to Finder on textedit",
+     "4. Open a web page on safari",
+     "5. Click the 'Today at 12 52' textbox on finder",
+     "6. Press Cmd+W on preview",
+     "7. Press Cmd+W on textedit",
+     "8. Press Cmd+Option+L on finder"
+    ],
+    "predicates": [
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ]
+    ],
+    "version": 1
+   },
+   {
+    "id": "skill_0mtm2aaek78f2c56ac28573fc",
+    "name": "Save in TextEdit after clicking the 'Apprentice test invoices' textbox in Finder",
+    "source": "candidate",
+    "subtasks": [
+     "1. Click the 'Apprentice test invoices' textbox on finder",
+     "2. Switch to Preview on preview",
+     "3. Press Cmd+S on textedit"
+    ],
+    "predicates": [
+     [
+      "app_frontmost"
+     ],
+     [
+      "app_frontmost"
+     ],
+     [
+      "user_confirm"
+     ]
+    ],
+    "version": 1
+   },
+   {
+    "id": "skill_0mtm3zu28afba1d5137f82ff9",
+    "name": "Rename downloads to the date-topic convention",
+    "source": "taught",
+    "subtasks": [
+     "1. Rename IMG_4021.txt",
+     "2. Rename scan (2).txt"
+    ],
+    "predicates": [
+     [
+      "user_confirm"
+     ],
+     [
+      "user_confirm"
+     ]
+    ],
+    "version": 1
+   },
+   {
+    "id": "skill_0mtm58wpyb9b85ff441c77af0",
+    "name": "Save in TextEdit after clicking the 'List view' tree in Finder",
+    "source": "candidate",
+    "subtasks": [
+     "1. Open 'tuesday.txt' on finder",
+     "2. Open 'summary.txt' on textedit",
+     "3. Press Cmd+S on textedit"
+    ],
+    "predicates": [
+     [
+      "app_frontmost"
+     ],
+     [
+      "user_confirm"
+     ],
+     [
+      "user_confirm"
+     ]
+    ],
+    "version": 1
+   }
+  ]
+ }
+}

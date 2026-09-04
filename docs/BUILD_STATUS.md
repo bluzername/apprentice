@@ -296,3 +296,8 @@ Engineering changes the validation motivated (all with regression tests, in this
    grounding benchmark, shorter replies).
 4. The grounding benchmark accepts temperature and thinking settings from the environment and
    records them in the report.
+5. The proposal request carries the captured window's app and title, and the UI-Mate turn
+   reminder states them (`frontmost_app`, `window_title`), so the model is told which app is
+   active instead of guessing from a window-only screenshot. Unit-tested; the live re-run of the
+   journal routine with this build is pending because replacing the app bundle in /Applications
+   reset the macOS Screen Recording and Accessibility grants, which only the user can restore.

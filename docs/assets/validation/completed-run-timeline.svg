@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450" role="img" aria-label="Time composition of the three completed runs and per-proposal latency">
+<style>text{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;fill:#1c1c1e} .t{font-size:17px;font-weight:600} .s{font-size:12px;fill:#63636e} .ax{font-size:11.5px;fill:#63636e} .lb{font-size:11.5px} .vl{font-size:11px;font-weight:600} .lg{font-size:11.5px}</style>
+<rect width="800" height="450" fill="#ffffff"/>
+<text class="t" x="32" y="30">The three completed runs: where the wall clock went</text>
+<text class="s" x="32" y="50">Two invoice runs and the journal run, all with thinking off, temperature 0.2 and one server slot.</text>
+<rect x="182" y="66" width="11" height="11" fill="#6d4aff" fill-opacity="1.0"/><text class="lg" x="198" y="75">model proposal</text>
+<rect x="299.6" y="66" width="11" height="11" fill="#6d4aff" fill-opacity="0.55"/><text class="lg" x="315.6" y="75">human approval wait</text>
+<rect x="449.20000000000005" y="66" width="11" height="11" fill="#6d4aff" fill-opacity="0.32"/><text class="lg" x="465.20000000000005" y="75">verify</text>
+<rect x="515.6" y="66" width="11" height="11" fill="#6d4aff" fill-opacity="0.85"/><text class="lg" x="531.6" y="75">execute</text>
+<rect x="588.4000000000001" y="66" width="11" height="11" fill="#6d4aff" fill-opacity="0.16"/><text class="lg" x="604.4000000000001" y="75">capture and app overhead</text>
+<line x1="182.0" y1="92" x2="182.0" y2="216" stroke="#dcdce4" stroke-width="1" opacity="0.7"/><text class="ax" x="182.0" y="232" text-anchor="middle">0</text>
+<line x1="293.2" y1="92" x2="293.2" y2="216" stroke="#dcdce4" stroke-width="1" opacity="0.7"/><text class="ax" x="293.2" y="232" text-anchor="middle">100</text>
+<line x1="404.3" y1="92" x2="404.3" y2="216" stroke="#dcdce4" stroke-width="1" opacity="0.7"/><text class="ax" x="404.3" y="232" text-anchor="middle">200</text>
+<line x1="515.5" y1="92" x2="515.5" y2="216" stroke="#dcdce4" stroke-width="1" opacity="0.7"/><text class="ax" x="515.5" y="232" text-anchor="middle">300</text>
+<line x1="626.6" y1="92" x2="626.6" y2="216" stroke="#dcdce4" stroke-width="1" opacity="0.7"/><text class="ax" x="626.6" y="232" text-anchor="middle">400</text>
+<line x1="737.8" y1="92" x2="737.8" y2="216" stroke="#dcdce4" stroke-width="1" opacity="0.7"/><text class="ax" x="737.8" y="232" text-anchor="middle">500</text>
+<text class="lb" x="168" y="117.0" text-anchor="end">Run 5, wall 5 m 11 s</text>
+<rect x="182.0" y="100" width="138.9" height="26" fill="#6d4aff" fill-opacity="1.0"/><text class="vl" x="251.5" y="117.0" text-anchor="middle" fill="#ffffff">125 s</text>
+<rect x="320.9" y="100" width="158.9" height="26" fill="#6d4aff" fill-opacity="0.55"/><text class="vl" x="400.4" y="117.0" text-anchor="middle" fill="#ffffff">143 s</text>
+<rect x="479.9" y="100" width="3.9" height="26" fill="#6d4aff" fill-opacity="0.32"/><rect x="483.8" y="100" width="0.7" height="26" fill="#6d4aff" fill-opacity="0.85"/><rect x="484.1" y="100" width="43.8" height="26" fill="#6d4aff" fill-opacity="0.16"/><text class="vl" x="506.0" y="117.0" text-anchor="middle" fill="#ffffff">39 s</text>
+<text class="lb" x="168" y="157.0" text-anchor="end">Run 7, wall 5 m 28 s</text>
+<rect x="182.0" y="140" width="121.2" height="26" fill="#6d4aff" fill-opacity="1.0"/><text class="vl" x="242.6" y="157.0" text-anchor="middle" fill="#ffffff">109 s</text>
+<rect x="303.2" y="140" width="136.7" height="26" fill="#6d4aff" fill-opacity="0.55"/><text class="vl" x="371.5" y="157.0" text-anchor="middle" fill="#ffffff">123 s</text>
+<rect x="439.9" y="140" width="5.0" height="26" fill="#6d4aff" fill-opacity="0.32"/><rect x="444.9" y="140" width="0.7" height="26" fill="#6d4aff" fill-opacity="0.85"/><rect x="445.2" y="140" width="101.2" height="26" fill="#6d4aff" fill-opacity="0.16"/><text class="vl" x="495.8" y="157.0" text-anchor="middle" fill="#ffffff">91 s</text>
+<text class="lb" x="168" y="197.0" text-anchor="end">Run 9, wall 8 m 21 s</text>
+<rect x="182.0" y="180" width="277.9" height="26" fill="#6d4aff" fill-opacity="1.0"/><text class="vl" x="320.9" y="197.0" text-anchor="middle" fill="#ffffff">250 s</text>
+<rect x="459.9" y="180" width="177.8" height="26" fill="#6d4aff" fill-opacity="0.55"/><text class="vl" x="548.8" y="197.0" text-anchor="middle" fill="#ffffff">160 s</text>
+<rect x="637.7" y="180" width="9.3" height="26" fill="#6d4aff" fill-opacity="0.32"/><rect x="647.1" y="180" width="0.7" height="26" fill="#6d4aff" fill-opacity="0.85"/><rect x="647.6" y="180" width="91.3" height="26" fill="#6d4aff" fill-opacity="0.16"/><text class="vl" x="693.2" y="197.0" text-anchor="middle" fill="#ffffff">82 s</text>
+<text class="ax" x="471" y="248" text-anchor="middle">seconds (phase totals, not wall-clock positions: per-step timestamps are not exported)</text>
+<text class="lb" x="32" y="272">Run 7, latency of each proposal in order</text>
+<line x1="182" y1="362.0" x2="760" y2="362.0" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="172" y="366.0" text-anchor="end">0</text>
+<line x1="182" y1="342.5" x2="760" y2="342.5" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="172" y="346.5" text-anchor="end">8</text>
+<line x1="182" y1="323.0" x2="760" y2="323.0" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="172" y="327.0" text-anchor="end">16</text>
+<line x1="182" y1="303.5" x2="760" y2="303.5" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="172" y="307.5" text-anchor="end">24</text>
+<line x1="182" y1="284.0" x2="760" y2="284.0" stroke="#dcdce4" stroke-width="1"/><text class="ax" x="172" y="288.0" text-anchor="end">32</text>
+<text class="ax" x="172" y="278" text-anchor="end">seconds</text>
+<rect x="196.9" y="340.1" width="52.8" height="21.9" fill="#6d4aff" fill-opacity="0.9"/><text class="vl" x="223.3" y="334.1" text-anchor="middle" fill="#63636e">9.0</text>
+<text class="ax" x="223.3" y="377.0" text-anchor="middle">1</text>
+<text class="ax" x="223.3" y="390.0" text-anchor="middle">double-click</text>
+<rect x="279.4" y="339.3" width="52.8" height="22.7" fill="#6d4aff" fill-opacity="0.9"/><text class="vl" x="305.9" y="333.3" text-anchor="middle" fill="#63636e">9.3</text>
+<text class="ax" x="305.9" y="377.0" text-anchor="middle">2</text>
+<text class="ax" x="305.9" y="390.0" text-anchor="middle">cmd+W</text>
+<rect x="362.0" y="339.3" width="52.8" height="22.7" fill="#6d4aff" fill-opacity="0.9"/><text class="vl" x="388.4" y="333.3" text-anchor="middle" fill="#63636e">9.3</text>
+<text class="ax" x="388.4" y="377.0" text-anchor="middle">3</text>
+<text class="ax" x="388.4" y="390.0" text-anchor="middle">click</text>
+<rect x="444.6" y="342.3" width="52.8" height="19.7" fill="#6d4aff" fill-opacity="0.9"/><text class="vl" x="471.0" y="336.3" text-anchor="middle" fill="#63636e">8.1</text>
+<text class="ax" x="471.0" y="377.0" text-anchor="middle">4</text>
+<text class="ax" x="471.0" y="390.0" text-anchor="middle">Return</text>
+<rect x="527.1" y="312.5" width="52.8" height="49.5" fill="#6d4aff" fill-opacity="0.9"/><text class="vl" x="553.6" y="306.5" text-anchor="middle" fill="#63636e">20.3</text>
+<text class="ax" x="553.6" y="377.0" text-anchor="middle">5</text>
+<text class="ax" x="553.6" y="390.0" text-anchor="middle">type line</text>
+<rect x="609.7" y="305.4" width="52.8" height="56.5" fill="#6d4aff" fill-opacity="0.9"/><text class="vl" x="636.1" y="299.4" text-anchor="middle" fill="#63636e">23.2</text>
+<text class="ax" x="636.1" y="377.0" text-anchor="middle">6</text>
+<text class="ax" x="636.1" y="390.0" text-anchor="middle">cmd+S</text>
+<rect x="692.3" y="289.6" width="52.8" height="72.4" fill="#6d4aff" fill-opacity="0.9"/><text class="vl" x="718.7" y="283.6" text-anchor="middle" fill="#63636e">29.7</text>
+<text class="ax" x="718.7" y="377.0" text-anchor="middle">7</text>
+<text class="ax" x="718.7" y="390.0" text-anchor="middle">finished</text>
+<line x1="182" y1="362" x2="760" y2="362" stroke="#63636e" stroke-width="1.2"/>
+<text class="ax" x="471" y="406" text-anchor="middle">proposal number and the action it produced. Run 9 ranged 7.0 to 45.2 s over 12 proposals.</text>
+<text class="s" x="32" y="428">Run 7 overhead includes 6.4 s of measured capture time; run 9 includes 11.2 s.</text>
+<text class="s" x="32" y="444">Source: metrics-final.json runs[4], runs[6], runs[8]; REPORT-NOTES.md "Run 5", "Run 7" and "Run 9".</text>
+</svg>
