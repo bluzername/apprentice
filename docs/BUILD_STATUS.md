@@ -284,8 +284,9 @@ Not achieved, recorded as limitations:
 - One journal run stalled with the model re-proposing "bring Notes to the front" because a
   window-scoped screenshot does not show which app is active (fixed, see change 5 below; 3 of 3
   follow-up runs passed that step).
-- The observer records the assistant's own approved actions as activity, so guided runs feed
-  discovery (two run-derived candidates appeared).
+- The observer recorded the assistant's own approved actions as activity, so guided runs fed
+  discovery (four run-derived candidates appeared over the night and morning); fixed, see
+  change 7 below.
 
 Engineering changes the validation motivated (all with regression tests, in this build):
 1. Active-time accounting counts pauses of up to 2 minutes as active work (previously 60 s), so
@@ -304,3 +305,8 @@ Engineering changes the validation motivated (all with regression tests, in this
 6. The Escape emergency-stop shortcut is lifted for a synthetic `esc` press as well as `escape`
    (the model spells it `esc`); before the fix an approved Escape ended the run as stopped by the
    user. Regression test added; verified live on the following run.
+7. The observer stores no helper or extension events while a guided run is active (the app
+   context still follows activations), so the assistant's own approved actions no longer feed
+   discovery. Before the change, the overnight and morning runs produced four run-derived
+   candidates; a completed journal run on the fixed build added no activity events, episodes or
+   candidates.

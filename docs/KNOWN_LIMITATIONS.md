@@ -81,8 +81,9 @@ during the build; items marked "by design" are intentional alpha scope.
   start of a subtask is still common and harmless.
 - Replacing the app bundle in /Applications by deleting it first resets the macOS Screen
   Recording and Accessibility grants; copy the new bundle over the existing one instead.
-- The observer records the assistant's own approved actions as ordinary activity, so guided runs
-  can produce candidates for the routine they just executed.
+- Nothing is recorded while a guided run is active, so the assistant's own actions never feed
+  discovery; anything the user does by hand during a run (answering an open-window question, for
+  example) is not learned from either.
 - The credential-shape check on typed text can flag ordinary pipe-delimited data lines as a
   high-entropy token; approval is still possible, the card just shows the warning.
 - Coordinates from the model are mapped through the resize transform and checked against OCR and

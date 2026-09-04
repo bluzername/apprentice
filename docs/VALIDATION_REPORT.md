@@ -244,10 +244,16 @@ app bundle had reset.
   "Journal 2026-09-11" followed by the template text); run 15 is the Escape case above. Wall
   times 6 m 58 s and 6 m 24 s, model 135 s in each, helper execution under 0.4 s.
 
-Reviewed-skill runs including the follow-up: 5 of 7 completed (invoice 2 of 2, journal 3 of 5),
+Reviewed-skill runs including the follow-up: 6 of 8 completed (invoice 2 of 2, journal 4 of 6),
 with both journal failures traced to engine defects that are now fixed. Export in
-`docs/benchmarks/validation-runs-2026-09-04-followup.json` (runs 12 to 16 appended; runs 12 and
+`docs/benchmarks/validation-runs-2026-09-04-followup.json` (runs 12 to 17 appended; runs 12 and
 13 failed at the first capture or action on missing permissions and are not model results).
+
+- **Observer** (`d0d202f`): the morning runs produced two more run-derived candidates, so the
+  pipeline now stores no events while a guided run is active. A journal run on that build (run
+  17, completed, 11 executed actions) added no activity events, no episodes and no candidates;
+  it also exercised the Escape fix, the model closing a Notes menu it had opened and the run
+  continuing.
 
 One operational finding: deleting and re-copying the app bundle in /Applications reset the
 Screen Recording and Accessibility grants for the app, while earlier in-place rebuilds had kept
