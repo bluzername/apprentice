@@ -226,6 +226,33 @@ After the last run, the proposal request started carrying the captured window's 
 and the turn reminder now names them (`d50c180`), the fix run 11 pointed at; its live re-run is
 pending.
 
+## Follow-up the next morning
+
+The two engine gaps that cost runs overnight were fixed and re-tested on the same machine on
+the morning of 2026-09-04, after the user re-granted the macOS permissions that replacing the
+app bundle had reset.
+
+- **Frontmost application in the prompt** (`d50c180`): the proposal request now carries the
+  captured window's app and title, and the turn reminder states them. Three journal runs on this
+  build (runs 14, 15, 16) each left the "bring Notes to the front" step after a single click and
+  went straight to Command+N; run 11 had looped three times on it.
+- **Escape guard** (`62e3784`): run 15 ended as "stopped by the user" when the model pressed
+  Escape to close a Notes toolbar menu it had opened. The key was serialized as `esc`, which the
+  guard that lifts the global Escape shortcut did not recognise, so the app's own emergency stop
+  swallowed the approved keypress. The guard now accepts both spellings, with a regression test.
+- Runs 14 and 16 completed and left the expected notes ("Journal 2026-09-09" and
+  "Journal 2026-09-11" followed by the template text); run 15 is the Escape case above. Wall
+  times 6 m 58 s and 6 m 24 s, model 135 s in each, helper execution under 0.4 s.
+
+Reviewed-skill runs including the follow-up: 5 of 7 completed (invoice 2 of 2, journal 3 of 5),
+with both journal failures traced to engine defects that are now fixed. Export in
+`docs/benchmarks/validation-runs-2026-09-04-followup.json` (runs 12 to 16 appended; runs 12 and
+13 failed at the first capture or action on missing permissions and are not model results).
+
+One operational finding: deleting and re-copying the app bundle in /Applications reset the
+Screen Recording and Accessibility grants for the app, while earlier in-place rebuilds had kept
+them. Copy over the existing bundle instead.
+
 ## Resource and hardware requirements
 
 The model held 11.2 to 11.7 GB of GPU memory at the 32k context, `llama-server` 8.9 to 9.8 GB

@@ -76,8 +76,11 @@ during the build; items marked "by design" are intentional alpha scope.
   between steps. Actions whose effect depends on the window staying key (Finder inline rename,
   context menus, hover states) do not work one step at a time; Finder rename failed in 3 of 3
   runs for this reason.
-- The model sees only the target window, not which app is active. It can re-propose "bring the
-  app to the front" after that already happened; stop the run or advance the subtask.
+- The model sees only the target window; the prompt now names the frontmost app and window title
+  so it does not keep re-proposing "bring the app to the front", but a first focus click at the
+  start of a subtask is still common and harmless.
+- Replacing the app bundle in /Applications by deleting it first resets the macOS Screen
+  Recording and Accessibility grants; copy the new bundle over the existing one instead.
 - The observer records the assistant's own approved actions as ordinary activity, so guided runs
   can produce candidates for the routine they just executed.
 - The credential-shape check on typed text can flag ordinary pipe-delimited data lines as a

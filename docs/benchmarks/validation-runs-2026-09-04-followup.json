@@ -1,0 +1,764 @@
+{
+ "since": 1788468011000,
+ "runs": [
+  {
+   "id": "run_0mtm2axekdceea31351dddf9b",
+   "skill": "Save in TextEdit after clicking the 'Apprentice test invoices' textbox in Finder",
+   "status": "failed",
+   "failure": "invalid_action",
+   "provider": "uimate",
+   "subtasks": "0/3",
+   "steps": 2,
+   "proposed": 2,
+   "executed": 0,
+   "verified": 0,
+   "invalid": 2,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 0,
+   "proposeMedianMs": 17624,
+   "proposeMaxMs": 22073,
+   "approvalMedianMs": null,
+   "wallMs": 37731,
+   "summary": "Action rejected: target belongs to com.anthropic.claudefordesktop",
+   "actions": [
+    "click: Click the search icon in the top-right corner of the Finder window to  [invalid_action]",
+    "click: Click the search icon (magnifying glass) in the top-right toolbar of t [invalid_action]"
+   ]
+  },
+  {
+   "id": "run_0mtm2ecp5f8f16a720de23c70",
+   "skill": "Save in TextEdit after clicking the 'Apprentice test invoices' textbox in Finder",
+   "status": "interrupted",
+   "failure": "user_interrupted",
+   "provider": "uimate",
+   "subtasks": "0/3",
+   "steps": 2,
+   "proposed": 2,
+   "executed": 1,
+   "verified": 1,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 0,
+   "proposeMedianMs": 20860,
+   "proposeMaxMs": 29112,
+   "approvalMedianMs": 35448,
+   "wallMs": 117049,
+   "summary": "Stopped while waiting for approval",
+   "actions": [
+    "click: Click the search icon in the top-right corner of the Finder window to  [none]",
+    "click: Click the search icon in the top-right corner of the Finder window to  [user_interrupted]"
+   ]
+  },
+  {
+   "id": "run_0mtm2h7ks72d95ba62a2d4992",
+   "skill": "File invoice INV-1105 into the ledger",
+   "status": "interrupted",
+   "failure": "user_interrupted",
+   "provider": "uimate",
+   "subtasks": "1/3",
+   "steps": 4,
+   "proposed": 3,
+   "executed": 3,
+   "verified": 3,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 0,
+   "proposeMedianMs": 24620,
+   "proposeMaxMs": 27823,
+   "approvalMedianMs": 15596,
+   "wallMs": 161536,
+   "summary": "Stopped while waiting for the user to open a window",
+   "actions": [
+    "double_click: Double-click the invoice-INV-1105.pdf file in the Finder list to open  [none]",
+    "hotkey: Press Command+W to close the invoice-INV-1105.pdf window in Preview. [none]",
+    "hotkey: Press Command+W to close the invoice-INV-1105.pdf window in Preview. [none]",
+    "None:  [user_interrupted]"
+   ]
+  },
+  {
+   "id": "run_0mtm4jgac09602e95c9305429",
+   "skill": "Rename downloads to the date-topic convention",
+   "status": "interrupted",
+   "failure": "user_interrupted",
+   "provider": "uimate",
+   "subtasks": "0/2",
+   "steps": 6,
+   "proposed": 6,
+   "executed": 5,
+   "verified": 5,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 0,
+   "proposeMedianMs": 32896,
+   "proposeMaxMs": 60051,
+   "approvalMedianMs": 17896,
+   "wallMs": 403854,
+   "summary": "Stopped while waiting for approval",
+   "actions": [
+    "click: Click on the IMG_4021.txt file row to select it. [none]",
+    "press_key: Press Return to enter inline rename mode for the selected file. [none]",
+    "click: Right-click on the IMG_4021.txt file to open the context menu. [none]",
+    "click: Click on the \"Rename...\" option in the context menu. [none]",
+    "click: Click on the IMG_4021.txt file to check if it was renamed. [none]",
+    "click: Click on the first file (2026-09...xport.txt) to deselect the second f [user_interrupted]"
+   ]
+  },
+  {
+   "id": "run_0mtm50ovmefadfdffd7f42190",
+   "skill": "File invoice INV-1105 into the ledger",
+   "status": "completed",
+   "failure": "none",
+   "provider": "uimate",
+   "subtasks": "2/3",
+   "steps": 8,
+   "proposed": 8,
+   "executed": 6,
+   "verified": 5,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 2,
+   "proposeMedianMs": 11767,
+   "proposeMaxMs": 31659,
+   "approvalMedianMs": 18413,
+   "wallMs": 311214,
+   "summary": "All subtasks verified",
+   "actions": [
+    "double_click: Double-click the invoice-INV-1105.pdf file in the Finder list to open  [none]",
+    "hotkey: Press Command+W to close the invoice-INV-1105.pdf window in Preview. [none]",
+    "hotkey: Press Command+W to close the invoice-INV-1105.pdf window in Preview. [none]",
+    "click: Click at the end of the last data line in ledger.txt (after \"invoice-I [none]",
+    "press_key: Press the Return key to create a new line after the last entry in ledg [none]",
+    "type_text: Type the new ledger entry '2026-08-25 | Metro Transit | 66.00 | invoic [none]",
+    "hotkey: Press Command+S to save the ledger.txt file. [none]",
+    "done: Terminate the task with success status as the invoice INV-1105 has bee [none]"
+   ]
+  },
+  {
+   "id": "run_0mtm59wgwa14239ab24d21439",
+   "skill": "Save in TextEdit after clicking the 'List view' tree in Finder",
+   "status": "interrupted",
+   "failure": "user_interrupted",
+   "provider": "uimate",
+   "subtasks": "1/3",
+   "steps": 5,
+   "proposed": 5,
+   "executed": 4,
+   "verified": 3,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 0,
+   "proposeMedianMs": 8328,
+   "proposeMaxMs": 16408,
+   "approvalMedianMs": 17287,
+   "wallMs": 189425,
+   "summary": "Stopped while waiting for approval",
+   "actions": [
+    "click: Click on the 'tuesday.txt' file in the Finder window to open it. [none]",
+    "double_click: Double-click on the 'tuesday.txt' file to open it. [none]",
+    "click: Click the TextEdit window\u2019s title bar to focus it before proceeding to [none]",
+    "hotkey: Press the Command+W keyboard shortcut to close the current TextEdit do [none]",
+    "hotkey: Press the Command+O keyboard shortcut to open the file dialog in TextE [user_interrupted]"
+   ]
+  },
+  {
+   "id": "run_0mtm5hi8h903b1570a86ca0f3",
+   "skill": "File invoice INV-1106 into the ledger",
+   "status": "completed",
+   "failure": "none",
+   "provider": "uimate",
+   "subtasks": "2/3",
+   "steps": 8,
+   "proposed": 7,
+   "executed": 6,
+   "verified": 5,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 2,
+   "proposeMedianMs": 9346,
+   "proposeMaxMs": 29744,
+   "approvalMedianMs": 9984,
+   "wallMs": 327795,
+   "summary": "All subtasks verified",
+   "actions": [
+    "double_click: Double-click the invoice-INV-1106.pdf file in the Finder list to open  [none]",
+    "hotkey: Press Command+W to close the invoice-INV-1106.pdf window in Preview. [none]",
+    "None:  [none]",
+    "click: Click at the end of the last data line in ledger.txt (after \"invoice-I [none]",
+    "press_key: Press the Return key to create a new line in ledger.txt. [none]",
+    "type_text: Type the new ledger entry '2026-08-26 | Lumen Electric | 141.75 | invo [none]",
+    "hotkey: Press Command+S to save the ledger.txt file. [none]",
+    "done: Terminate the task with success status since the ledger.txt has been s [none]"
+   ]
+  },
+  {
+   "id": "run_0mtm5yc2aed285373fab687c0",
+   "skill": "Rename downloads to the date-topic convention",
+   "status": "interrupted",
+   "failure": "user_interrupted",
+   "provider": "uimate",
+   "subtasks": "0/2",
+   "steps": 8,
+   "proposed": 8,
+   "executed": 6,
+   "verified": 5,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 0,
+   "proposeMedianMs": 10492,
+   "proposeMaxMs": 26951,
+   "approvalMedianMs": 19140,
+   "wallMs": 294807,
+   "summary": "Stopped while waiting for approval",
+   "actions": [
+    "click: Click on the IMG_4021.txt file row to select it. [none]",
+    "press_key: Press Return to initiate inline rename for the selected file. [none]",
+    "wait: Wait briefly for the inline rename field to appear. [none]",
+    "press_key: Press F2 to trigger the rename action on the selected file. [none]",
+    "click: Click on the IMG_4021.txt file row to select it. [none]",
+    "click: Right-click on the IMG_4021.txt file to open the context menu. [none]",
+    "click: Click directly on the filename text \"IMG_4021.txt\" in the file list to [none]",
+    "double_click: Double-click on the IMG_4021.txt file to open it. [user_interrupted]"
+   ]
+  },
+  {
+   "id": "run_0mtm7mqyc65f9af40434197e9",
+   "skill": "Create the daily journal note from the template",
+   "status": "completed",
+   "failure": "none",
+   "provider": "uimate",
+   "subtasks": "2/3",
+   "steps": 13,
+   "proposed": 12,
+   "executed": 10,
+   "verified": 8,
+   "invalid": 1,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 2,
+   "proposeMedianMs": 17206,
+   "proposeMaxMs": 45247,
+   "approvalMedianMs": 13167,
+   "wallMs": 500885,
+   "summary": "All subtasks verified",
+   "actions": [
+    "double_click: Double-click the template.txt file in the Journal Finder window to ope [none]",
+    "click: Click inside the TextEdit window to ensure it is focused. [none]",
+    "hotkey: Press Command+A to select all text in the TextEdit window. [none]",
+    "hotkey: Press Command+C to copy the selected text. [none]",
+    "hotkey: Press Command+W to close the TextEdit window. [none]",
+    "None:  [none]",
+    "hotkey: Press Command+N to create a new note in the Notes app. [none]",
+    "click: Click on the new note in the list to open it for editing. [target_ambiguous]",
+    "double_click: Double-click the \"New Note\" item in the list to open it for editing. [none]",
+    "type_text: Type \"Journal 2026-09-07\" as the note title. [none]",
+    "press_key: Press the Return key to move the cursor to a new line below the title. [none]",
+    "hotkey: Press Command+V to paste the copied template text into the note. [none]",
+    "SUBTASK_COMPLETE: The new note shows the title \"Journal 2026-09-07\" followed by the temp [none]"
+   ]
+  },
+  {
+   "id": "run_0mtm7yxt46cd186dccdeacdd3",
+   "skill": "Rename downloads to the date-topic convention",
+   "status": "interrupted",
+   "failure": "user_interrupted",
+   "provider": "uimate",
+   "subtasks": "0/2",
+   "steps": 4,
+   "proposed": 4,
+   "executed": 3,
+   "verified": 2,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 0,
+   "proposeMedianMs": 4514,
+   "proposeMaxMs": 10903,
+   "approvalMedianMs": 19487,
+   "wallMs": 122213,
+   "summary": "Stopped while waiting for approval",
+   "actions": [
+    "click: Click once on the IMG_4021.txt row in the Downloads-Sim folder to sele [none]",
+    "click: Click once on the IMG_4021.txt row to select it. [none]",
+    "click: Click once on the IMG_4021.txt filename text to enter inline rename mo [none]",
+    "click: Click once on the IMG_4021.txt filename text to enter inline rename mo [user_interrupted]"
+   ]
+  },
+  {
+   "id": "run_0mtm82eqb4b8ea1d2712f5565",
+   "skill": "Create the daily journal note from the template",
+   "status": "interrupted",
+   "failure": "user_interrupted",
+   "provider": "uimate",
+   "subtasks": "2/3",
+   "steps": 9,
+   "proposed": 8,
+   "executed": 7,
+   "verified": 7,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 1,
+   "proposeMedianMs": 8139,
+   "proposeMaxMs": 19148,
+   "approvalMedianMs": 22786,
+   "wallMs": 305369,
+   "summary": "Stopped while waiting for approval",
+   "actions": [
+    "double_click: Double-click the template.txt file in the Journal Finder window to ope [none]",
+    "click: Click the TextEdit window (template.txt) to bring it to the front. [none]",
+    "hotkey: Press Command+A to select all text in the TextEdit window. [none]",
+    "hotkey: Press Command+C to copy the selected text. [none]",
+    "hotkey: Press Command+W to close the TextEdit window. [none]",
+    "None:  [none]",
+    "click: Click the Notes application icon in the Dock to bring Notes to the fro [none]",
+    "click: Click the Notes icon in the Dock to bring the Notes app to the front. [none]",
+    "click: Click the Notes icon in the Dock to bring the Notes app to the front. [user_interrupted]"
+   ]
+  },
+  {
+   "id": "run_0mtm8mnc16d6acdf220e6605c",
+   "skill": "Create the daily journal note from the template",
+   "status": "failed",
+   "failure": "helper_error",
+   "provider": "uimate",
+   "subtasks": "0/3",
+   "steps": 1,
+   "proposed": 0,
+   "executed": 0,
+   "verified": 0,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 0,
+   "proposeMedianMs": null,
+   "proposeMaxMs": null,
+   "approvalMedianMs": null,
+   "wallMs": 79,
+   "summary": "Capture failed: Failed to get sources.",
+   "actions": [
+    "None:  [helper_error]"
+   ]
+  },
+  {
+   "id": "run_0mtmgoezxa541244ed797e4ef",
+   "skill": "Create the daily journal note from the template",
+   "status": "failed",
+   "failure": "helper_error",
+   "provider": "uimate",
+   "subtasks": "0/3",
+   "steps": 1,
+   "proposed": 1,
+   "executed": 0,
+   "verified": 0,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 0,
+   "proposeMedianMs": 11606,
+   "proposeMaxMs": 11606,
+   "approvalMedianMs": 18462,
+   "wallMs": 96778,
+   "summary": "Helper error: Accessibility permission is required to perform actions",
+   "actions": [
+    "double_click: Double-click the template.txt file in the Journal Finder window to ope [helper_error]"
+   ]
+  },
+  {
+   "id": "run_0mtmr85zb45eaf3cad9dc530f",
+   "skill": "Create the daily journal note from the template",
+   "status": "completed",
+   "failure": "none",
+   "provider": "uimate",
+   "subtasks": "2/3",
+   "steps": 12,
+   "proposed": 11,
+   "executed": 10,
+   "verified": 10,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 2,
+   "proposeMedianMs": 12566,
+   "proposeMaxMs": 24553,
+   "approvalMedianMs": 16965,
+   "wallMs": 417903,
+   "summary": "All subtasks verified",
+   "actions": [
+    "double_click: Double-click the template.txt file in the Journal Finder window to ope [none]",
+    "click: Click the TextEdit window to focus it. [none]",
+    "hotkey: Press Command+A to select all text in TextEdit. [none]",
+    "hotkey: Press Command+C to copy the selected text. [none]",
+    "hotkey: Press Command+W to close the TextEdit window. [none]",
+    "None:  [none]",
+    "click: Click the Notes application icon in the Dock to bring Notes to the fro [none]",
+    "hotkey: Press Command+N to create a new note in Notes. [none]",
+    "type_text: Type the title \"Journal 2026-09-09\" into the new note. [none]",
+    "press_key: Press Return to move the cursor to a new line below the title. [none]",
+    "hotkey: Press Command+V to paste the copied template into the note. [none]",
+    "SUBTASK_COMPLETE: The new note shows the title \"Journal 2026-09-09\" followed by the temp [none]"
+   ]
+  },
+  {
+   "id": "run_0mtmrhxr485665be22ee59c59",
+   "skill": "Create the daily journal note from the template",
+   "status": "interrupted",
+   "failure": "user_interrupted",
+   "provider": "uimate",
+   "subtasks": "2/3",
+   "steps": 8,
+   "proposed": 7,
+   "executed": 7,
+   "verified": 6,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 1,
+   "proposeMedianMs": 7621,
+   "proposeMaxMs": 18625,
+   "approvalMedianMs": 12394,
+   "wallMs": 245409,
+   "summary": "Stopped by the user",
+   "actions": [
+    "double_click: Double-click the template.txt file in the Journal Finder window to ope [none]",
+    "click: Click the TextEdit window to bring it to the front. [none]",
+    "hotkey: Press Command+A to select all text in TextEdit. [none]",
+    "hotkey: Press Command+C to copy the selected text. [none]",
+    "hotkey: Press Command+W to close the TextEdit window. [none]",
+    "None:  [none]",
+    "click: Click the Notes application icon in the Dock to bring Notes to the fro [none]",
+    "press_key: Press Escape to close the attachment menu in Notes. [none]"
+   ]
+  },
+  {
+   "id": "run_0mtmrwr3g7a5874999a92b664",
+   "skill": "Create the daily journal note from the template",
+   "status": "completed",
+   "failure": "none",
+   "provider": "uimate",
+   "subtasks": "2/3",
+   "steps": 12,
+   "proposed": 11,
+   "executed": 10,
+   "verified": 9,
+   "invalid": 0,
+   "stale": 0,
+   "rejected": 0,
+   "userAdvanced": 2,
+   "proposeMedianMs": 12679,
+   "proposeMaxMs": 23658,
+   "approvalMedianMs": 14795,
+   "wallMs": 383759,
+   "summary": "All subtasks verified",
+   "actions": [
+    "double_click: Double-click the template.txt file in the Journal Finder window to ope [none]",
+    "click: Click inside the TextEdit window to ensure it is focused. [none]",
+    "hotkey: Press Command+A to select all text in the TextEdit window. [none]",
+    "hotkey: Press Command+C to copy the selected text. [none]",
+    "hotkey: Press Command+W to close the TextEdit window. [none]",
+    "None:  [none]",
+    "click: Click the Notes application icon in the Dock to bring Notes to the fro [none]",
+    "hotkey: Press Command+N to create a new note in Notes. [none]",
+    "type_text: Type the title \"Journal 2026-09-11\" into the new note. [none]",
+    "press_key: Press Return to move the cursor to a new line below the title. [none]",
+    "hotkey: Press Command+V to paste the copied template into the note. [none]",
+    "SUBTASK_COMPLETE: The new note shows the title \"Journal 2026-09-11\" followed by the temp [none]"
+   ]
+  }
+ ],
+ "learning": {
+  "episodes": 46,
+  "episodeActiveMedianMs": 56041,
+  "candidates": [
+   {
+    "id": "cand_5af37a2da420ef58666aa5fd",
+    "title": "Textedit: press cmd+w after finder",
+    "repeat": 2,
+    "similarity": 0.8624,
+    "confidence": 0.7008,
+    "medianDurationMs": 179608,
+    "steps": 9,
+    "variables": 1,
+    "risk": "internal_mutation",
+    "createdAt": 1788433689402
+   },
+   {
+    "id": "cand_d899bf5ddb3f0f378d167b39",
+    "title": "Save in TextEdit after clicking the 'Apprentice test invoices' textbox in Finder",
+    "repeat": 4,
+    "similarity": 0.7252,
+    "confidence": 0.7288,
+    "medianDurationMs": 169435,
+    "steps": 8,
+    "variables": 0,
+    "risk": "internal_mutation",
+    "createdAt": 1788471349656
+   },
+   {
+    "id": "cand_fd1ac94ef84278bd33ac16ea",
+    "title": "Save in TextEdit after clicking the 'List view' tree in Finder",
+    "repeat": 2,
+    "similarity": 0.624,
+    "confidence": 0.5122,
+    "medianDurationMs": 126487,
+    "steps": 14,
+    "variables": 2,
+    "risk": "internal_mutation",
+    "createdAt": 1788476069039
+   },
+   {
+    "id": "cand_255bda0b7401a0a634e72aa4",
+    "title": "Save in TextEdit after clicking the 'List view' tree in Finder",
+    "repeat": 2,
+    "similarity": 0.7859,
+    "confidence": 0.6474,
+    "medianDurationMs": 135488,
+    "steps": 14,
+    "variables": 2,
+    "risk": "internal_mutation",
+    "createdAt": 1788476083891
+   },
+   {
+    "id": "cand_d6a99350f0d4d551b2e1ea00",
+    "title": "Open 'ledger.txt' in TextEdit after opening 'invoice-inv.pdf' in Finder",
+    "repeat": 2,
+    "similarity": 0.6307,
+    "confidence": 0.4631,
+    "medianDurationMs": 173222,
+    "steps": 8,
+    "variables": 0,
+    "risk": "reversible_navigation",
+    "createdAt": 1788477130147
+   },
+   {
+    "id": "cand_e4c98c67b015cfb6212ee443",
+    "title": "Save in TextEdit after opening 'invoice-inv.pdf' in Finder",
+    "repeat": 2,
+    "similarity": 0.9034,
+    "confidence": 0.8161,
+    "medianDurationMs": 233930,
+    "steps": 7,
+    "variables": 0,
+    "risk": "internal_mutation",
+    "createdAt": 1788477955003
+   },
+   {
+    "id": "cand_c4e8f98ce85b65571cb5ba0e",
+    "title": "Click the 'List view' tree after opening 'img.txt' in Finder",
+    "repeat": 2,
+    "similarity": 0.7117,
+    "confidence": 0.5866,
+    "medianDurationMs": 311822,
+    "steps": 4,
+    "variables": 1,
+    "risk": "reversible_navigation",
+    "createdAt": 1788478761661
+   },
+   {
+    "id": "cand_6ec5b540c8450d233edffec1",
+    "title": "Press Cmd+V in Notes after clicking the 'Back to runs' group in Finder",
+    "repeat": 2,
+    "similarity": 0.6622,
+    "confidence": 0.4642,
+    "medianDurationMs": 110605,
+    "steps": 13,
+    "variables": 1,
+    "risk": "internal_mutation",
+    "createdAt": 1788479984025
+   },
+   {
+    "id": "cand_2bf3e630fa58d5ec63e7052d",
+    "title": "Press Cmd+V in Notes after opening 'template.txt' in Finder",
+    "repeat": 3,
+    "similarity": 0.7568,
+    "confidence": 0.5984,
+    "medianDurationMs": 134601,
+    "steps": 10,
+    "variables": 1,
+    "risk": "internal_mutation",
+    "createdAt": 1788480740763
+   },
+   {
+    "id": "cand_bb6dfd078ada8c19f44f7e1a",
+    "title": "Click the 'Journal 09 07' scrollarea in Notes after opening 'template.txt' in Finder",
+    "repeat": 2,
+    "similarity": 0.7348,
+    "confidence": 0.609,
+    "medianDurationMs": 886898,
+    "steps": 14,
+    "variables": 1,
+    "risk": "internal_mutation",
+    "createdAt": 1788514820153
+   },
+   {
+    "id": "cand_c8c3cb82abf01b92ca4e05b1",
+    "title": "Click the 'Media' menubutton in Notes after opening 'template.txt' in Finder",
+    "repeat": 2,
+    "similarity": 0.7497,
+    "confidence": 0.6099,
+    "medianDurationMs": 911191,
+    "steps": 15,
+    "variables": 1,
+    "risk": "internal_mutation",
+    "createdAt": 1788514976229
+   }
+  ],
+  "skills": [
+   {
+    "id": "skill_0mtlfa06od1f87fce88574aad",
+    "name": "File invoice INV-1106 into the ledger",
+    "source": "candidate",
+    "subtasks": [
+     "1. Open invoice-INV-1106.pdf in Preview",
+     "2. Close the invoice in Preview",
+     "3. Record the invoice in ledger.txt"
+    ],
+    "predicates": [
+     [
+      "app_frontmost"
+     ],
+     [
+      "user_confirm"
+     ],
+     [
+      "user_confirm"
+     ]
+    ],
+    "version": 1
+   },
+   {
+    "id": "skill_0mtlff35se697ad1223d471ac",
+    "name": "finder: Press Cmd+Option+L",
+    "source": "taught",
+    "subtasks": [
+     "1. Click the 'Today at 12 50' textbox on finder",
+     "2. Press Cmd+W on preview",
+     "3. Switch to Finder on textedit",
+     "4. Open a web page on safari",
+     "5. Click the 'Today at 12 52' textbox on finder",
+     "6. Press Cmd+W on preview",
+     "7. Press Cmd+W on textedit",
+     "8. Press Cmd+Option+L on finder"
+    ],
+    "predicates": [
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ],
+     [
+      "title_contains"
+     ]
+    ],
+    "version": 1
+   },
+   {
+    "id": "skill_0mtm2aaek78f2c56ac28573fc",
+    "name": "Save in TextEdit after clicking the 'Apprentice test invoices' textbox in Finder",
+    "source": "candidate",
+    "subtasks": [
+     "1. Click the 'Apprentice test invoices' textbox on finder",
+     "2. Switch to Preview on preview",
+     "3. Press Cmd+S on textedit"
+    ],
+    "predicates": [
+     [
+      "app_frontmost"
+     ],
+     [
+      "app_frontmost"
+     ],
+     [
+      "user_confirm"
+     ]
+    ],
+    "version": 1
+   },
+   {
+    "id": "skill_0mtm3zu28afba1d5137f82ff9",
+    "name": "Rename downloads to the date-topic convention",
+    "source": "taught",
+    "subtasks": [
+     "1. Rename IMG_4021.txt",
+     "2. Rename scan (2).txt"
+    ],
+    "predicates": [
+     [
+      "user_confirm"
+     ],
+     [
+      "user_confirm"
+     ]
+    ],
+    "version": 1
+   },
+   {
+    "id": "skill_0mtm58wpyb9b85ff441c77af0",
+    "name": "Save in TextEdit after clicking the 'List view' tree in Finder",
+    "source": "candidate",
+    "subtasks": [
+     "1. Open 'tuesday.txt' on finder",
+     "2. Open 'summary.txt' on textedit",
+     "3. Press Cmd+S on textedit"
+    ],
+    "predicates": [
+     [
+      "app_frontmost"
+     ],
+     [
+      "user_confirm"
+     ],
+     [
+      "user_confirm"
+     ]
+    ],
+    "version": 1
+   },
+   {
+    "id": "skill_0mtm7km2q321d99df13d0a5a9",
+    "name": "Create the daily journal note from the template",
+    "source": "candidate",
+    "subtasks": [
+     "1. Open template.txt in TextEdit",
+     "2. Copy the template and switch to Notes",
+     "3. Create the journal note"
+    ],
+    "predicates": [
+     [
+      "app_frontmost"
+     ],
+     [
+      "app_frontmost"
+     ],
+     [
+      "user_confirm"
+     ]
+    ],
+    "version": 1
+   }
+  ]
+ }
+}

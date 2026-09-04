@@ -282,7 +282,8 @@ Not achieved, recorded as limitations:
   Return can engage. Actions that depend on the target window staying key across an approval
   cannot succeed one step at a time.
 - One journal run stalled with the model re-proposing "bring Notes to the front" because a
-  window-scoped screenshot does not show which app is active.
+  window-scoped screenshot does not show which app is active (fixed, see change 5 below; 3 of 3
+  follow-up runs passed that step).
 - The observer records the assistant's own approved actions as activity, so guided runs feed
   discovery (two run-derived candidates appeared).
 
@@ -298,6 +299,8 @@ Engineering changes the validation motivated (all with regression tests, in this
    records them in the report.
 5. The proposal request carries the captured window's app and title, and the UI-Mate turn
    reminder states them (`frontmost_app`, `window_title`), so the model is told which app is
-   active instead of guessing from a window-only screenshot. Unit-tested; the live re-run of the
-   journal routine with this build is pending because replacing the app bundle in /Applications
-   reset the macOS Screen Recording and Accessibility grants, which only the user can restore.
+   active instead of guessing from a window-only screenshot. Verified live the next morning: three
+   journal runs each left the focus step after one click (previously a three-proposal loop).
+6. The Escape emergency-stop shortcut is lifted for a synthetic `esc` press as well as `escape`
+   (the model spells it `esc`); before the fix an approved Escape ended the run as stopped by the
+   user. Regression test added; verified live on the following run.
