@@ -81,7 +81,7 @@ export function stepWithTiming(step: RunStep, patch: Partial<RunStep["timing"]>)
 export const SYNTHETIC_ESCAPE_GRACE_MS = 1500;
 
 export function usesEscapeKey(action: ExecutableAction): boolean {
-  return (action.type === "press_key" || action.type === "hotkey") && action.key === "escape";
+  return (action.type === "press_key" || action.type === "hotkey") && (action.key === "escape" || action.key === "esc");
 }
 
 /** True when a "user pressed Escape" stop arrives within the grace window of an Escape the run itself executed. */

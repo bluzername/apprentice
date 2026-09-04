@@ -5,6 +5,9 @@ import { SYNTHETIC_ESCAPE_GRACE_MS, isSyntheticEscapeEcho, usesEscapeKey } from 
 describe("synthetic escape guard", () => {
   it("recognises the actions that post an Escape key through the helper", () => {
     expect(usesEscapeKey({ type: "press_key", key: "escape" })).toBe(true);
+    // The model may spell it "esc"; both names are legal key names and both must lift the shortcut.
+    expect(usesEscapeKey({ type: "press_key", key: "esc" })).toBe(true);
+    expect(usesEscapeKey({ type: "hotkey", modifiers: ["cmd"], key: "esc" })).toBe(true);
     expect(usesEscapeKey({ type: "hotkey", modifiers: ["cmd"], key: "escape" })).toBe(true);
     expect(usesEscapeKey({ type: "press_key", key: "enter" })).toBe(false);
     expect(usesEscapeKey({ type: "click", x: 10, y: 10, button: "left" } as ExecutableAction)).toBe(false);
