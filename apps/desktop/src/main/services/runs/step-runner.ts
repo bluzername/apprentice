@@ -95,7 +95,12 @@ function proposalInput(active: ActiveRun, snapshot: ScreenSnapshot, sessionId: s
     priorActions: active.priorActions.slice(-200),
     screenshot: { id: snapshot.screenshotId, pngBase64: snapshot.resized.png.toString("base64"), width: snapshot.resized.width, height: snapshot.resized.height },
     platform: "macos" as const,
-    variables: active.variables
+    variables: active.variables,
+    // A window-scoped capture does not show which app is active; say it in words so the
+    // model does not keep proposing "bring the app to the front".
+    ...(snapshot.context.bundleId
+      ? { screen: { bundleId: snapshot.context.bundleId, appName: snapshot.context.appName, windowTitle: snapshot.context.windowTitle } }
+      : {})
   };
 }
 

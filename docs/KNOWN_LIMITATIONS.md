@@ -70,8 +70,16 @@ during the build; items marked "by design" are intentional alpha scope.
   Actions that do not change the window (Command+S on an unchanged view) are reported as
   unverified even when they succeeded on disk.
 - Wall-clock time of a guided run is dominated by approval waits and model latency, not by
-  execution: in the measured runs the helper spent under 0.3 s executing per run, the model
-  110-125 s, and approvals 120-145 s.
+  execution: in the measured runs the helper spent under 0.5 s executing per run, the model
+  110-250 s, and approvals 120-160 s.
+- Every approval brings the Apprentice window forward, so the target window loses key status
+  between steps. Actions whose effect depends on the window staying key (Finder inline rename,
+  context menus, hover states) do not work one step at a time; Finder rename failed in 3 of 3
+  runs for this reason.
+- The model sees only the target window, not which app is active. It can re-propose "bring the
+  app to the front" after that already happened; stop the run or advance the subtask.
+- The observer records the assistant's own approved actions as ordinary activity, so guided runs
+  can produce candidates for the routine they just executed.
 - The credential-shape check on typed text can flag ordinary pipe-delimited data lines as a
   high-entropy token; approval is still possible, the card just shows the warning.
 - Coordinates from the model are mapped through the resize transform and checked against OCR and

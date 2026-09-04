@@ -198,6 +198,19 @@ describe("UIMateProvider.proposeNextAction", () => {
     expect(second).toContain(TURN_REMINDER_LINE);
   });
 
+  it("tells the model which app the window-scoped screenshot belongs to", async () => {
+    const { provider, fake } = providerWith([CLICK]);
+    const screen = { bundleId: "com.apple.Notes", appName: "Notes", windowTitle: "Notes - 3 notes" };
+    await provider.proposeNextAction(input("run_1", 0, { screen }));
+    await provider.proposeNextAction(input("run_1", 0, { screen }));
+    const bodies = chatBodies(fake.requests);
+    const messages = (bodies[1]?.["messages"] ?? []) as readonly { role: string; content: readonly { type: string; text?: string }[] }[];
+    const last = messages[messages.length - 1];
+    const text = (last?.content ?? []).map((block) => block.text ?? "").join("");
+    expect(text).toContain("frontmost_app: Notes (com.apple.Notes), already active");
+    expect(text).toContain("window_title: Notes - 3 notes");
+  });
+
   it("advances on subtask_complete, awaits finish on the last subtask, then reports DONE", async () => {
     const { provider } = providerWith([SUBTASK_DONE, SUBTASK_DONE, FINISHED]);
     const first = await provider.proposeNextAction(input("run_1", 0));

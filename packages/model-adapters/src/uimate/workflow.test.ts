@@ -89,6 +89,18 @@ describe("buildTurnReminder (deviation: subtask context on every turn)", () => {
     expect(buildTurnReminder(plan, 0)).toContain("index: 0 of 2");
   });
 
+  it("names the frontmost app and window when the engine knows them", () => {
+    const plan = planFromSkillSubtasks([{ title: "T", goal: "G", completionCriteria: "C", keySteps: [] }]);
+    const reminder = buildTurnReminder(plan, 0, { bundleId: "com.apple.Notes", appName: "Notes", windowTitle: "Notes - 156 notes" });
+    expect(reminder).toContain("frontmost_app: Notes (com.apple.Notes), already active; do not click to bring it to the front");
+    expect(reminder).toContain("window_title: Notes - 156 notes");
+    expect(reminder.indexOf("frontmost_app")).toBeLessThan(reminder.indexOf("</current_subtask_reminder>"));
+    expect(buildTurnReminder(plan, 0, { bundleId: "com.apple.finder" })).toContain("frontmost_app: com.apple.finder, already active");
+    expect(buildTurnReminder(plan, 0, { bundleId: "com.apple.finder", windowTitle: "  " })).not.toContain("window_title");
+    expect(buildTurnReminder(plan, 0, { bundleId: "" })).not.toContain("frontmost_app");
+    expect(buildTurnReminder(plan, 0)).not.toContain("frontmost_app");
+  });
+
   it("omits an empty intent summary and rejects an out-of-range index", () => {
     const plan = planFromSkillSubtasks([{ title: "", goal: "G", completionCriteria: "C", keySteps: [] }]);
     expect(buildTurnReminder(plan, 0)).not.toContain("intent_summary");

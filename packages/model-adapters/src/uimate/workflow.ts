@@ -144,7 +144,25 @@ export const TURN_REMINDER_LINE =
  * the first turn of the window, so on turn 2 and later the model no longer sees
  * which subtask it is on or how that subtask ends.
  */
-export function buildTurnReminder(plan: WorkflowPlan, currentIndex: number): string {
+export interface ReminderScreen {
+  readonly bundleId: string;
+  readonly appName?: string;
+  readonly windowTitle?: string;
+}
+
+/** One line naming the app whose window the screenshot shows; empty when unknown. */
+export function describeScreen(screen: ReminderScreen | undefined): readonly string[] {
+  if (screen === undefined || screen.bundleId.length === 0) return [];
+  const name = pyStrip(screen.appName ?? "");
+  const app = name.length > 0 ? `${name} (${screen.bundleId})` : screen.bundleId;
+  const title = pyStrip(screen.windowTitle ?? "");
+  return [
+    `frontmost_app: ${app}, already active; do not click to bring it to the front`,
+    ...(title.length > 0 ? [`window_title: ${title}`] : [])
+  ];
+}
+
+export function buildTurnReminder(plan: WorkflowPlan, currentIndex: number, screen?: ReminderScreen): string {
   const subtask = plan.subtasks[currentIndex];
   if (subtask === undefined) {
     throw new RangeError(`subtask index ${currentIndex} out of range (${plan.subtasks.length} subtasks)`);
@@ -154,6 +172,7 @@ export function buildTurnReminder(plan: WorkflowPlan, currentIndex: number): str
     `index: ${currentIndex} of ${plan.subtasks.length}`,
     ...(subtask.title ? [`intent_summary: ${pyStrip(subtask.title)}`] : []),
     `subtask_complete_flag: ${pyStrip(subtask.completionFlag ?? "")}`,
+    ...describeScreen(screen),
     "</current_subtask_reminder>",
     TURN_REMINDER_LINE
   ].join("\n");

@@ -298,7 +298,7 @@ export class UIMateProvider implements VisionAgentProvider {
       workflowSection: UIMATE_WORKFLOW_SECTION_WITH_SAFETY,
       actionPatch: SUBTASK_COMPLETE_PATCH,
       platform: promptPlatform(input),
-      latestTurnSuffix: buildTurnReminder(plan, index)
+      latestTurnSuffix: buildTurnReminder(plan, index, input.screen)
     });
     const { messages: collapsed } = collapseMessages(messages, this.imagesToKeep, 1, COLLAPSED_SCREENSHOT_TEXT);
     return chatCompletion(this.http, {

@@ -241,25 +241,31 @@ Observed but not changed:
 ## Overnight validation with the real model (2026-09-04)
 
 A 12-hour unattended validation on the same M3 Max (36 GB) with the packaged app, the managed
-llama.cpp b10752 runtime and UI-Mate-9B Q6_K. Realistic office routines (filing invoices into a
-ledger, renaming downloads, meeting notes, a weekly roll-up) were demonstrated by an automation
-driver in real Finder, Preview, TextEdit and Notes windows, then the agent's learning and guided
-execution were measured. The full report with method and every number is
+llama.cpp b10752 runtime and UI-Mate-9B Q6_K. Six realistic office routines (filing invoices
+into a ledger, sorting receipts, meeting decisions into Notes, renaming downloads, a weekly
+roll-up, a daily journal note) were demonstrated 20 times by an automation driver in real
+Finder, Preview, TextEdit and Notes windows, then the agent's learning and guided execution were
+measured over 11 runs. The full report with method and every number is
 `docs/VALIDATION_REPORT.md`; the benchmark JSON is in `docs/benchmarks/`; the helper scripts
 are in `scripts/validation/`.
 
 Verified:
-- Passive discovery found the invoice routine after 4 demonstrations (similarity 0.73,
-  confidence 0.73) and the weekly roll-up after 2 (similarity 0.79, confidence 0.65), with the
-  step lists matching the demonstrated routines.
-- Two guided runs of the three-subtask invoice skill completed end to end (runs of 5 m 11 s and
-  4 m 04 s, 6 approved actions each, every action executed by the helper and verified), each
-  leaving the exact expected line in ledger.txt on disk. The typed line was shown verbatim on
-  the approval card before it was typed.
+- Passive discovery found 3 of the 6 routines: the invoice routine after 4 demonstrations
+  (similarity 0.73, confidence 0.73), the weekly roll-up after 2 (0.79, 0.65) and the journal
+  note after 3 (0.76, 0.60), each with a step list matching the demonstrated routine. A fourth
+  (rename) was captured with "Learn what I just did".
+- Occurrences separated by a 270 s idle gap segmented into exactly one episode each (5 of 5).
+- Guided runs of human-reviewed skills completed 3 of 4 times: the three-subtask invoice skill
+  twice (5 m 11 s and 5 m 28 s, 6 approved actions each, the exact expected ledger line on disk)
+  and the discovered journal skill once after a review of its wording (7 m 54 s, 10 approved
+  actions across Finder, TextEdit and Notes, the expected note in Notes). Typed text was shown
+  verbatim on the approval card before it was typed; no action reached the OS unapproved.
 - Engine-owned subtask completion from evidence (app_frontmost predicate) closed subtasks
-  without a model signal; "Subtask complete, continue" advances a run from an open question.
-- Window-scoped capture is the default: the model sees only the target window, and a proposal
-  whose point lands on another app's window is refused by the hit-test guard.
+  without a model signal in every run that reached one; "Subtask complete, continue" advances a
+  run from an open question; "Approve low-risk for this run" let read-only shortcuts run
+  without a further prompt.
+- Window-scoped capture is the default: the model sees only the target window, and proposals
+  whose point resolves to another app's element are refused by the hit-test guard.
 - Grounding benchmark on 32 real-window targets (Finder, TextEdit, Preview, Apprentice): 47-59 %
   within 6 px across four passes (thinking on and off, temperature 0.2 and 1.0); labelled text
   targets reliable, icon-only controls mostly missed; 0-1 parse failures per pass; median
@@ -267,12 +273,18 @@ Verified:
 
 Not achieved, recorded as limitations:
 - Routines repeated with pauses under 4 minutes and without an outcome event (paste into Notes,
-  move without save) were merged into one episode and not discovered.
+  move without save) merged into one episode; a routine shorter than the 90 s median-active gate
+  (the standup-decisions routine at 60 s) segmented correctly but was not proposed.
 - A skill created from a discovered candidate without editing is not executable as-is: the model
   follows the literal accessibility-label wording and the last occurrence's file name.
-- The rename routine run did not type the new name (the model found Finder's context-menu
-  Rename path, then drifted); typed values are never recorded during observation, so the naming
-  convention itself cannot be learned.
+- Finder inline rename failed in all 3 runs, with the cause identified: the approval round trip
+  brings the Apprentice window forward, so Finder loses key status before click-to-rename or
+  Return can engage. Actions that depend on the target window staying key across an approval
+  cannot succeed one step at a time.
+- One journal run stalled with the model re-proposing "bring Notes to the front" because a
+  window-scoped screenshot does not show which app is active.
+- The observer records the assistant's own approved actions as activity, so guided runs feed
+  discovery (two run-derived candidates appeared).
 
 Engineering changes the validation motivated (all with regression tests, in this build):
 1. Active-time accounting counts pauses of up to 2 minutes as active work (previously 60 s), so

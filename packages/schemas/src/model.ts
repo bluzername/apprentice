@@ -88,7 +88,18 @@ export const NextActionInputSchema = z.object({
   priorActions: z.array(z.object({ stepIndex: z.number().int().nonnegative(), summary: z.string().max(300) })).max(200),
   screenshot: ModelImageSchema,
   platform: z.enum(["macos"]).default("macos"),
-  variables: z.record(z.string().max(64), z.string().max(500)).default({})
+  variables: z.record(z.string().max(64), z.string().max(500)).default({}),
+  /**
+   * What the screenshot shows, as the engine knows it: a window-scoped capture does
+   * not reveal which app is active, so the model is told in words.
+   */
+  screen: z
+    .object({
+      bundleId: z.string().max(256),
+      appName: z.string().max(120).optional(),
+      windowTitle: z.string().max(300).optional()
+    })
+    .optional()
 });
 export type NextActionInput = z.infer<typeof NextActionInputSchema>;
 
