@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  alpha-bundle:
+    name: Build, package and publish the alpha bundle (macOS arm64)
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the Swift helper
+        run: node scripts/build-helper.mjs
+
+      - name: Build packages, extension and app bundles
+        run: pnpm build
+
+      - name: Package the macOS app
+        # Signing and notarization are optional. Without MAC_CSC_LINK the app is
+        # ad hoc signed; without the APPLE_* secrets notarization is skipped
+        # (see apps/desktop/scripts/package-mac.mjs).
+        env:
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: pnpm package:mac
+
+      - name: Assemble the alpha bundle
+        run: pnpm alpha:bundle
+
+      - name: Smoke-test the bundle
+        run: pnpm alpha:smoke
+
+      - name: Publish the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/alpha/*
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+          generate_release_notes: true
