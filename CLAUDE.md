@@ -60,7 +60,7 @@ pnpm bench:grounding                           # opt-in grounding accuracy bench
 
 ## Definition of Done
 
-See section 20 of `self_learning_work_agent_claude_code_master_prompt.md` and
+See section 20 of `docs/MASTER_PROMPT.md` and
 `docs/BUILD_STATUS.md` (tested facts only). Do not mark items done without running them.
 
 ## Conventions
