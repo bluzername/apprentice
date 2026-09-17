@@ -7,7 +7,6 @@
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
   <img alt="Platform: macOS on Apple Silicon" src="https://img.shields.io/badge/platform-macOS%20%7C%20Apple%20Silicon-black?logo=apple">
   <img alt="Status: alpha" src="https://img.shields.io/badge/status-alpha-orange">
-  <img alt="Tests: 1030 passing" src="https://img.shields.io/badge/tests-1030%20passing-brightgreen">
   <img alt="Local model: UI-Mate-9B via llama.cpp" src="https://img.shields.io/badge/local%20model-UI--Mate--9B%20%2B%20llama.cpp-7c5cff">
   <img alt="Cloud calls in the default path: none" src="https://img.shields.io/badge/cloud%20calls-none%20by%20default-2dd4bf">
 </p>
@@ -78,6 +77,11 @@ pnpm package:mac
 pnpm alpha:bundle                    # dist/alpha/
 pnpm alpha:smoke                     # verifies the bundle without downloading a model
 ```
+
+Pushing a tag that starts with `v` runs [`release.yml`](.github/workflows/release.yml), which builds the
+same bundle on a macOS runner and attaches `dist/alpha/*` to a GitHub release (marked pre-release
+when the tag contains `alpha`, `beta` or `rc`). Signing and notarization use repository secrets when
+they are present and fall back to ad hoc signing otherwise.
 
 <details>
 <summary><b>Run the real model (optional, 8.6 GB download)</b></summary>
