@@ -7,6 +7,6 @@
   "types": "./src/index.ts",
   "exports": { ".": "./src/index.ts" },
   "scripts": {"typecheck":"tsc --noEmit -p tsconfig.json","test":"vitest run","build":"tsx src/cli/render-fixtures.ts","generate":"tsx src/cli/render-fixtures.ts"},
-  "dependencies": {"@apprentice/schemas":"workspace:*","@apprentice/core":"workspace:*","@resvg/resvg-js":"^2.6.2","pngjs":"^7.0.0","zod":"^4.5.4"},
+  "dependencies": {"@apprentice/schemas":"workspace:*","@apprentice/core":"workspace:*","@resvg/resvg-js":"^2.6.2","pngjs":"^7.0.0","zod":"^4.6.5"},
   "devDependencies": {"@types/pngjs":"^6.0.5","typescript":"^5.9.3","vitest":"^4.1.11","tsx":"^4.20.0"}
 }
