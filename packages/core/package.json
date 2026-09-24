@@ -7,6 +7,6 @@
   "types": "./src/index.ts",
   "exports": { ".": "./src/index.ts" },
   "scripts": {"typecheck":"tsc --noEmit -p tsconfig.json","test":"vitest run","build":"tsc --noEmit -p tsconfig.json"},
-  "dependencies": {"@apprentice/schemas":"workspace:*","zod":"^4.5.4","pngjs":"^7.0.0","yazl":"^3.3.1","yauzl":"^3.4.0"},
+  "dependencies": {"@apprentice/schemas":"workspace:*","zod":"^4.6.5","pngjs":"^7.0.0","yazl":"^3.3.1","yauzl":"^3.4.0"},
   "devDependencies": {"@types/pngjs":"^6.0.5","@types/yazl":"^2.4.6","@types/yauzl":"^2.10.3","typescript":"^5.9.3","vitest":"^4.1.11"}
 }
