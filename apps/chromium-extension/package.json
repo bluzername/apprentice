@@ -16,15 +16,15 @@
   },
   "dependencies": {
     "@apprentice/schemas": "workspace:*",
-    "zod": "^4.5.4"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@types/chrome": "^0.1.20",
+    "@types/chrome": "^0.3.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.6",
     "vitest": "^4.1.11",
     "yazl": "^3.3.1",
     "@types/yazl": "^2.4.6",
-    "tsx": "^4.20.0"
+    "tsx": "^4.23.15"
   }
 }
